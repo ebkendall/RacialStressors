@@ -41,7 +41,7 @@ model_t <- function(t,p,parms) {
 update_mu_tilde = function(pars, par_index, mu_i, n_sub) {
     
     # Prior mean and variance for mu_tilde
-    big_sigma = diag(c(1, 1, 1))
+    big_sigma = diag(c(20, 20, 20))
     mu_0 = c(8, 6, 7)
     
     # variance for mu^(i)
@@ -157,18 +157,21 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   n_par = length(pars)
   chain = matrix( 0, steps, n_par)
 
+  # group = as.list(unlist(par_index))
+  # names(group) = NULL
   group = list(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit),
                c(par_index$log_tau2), c(par_index$log_sigma2_tilde))
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
-  pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*.001
+  pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
   pscale = rep( 1, n_group)
 
   accept = rep( 0, n_group)
   
   # Initializing the random effects matrix mu_i
-  mu_i = matrix(rep(c(8, 6, 7), n_sub), nrow = n_sub, ncol = 3, byrow = T)
+  M = vector(mode = "list", length = 10)
+  mu_i = matrix(rep(c(0, 0, 0), n_sub), nrow = n_sub, ncol = 3, byrow = T)
 
   # Evaluate the log_post of the initial parameters
   log_post_prev = fn_log_post_continuous( pars, prior_par, par_index, y_1, y_2, t, id, mu_i)
@@ -244,6 +247,15 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
               temp_chain = chain[(ttt-2000):ttt,ind_j]
               pcov[[j]] = cov(temp_chain[ !duplicated(temp_chain),, drop=F])
             }
+        } else {
+            if(100 <= ttt & ttt <= 2000){
+                temp_chain = chain[1:ttt,ind_j]
+                pcov[[j]] = matrix(var(temp_chain[ !duplicated(temp_chain)]))
+                
+            } else if(2000 < ttt){
+                temp_chain = chain[(ttt-2000):ttt,ind_j]
+                pcov[[j]] = matrix(var(temp_chain[ !duplicated(temp_chain)]))
+            }
         }
         
         if( sum( is.na(pcov[[j]]) ) > 0)  pcov[[j]] = diag( length(ind_j) )
@@ -252,6 +264,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
         # reasonable acceptance ratios.
         if(ttt %% 30 == 0){
           if(ttt %% 480 == 0){
+            print("accept ratio")
+            print(accept)
             accept[j] = 0
 
           } else if( accept[j] / (ttt %% 480) < .4 ){ 

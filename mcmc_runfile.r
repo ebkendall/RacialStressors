@@ -22,8 +22,24 @@ init_par = c(c(matrix(c(-3, 0,
 par_index = list( beta=1:12, misclass = 13:18, pi_logit=19:20,
                   mu_tilde = 21:23, log_tau2 = 24, log_sigma2_tilde = 25)
 
-prior_mean = rep(0, 22)
-prior_sd = rep(20, 22)
+prior_mean = c(c(matrix(c(-8, 0,
+                          -8, 0,
+                          -8, 0,
+                          -8, 0,
+                          -8, 0,
+                          -8, 0), ncol=2, byrow = T)),
+               c(-5, -5, -5, -5, -5, -5),
+               c(-5, -5),
+                  0,  0)
+prior_sd = c(c(matrix(c(15, 5,
+                        15, 5,
+                        15, 5,
+                        15, 5,
+                        15, 5,
+                        15, 5), ncol=2, byrow = T)),
+             c(5, 5, 5, 5, 5, 5),
+             c(5, 5),
+             5,  5)
 prior_par = data.frame( prior_mean= prior_mean,
                         prior_sd= prior_sd)
 
@@ -33,8 +49,8 @@ y_1 = temp_data[,"State"]
 y_2 = temp_data[,"RSA"]
 t = temp_data[,"Time"]
 
-steps = 10000
-burnin = 5000
+steps = 5000
+burnin = 1000
 n_cores = 20
 
 s_time = Sys.time()
