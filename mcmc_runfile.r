@@ -6,6 +6,8 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
+trial_num = 2
+
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
 
@@ -49,8 +51,8 @@ y_1 = temp_data[,"State"]
 y_2 = temp_data[,"RSA"]
 t = temp_data[,"Time"]
 
-steps = 5000
-burnin = 1000
+steps = 10000
+burnin = 5000
 n_cores = 20
 
 s_time = Sys.time()
@@ -60,4 +62,4 @@ mcmc_out = mcmc_routine(y_1, y_2, t, id, init_par, prior_par, par_index,
 
 e_time = Sys.time() - s_time; print(e_time)
 
-save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, ".rda"))
+save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, ".rda"))

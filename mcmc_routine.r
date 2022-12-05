@@ -265,7 +265,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
         if(ttt %% 30 == 0){
           if(ttt %% 480 == 0){
             print("accept ratio")
-            print(accept)
+            print(accept[j])
             accept[j] = 0
 
           } else if( accept[j] / (ttt %% 480) < .4 ){ 
