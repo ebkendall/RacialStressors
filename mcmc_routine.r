@@ -2,6 +2,7 @@ library(mvtnorm, quietly=T)
 library(foreach, quietly=T)
 library(doParallel, quietly=T)
 library(deSolve, quietly=T)
+library(LaplacesDemon, quietly=T)
 
 # Construct the transition rate matrix
 Q <- function(t,beta){
@@ -42,19 +43,38 @@ update_mu_tilde = function(pars, par_index, mu_i, n_sub) {
     
     # Prior mean and variance for mu_tilde
     big_sigma = diag(c(20, 20, 20))
+    big_sigma_inv = solve(big_sigma)
     mu_0 = c(8, 6, 7)
     
     # variance for mu^(i)
-    sigma2_tilde = exp(pars[par_index$log_sigma2_tilde])
-    sigma_i = diag(rep(n_sub/sigma2_tilde, 3))
+    upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
+    upsilon_inv = solve(upsilon)
     
     # variance of Gibbs update
-    V = solve(solve(big_sigma) + sigma_i)
+    V = solve(big_sigma_inv + n_sub * upsilon_inv)
     
     # Mean of Gibbs update
-    M = V %*% (solve(big_sigma) %*% mu_0 + (n_sub/sigma2_tilde) * colMeans(mu_i))
+    M = V %*% (big_sigma_inv %*% mu_0 + n_sub * (upsilon_inv %*% colMeans(mu_i)) )
     
     return(rmvnorm(1, mean = M, sigma = V))
+}
+
+# Gibbs update of the mu_tilde
+update_upsilon = function(pars, par_index, mu_i, n_sub) {
+    sum_mu_i = (mu_i[1, ] - pars[par_index$mu_tilde]) %*% t(mu_i[1, ] - pars[par_index$mu_tilde])
+    for(i in 2:n_sub) {
+        sum_mu_i = sum_mu_i + (mu_i[i, ] - pars[par_index$mu_tilde]) %*% t(mu_i[i, ] - pars[par_index$mu_tilde])
+    }
+    
+    # Prior for Upsilon
+    psi = diag(3)
+    nu = 3 + 2
+    
+    # Gibbs update
+    new_psi = psi + sum_mu_i
+    new_nu  = nu + n_sub
+    
+    return(c(rinvwishart(new_nu, new_psi)))
 }
 
 # Evaluating the log posterior
@@ -90,7 +110,7 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
         
         f_i = val = 1
         y_1_i = y_1[id == i]    # the observed state
-        y_2_i = y_2[id == i]    # The four proportions of waves
+        y_2_i = y_2[id == i]    # the rsa measurements
         t_i = t[id == i]        # time
         
         mu_1 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
@@ -137,7 +157,8 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
 
     mean = prior_par$prior_mean
     sd = diag(prior_par$prior_sd)
-    log_prior_dens = dmvnorm( x=pars[-par_index$mu_tilde], mean=mean, sigma=sd, log=T)
+    log_prior_dens = dmvnorm( x=pars[c(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit),
+                                       c(par_index$log_tau2))], mean=mean, sigma=sd, log=T)
     return(log_total_val + log_prior_dens)
 
 }
@@ -160,7 +181,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # group = as.list(unlist(par_index))
   # names(group) = NULL
   group = list(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit),
-               c(par_index$log_tau2), c(par_index$log_sigma2_tilde))
+               c(par_index$log_tau2))
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
@@ -189,9 +210,12 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     pars[par_index$mu_tilde] = update_mu_tilde(pars, par_index, mu_i, n_sub)
     chain[ttt, par_index$mu_tilde] = pars[par_index$mu_tilde]
     
+    # upsilon: Gibbs update
+    pars[par_index$upsilon] = update_upsilon(pars, par_index, mu_i, n_sub)
+    chain[ttt, par_index$upsilon] = pars[par_index$upsilon]
+    
     # mu_i: update
-    sigma2_tilde = exp(pars[par_index$log_sigma2_tilde])
-    var_mu_i = diag(rep(sigma2_tilde, 3))
+    var_mu_i = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
     mu_i = rmvnorm(n_sub, mean = pars[par_index$mu_tilde], sigma = var_mu_i)
       
     for(j in 1:n_group){
@@ -265,7 +289,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
         if(ttt %% 30 == 0){
           if(ttt %% 480 == 0){
             print("accept ratio")
-            print(accept[j])
+            print(accept[j] / 480)
             accept[j] = 0
 
           } else if( accept[j] / (ttt %% 480) < .4 ){ 

@@ -3,6 +3,8 @@ library(tidyverse)
 library(gridExtra)
 
 dir = 'Model_out/' 
+args <- commandArgs(TRUE)
+trial_num = as.numeric(args[1])
 
 # Size of posterior sample from mcmc chains
 n_post = 4000
@@ -16,9 +18,9 @@ index_post = (steps - burnin - n_post + 1):(steps - burnin)
 par_index = list( beta=1:24, misclass = 25:30, pi_logit=31:33, l_delta = 34:37, 
                   l_theta=38:41, l_alpha=42:45, l_beta=46:49)
 
-index_seeds = c(1)
+index_seeds = c(1:5)
 
-labels <- c(1:25)
+labels <- c(1:33)
 
 # -----------------------------------------------------------------------------
 # Create mcmc trace plots and histograms
@@ -30,7 +32,7 @@ ind = 0
 
 for(seed in index_seeds){
 
-    file_name = paste0(dir,'mcmc_out_',toString(seed),'.rda')
+    file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '.rda')
     
     if (file.exists(file_name)) {
         load(file_name)
@@ -47,7 +49,7 @@ for(seed in index_seeds){
 
 # Plot and save the mcmc trace plots and histograms.
 
-pdf(paste0('Plots/mcmc_out.pdf'))
+pdf(paste0('Plots/mcmc_out_', trial_num, '.pdf'))
 par(mfrow=c(4, 2))
 
 stacked_chains = do.call( rbind, chain_list)
