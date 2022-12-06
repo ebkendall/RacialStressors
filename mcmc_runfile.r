@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 3
+trial_num = 4
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
@@ -35,14 +35,14 @@ prior_mean = c(c(matrix(c(-8, 0,
                c(-5, -5, -5, -5, -5, -5),
                c(-5, -5),
                0)
-prior_sd = c(c(matrix(c(15, 5,
-                        15, 5,
-                        15, 5,
-                        15, 5,
-                        15, 5,
-                        15, 5), ncol=2, byrow = T)),
-             c(5, 5, 5, 5, 5, 5),
-             c(5, 5),
+prior_sd = c(c(matrix(c(5, 3,
+                        5, 3,
+                        5, 3,
+                        5, 3,
+                        5, 3,
+                        5, 3), ncol=2, byrow = T)),
+             c(1.5, 1.5, 1.5, 1.5, 1.5, 1.5),
+             c(1.5, 1.5),
              5)
 prior_par = data.frame( prior_mean= prior_mean,
                         prior_sd= prior_sd)

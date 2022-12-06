@@ -28,8 +28,8 @@ Q <- function(t,beta){
 # Setting up the differential equations for deSolve
 model_t <- function(t,p,parms) {
     qmat = Q(t, parms$b)
-    pmat = matrix(c(  p[1],  p[2],  p[3],
-                      p[4],  p[5],  p[6],
+    pmat = matrix(c(  p[1],  p[2], p[3],
+                      p[4],  p[5], p[6],
                       p[7],  p[8], p[9]),
                 nrow = 3, byrow = T)
     
@@ -42,9 +42,11 @@ model_t <- function(t,p,parms) {
 update_mu_tilde = function(pars, par_index, mu_i, n_sub) {
     
     # Prior mean and variance for mu_tilde
-    big_sigma = diag(c(20, 20, 20))
+    big_sigma = matrix(c(1.097200, 1.014710, 1.134521,
+                         1.014710, 1.332313, 1.475067,
+                         1.134521, 1.475067, 2.024380), ncol = 3, byrow = T)
     big_sigma_inv = solve(big_sigma)
-    mu_0 = c(8, 6, 7)
+    mu_0 = c(6.411967, 6.481880, 6.335972)
     
     # variance for mu^(i)
     upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
@@ -120,7 +122,8 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
         if(y_1_i[1] <= 3) { # observed state
           f_i = init %*% diag(c(mu_1,mu_2,mu_3) * resp_fnc[, y_1_i[1]])
         } else { # un-observed state (99)
-          f_i = init %*% diag(c(mu_1,mu_2,mu_3))
+            print("un-observed state")
+            f_i = init %*% diag(c(mu_1,mu_2,mu_3))
         }
 
         log_norm = 0
@@ -192,7 +195,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   
   # Initializing the random effects matrix mu_i
   M = vector(mode = "list", length = 10)
-  mu_i = matrix(rep(c(0, 0, 0), n_sub), nrow = n_sub, ncol = 3, byrow = T)
+  mu_i = matrix(rep(c(8, 6, 7), n_sub), nrow = n_sub, ncol = 3, byrow = T)
 
   # Evaluate the log_post of the initial parameters
   log_post_prev = fn_log_post_continuous( pars, prior_par, par_index, y_1, y_2, t, id, mu_i)
