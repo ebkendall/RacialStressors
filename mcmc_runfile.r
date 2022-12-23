@@ -6,22 +6,29 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 4
+trial_num = 6
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
 
-init_par = c(c(matrix(c(-3, 0,
-                        -3, 0,
-                        -3, 0,
-                        -3, 0,
-                        -3, 0,
-                        -3, 0), ncol=2, byrow = T)),
-            c(-5, -5, -5, -5, -5, -5),
+init_par = c(c(matrix(c( -7.5559073,    1.867881,
+                        -11.6850952, -16.2954373,
+                         17.6997781,  -11.974606,
+                         -6.0655820,   0.6983629,
+                         15.9354863,   -7.581977,
+                         -3.5153349,   -8.344387), ncol=2, byrow = T)),
+            c(-13.540490, -14.55917, -15.277297, -15.46481, -9.693826, -9.397141),
             c(-5, -5),
             c(8, 6, 7), 
             0, 
             c(diag(3)))
+
+# Initializing using the most recent MCMC -------------------------------------
+load(paste0('Model_out/mcmc_out_4_5.rda'))
+par_means = colMeans(mcmc_out$chain[3000:4000, ])
+init_par = par_means
+rm(mcmc_out)
+# -----------------------------------------------------------------------------
 
 par_index = list( beta=1:12, misclass = 13:18, pi_logit=19:20,
                   mu_tilde = 21:23, log_tau2 = 24, upsilon = 25:33)
@@ -32,18 +39,16 @@ prior_mean = c(c(matrix(c(-8, 0,
                           -8, 0,
                           -8, 0,
                           -8, 0), ncol=2, byrow = T)),
-               c(-5, -5, -5, -5, -5, -5),
-               c(-5, -5),
-               0)
-prior_sd = c(c(matrix(c(5, 3,
-                        5, 3,
-                        5, 3,
-                        5, 3,
-                        5, 3,
-                        5, 3), ncol=2, byrow = T)),
-             c(1.5, 1.5, 1.5, 1.5, 1.5, 1.5),
-             c(1.5, 1.5),
-             5)
+               c(-10, -10, -10, -10, -10, -10),
+               c(-5, -5) ) # ,0)
+prior_sd = c(c(matrix(c(5, 5,
+                        5, 5,
+                        5, 5,
+                        5, 5,
+                        5, 5,
+                        5, 5), ncol=2, byrow = T)),
+             c(2, 2, 2, 2, 2, 2),
+             c(1.5, 1.5) ) # , 5)
 prior_par = data.frame( prior_mean= prior_mean,
                         prior_sd= prior_sd)
 

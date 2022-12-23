@@ -108,16 +108,19 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
     eids = unique(id)
   
     # Parallelized computation of the log-likelihood
-    log_total_val = foreach(i=unique(id), .combine='+', .export = c("model_t", "Q"), .packages = c("deSolve")) %dopar% {
+    log_total_val = foreach(i=unique(id), .combine='+', 
+                            .export = c("model_t", "Q"), 
+                            .packages = c("deSolve"),
+                            .inorder=FALSE) %dopar% {
         
         f_i = val = 1
         y_1_i = y_1[id == i]    # the observed state
-        y_2_i = y_2[id == i]    # the rsa measurements
+        # y_2_i = y_2[id == i]    # the rsa measurements
         t_i = t[id == i]        # time
         
-        mu_1 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
-        mu_2 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
-        mu_3 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
+        mu_1 = 1 # dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
+        mu_2 = 1 # dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
+        mu_3 = 1 # dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
         
         if(y_1_i[1] <= 3) { # observed state
           f_i = init %*% diag(c(mu_1,mu_2,mu_3) * resp_fnc[, y_1_i[1]])
@@ -138,9 +141,9 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
                            out[2,"p7"],  out[2,"p8"],  out[2,"p9"]),
                         nrow = 3, byrow = T)
             
-            mu_1 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
-            mu_2 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
-            mu_3 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
+            mu_1 = 1 # dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
+            mu_2 = 1 # dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
+            mu_3 = 1 # dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
 
             if(y_1_i[k] <= 3) { # observed state
               D_i = diag(c(mu_1,mu_2,mu_3) * resp_fnc[, y_1_i[k]])
@@ -160,8 +163,9 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
 
     mean = prior_par$prior_mean
     sd = diag(prior_par$prior_sd)
-    log_prior_dens = dmvnorm( x=pars[c(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit),
-                                       c(par_index$log_tau2))], mean=mean, sigma=sd, log=T)
+    log_prior_dens = dmvnorm( x=pars[c(c(par_index$beta), c(par_index$misclass), 
+                                       c(par_index$pi_logit))], #, c(par_index$log_tau2)
+                                       mean=mean, sigma=sd, log=T)
     return(log_total_val + log_prior_dens)
 
 }
@@ -183,19 +187,25 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
 
   # group = as.list(unlist(par_index))
   # names(group) = NULL
-  group = list(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit),
-               c(par_index$log_tau2))
+  # group = list(c(par_index$beta[c(1,7)]), c(par_index$beta[c(2,8)]), c(par_index$beta[c(3,9)]),
+  #              c(par_index$beta[c(4,10)]), c(par_index$beta[c(5,11)]), c(par_index$beta[c(6,12)]),
+  #              c(par_index$misclass), c(par_index$pi_logit), c(par_index$log_tau2))
+  group = list(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit)) # , c(par_index$log_tau2)
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
-  pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
-  pscale = rep( 1, n_group)
+  # pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
+  # pscale = rep( 1, n_group)
+  load(paste0('Model_out/mcmc_out_4_5.rda'))
+  pcov = mcmc_out$pcov
+  pscale = mcmc_out$pscale
+  rm(mcmc_out)
 
   accept = rep( 0, n_group)
   
   # Initializing the random effects matrix mu_i
-  M = vector(mode = "list", length = 10)
-  mu_i = matrix(rep(c(8, 6, 7), n_sub), nrow = n_sub, ncol = 3, byrow = T)
+  # M = vector(mode = "list", length = 10)
+  # mu_i = matrix(rep(c(8, 6, 7), n_sub), nrow = n_sub, ncol = 3, byrow = T)
 
   # Evaluate the log_post of the initial parameters
   log_post_prev = fn_log_post_continuous( pars, prior_par, par_index, y_1, y_2, t, id, mu_i)
@@ -209,17 +219,17 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain[1,] = pars
   for(ttt in 2:steps){
       
-    # mu_tilde: Gibbs update
-    pars[par_index$mu_tilde] = update_mu_tilde(pars, par_index, mu_i, n_sub)
+    # # mu_tilde: Gibbs update
+    # pars[par_index$mu_tilde] = update_mu_tilde(pars, par_index, mu_i, n_sub)
     chain[ttt, par_index$mu_tilde] = pars[par_index$mu_tilde]
     
-    # upsilon: Gibbs update
-    pars[par_index$upsilon] = update_upsilon(pars, par_index, mu_i, n_sub)
+    # # upsilon: Gibbs update
+    # pars[par_index$upsilon] = update_upsilon(pars, par_index, mu_i, n_sub)
     chain[ttt, par_index$upsilon] = pars[par_index$upsilon]
     
-    # mu_i: update
-    var_mu_i = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
-    mu_i = rmvnorm(n_sub, mean = pars[par_index$mu_tilde], sigma = var_mu_i)
+    # # mu_i: update
+    # var_mu_i = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
+    # mu_i = rmvnorm(n_sub, mean = pars[par_index$mu_tilde], sigma = var_mu_i)
       
     for(j in 1:n_group){
 
@@ -265,6 +275,11 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
         # transition.  This helps with mixing.
         if(ttt == 100)  pscale[j] = 1
         
+        if(ttt %% 100 == 0) {
+            print("accept ratio")
+            print(accept[j])
+        }
+        
         if (length(ind_j) > 1) {
             if(100 <= ttt & ttt <= 2000){
               temp_chain = chain[1:ttt,ind_j]
@@ -291,8 +306,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
         # reasonable acceptance ratios.
         if(ttt %% 30 == 0){
           if(ttt %% 480 == 0){
-            print("accept ratio")
-            print(accept[j] / 480)
             accept[j] = 0
 
           } else if( accept[j] / (ttt %% 480) < .4 ){ 

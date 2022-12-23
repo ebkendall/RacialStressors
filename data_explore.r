@@ -20,6 +20,17 @@ data_format$State = as.numeric(data_format$State)
 data_format$Time = as.numeric(data_format$Time)
 data_format$RSA = as.numeric(data_format$RSA)
 
+yes_s3 = rep(TRUE, length(unique(data_format$ID..)))
+for(i in unique(data_format$ID..)) {
+    sub = data_format[data_format$ID.. == i, ]
+    if(sum(sub$State == 3) == 0){
+        yes_s3[which(unique(data_format$ID..) == i)] = FALSE
+    }
+}
+
+no_3 = unique(data_format$ID..)[!yes_s3]
+data_format = data_format[!(data_format$ID.. %in% no_3), ]
+
 save(data_format, file = 'Data/data_format.rda')
 
 means = function(df) {
@@ -33,13 +44,6 @@ s1 = data_format[data_format$State == 1, ]
 s2 = data_format[data_format$State == 2, ]
 s3 = data_format[data_format$State == 3, ]
 
-yes_s3 = rep(TRUE, length(unique(data_format$ID..)))
-for(i in unique(data_format$ID..)) {
-    sub = data_format[data_format$ID.. == i, ]
-    if(sum(sub$State == 3) == 0){
-        yes_s3[which(unique(data_format$ID..) == i)] = FALSE
-    }
-}
 
 m1 = means(s1)[yes_s3]; mean(m1); var(m1)
 m2 = means(s2)[yes_s3]; mean(m2); var(m2)

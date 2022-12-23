@@ -15,12 +15,18 @@ steps = 5000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-par_index = list( beta=1:24, misclass = 25:30, pi_logit=31:33, l_delta = 34:37, 
-                  l_theta=38:41, l_alpha=42:45, l_beta=46:49)
+par_index = list( beta=1:12, misclass = 13:18, pi_logit=19:20,
+                  mu_tilde = 21:23, log_tau2 = 24, upsilon = 25:33)
 
-index_seeds = c(1:5)
+index_seeds = c(2,4:5)
 
-labels <- c(1:33)
+labels <- c("Baseline: 1 -> 2", "Baseline: 1 -> 3", "Baseline: 2 -> 1",
+            "Baseline: 2 -> 3", "Baseline: 3 -> 1", "Baseline: 3 -> 2",
+            "Time: 1 -> 2", "Time: 1 -> 3", "Time: 2 -> 1",
+            "Time: 2 -> 3", "Time: 3 -> 1", "Time: 3 -> 2",
+            "P(obs. S2 | true S1)", "P(obs. S3 | true S1)", "P(obs. S1 | true S2)",
+            "P(obs. S3 | true S2)", "P(obs. S1 | true S3)", "P(obs. S2 | true S3)",
+            "P(init S2)", "P(init S3)", 21:33)
 
 # -----------------------------------------------------------------------------
 # Create mcmc trace plots and histograms
@@ -37,6 +43,8 @@ for(seed in index_seeds){
     if (file.exists(file_name)) {
         load(file_name)
         ind = ind + 1
+
+        print(mcmc_out$accept)
 
         # Thinning the chain
         main_chain = mcmc_out$chain[index_post,]
@@ -55,7 +63,9 @@ par(mfrow=c(4, 2))
 stacked_chains = do.call( rbind, chain_list)
 par_mean = par_median = upper = lower = rep( NA, length(labels))
 
-for(r in 1:length(labels)){
+labels_sub <- 1:20
+
+for(r in 1:length(labels_sub)){
 
     plot( NULL, xlab=NA, ylab=NA, main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
             ylim=range(stacked_chains[,r]) )
