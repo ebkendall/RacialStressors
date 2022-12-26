@@ -56,17 +56,18 @@ colMeans(cov_test)
 # hist(m2, col = "red")
 # hist(m3, col = "green", add = T)
 # hist(m1, add = T)
-# mean_RSA = matrix(0, nrow = length(unique(data_format$ID..)), ncol = 3)
-# 
-# for(i in unique(data_format$ID..)) {
-#     sub_dat = data_format[data_format$ID.. == i, ]
-# 
-#     mean_RSA[which(unique(data_format$ID..) == i), 1] = mean(sub_dat$RSA[sub_dat$State == 1])
-#     mean_RSA[which(unique(data_format$ID..) == i), 2] = mean(sub_dat$RSA[sub_dat$State == 2])
-#     mean_RSA[which(unique(data_format$ID..) == i), 3] = mean(sub_dat$RSA[sub_dat$State == 3])
-#     # mean_RSA[which(unique(data_format$ID..) == i), 4] = i
-# }
-# colMeans(mean_RSA, na.rm = T)
+mean_RSA = matrix(0, nrow = length(unique(data_format$ID..)), ncol = 3)
+
+for(i in unique(data_format$ID..)) {
+    sub_dat = data_format[data_format$ID.. == i, ]
+
+    mean_RSA[which(unique(data_format$ID..) == i), 1] = mean(sub_dat$RSA[sub_dat$State == 1])
+    mean_RSA[which(unique(data_format$ID..) == i), 2] = mean(sub_dat$RSA[sub_dat$State == 2])
+    mean_RSA[which(unique(data_format$ID..) == i), 3] = mean(sub_dat$RSA[sub_dat$State == 3])
+    # mean_RSA[which(unique(data_format$ID..) == i), 4] = i
+}
+save(mean_RSA, file = "Data/mean_RSA.rda")
+colMeans(mean_RSA, na.rm = T)
 # 
 # temp = t(apply(mean_RSA, 1, diff))
 # colMeans(temp, na.rm = T)

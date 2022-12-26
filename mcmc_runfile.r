@@ -19,13 +19,13 @@ init_par = c(c(matrix(c( -7.5559073,    1.867881,
                          -3.5153349,   -8.344387), ncol=2, byrow = T)),
             c(-13.540490, -14.55917, -15.277297, -15.46481, -9.693826, -9.397141),
             c(-5, -5),
-            c(8, 6, 7), 
+            c(6.411967, 6.481880, 6.335972), 
             0, 
             c(diag(3)))
 
 # Initializing using the most recent MCMC -------------------------------------
-load(paste0('Model_out/mcmc_out_4_5.rda'))
-par_means = colMeans(mcmc_out$chain[3000:4000, ])
+load(paste0('Model_out/mcmc_out_1_6.rda'))
+par_means = colMeans(mcmc_out$chain[4000:5000, ])
 init_par = par_means
 rm(mcmc_out)
 # -----------------------------------------------------------------------------
@@ -40,7 +40,7 @@ prior_mean = c(c(matrix(c(-8, 0,
                           -8, 0,
                           -8, 0), ncol=2, byrow = T)),
                c(-10, -10, -10, -10, -10, -10),
-               c(-5, -5) ) # ,0)
+               c(-5, -5), 0)  
 prior_sd = c(c(matrix(c(5, 5,
                         5, 5,
                         5, 5,
@@ -48,7 +48,7 @@ prior_sd = c(c(matrix(c(5, 5,
                         5, 5,
                         5, 5), ncol=2, byrow = T)),
              c(2, 2, 2, 2, 2, 2),
-             c(1.5, 1.5) ) # , 5)
+             c(1.5, 1.5), 5)
 prior_par = data.frame( prior_mean= prior_mean,
                         prior_sd= prior_sd)
 

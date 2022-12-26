@@ -115,12 +115,12 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
         
         f_i = val = 1
         y_1_i = y_1[id == i]    # the observed state
-        # y_2_i = y_2[id == i]    # the rsa measurements
+        y_2_i = y_2[id == i]    # the rsa measurements
         t_i = t[id == i]        # time
         
-        mu_1 = 1 # dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
-        mu_2 = 1 # dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
-        mu_3 = 1 # dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
+        mu_1 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
+        mu_2 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
+        mu_3 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
         
         if(y_1_i[1] <= 3) { # observed state
           f_i = init %*% diag(c(mu_1,mu_2,mu_3) * resp_fnc[, y_1_i[1]])
@@ -141,9 +141,9 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
                            out[2,"p7"],  out[2,"p8"],  out[2,"p9"]),
                         nrow = 3, byrow = T)
             
-            mu_1 = 1 # dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
-            mu_2 = 1 # dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
-            mu_3 = 1 # dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
+            mu_1 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
+            mu_2 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
+            mu_3 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
 
             if(y_1_i[k] <= 3) { # observed state
               D_i = diag(c(mu_1,mu_2,mu_3) * resp_fnc[, y_1_i[k]])
@@ -164,7 +164,7 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
     mean = prior_par$prior_mean
     sd = diag(prior_par$prior_sd)
     log_prior_dens = dmvnorm( x=pars[c(c(par_index$beta), c(par_index$misclass), 
-                                       c(par_index$pi_logit))], #, c(par_index$log_tau2)
+                                       c(par_index$pi_logit), c(par_index$log_tau2))], 
                                        mean=mean, sigma=sd, log=T)
     return(log_total_val + log_prior_dens)
 
@@ -196,7 +196,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # proposal covariance and scale parameter for Metropolis step
   # pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
   # pscale = rep( 1, n_group)
-  load(paste0('Model_out/mcmc_out_4_5.rda'))
+  load(paste0('Model_out/mcmc_out_1_6.rda'))
   pcov = mcmc_out$pcov
   pscale = mcmc_out$pscale
   rm(mcmc_out)
@@ -204,8 +204,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   accept = rep( 0, n_group)
   
   # Initializing the random effects matrix mu_i
-  # M = vector(mode = "list", length = 10)
-  # mu_i = matrix(rep(c(8, 6, 7), n_sub), nrow = n_sub, ncol = 3, byrow = T)
+  load('Data/mean_RSA.rda')
+  mu_i = mean_RSA
+  M = vector(mode = "list", length = 10)
 
   # Evaluate the log_post of the initial parameters
   log_post_prev = fn_log_post_continuous( pars, prior_par, par_index, y_1, y_2, t, id, mu_i)

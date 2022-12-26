@@ -9,16 +9,16 @@ trial_num = as.numeric(args[1])
 # Size of posterior sample from mcmc chains
 n_post = 4000
 # Step number at which the adaptive tuning scheme was frozen
-burnin = 1000
+burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 5000
+steps = 10000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 par_index = list( beta=1:12, misclass = 13:18, pi_logit=19:20,
                   mu_tilde = 21:23, log_tau2 = 24, upsilon = 25:33)
 
-index_seeds = c(2,4:5)
+index_seeds = c(1,3:4)
 
 labels <- c("Baseline: 1 -> 2", "Baseline: 1 -> 3", "Baseline: 2 -> 1",
             "Baseline: 2 -> 3", "Baseline: 3 -> 1", "Baseline: 3 -> 2",
