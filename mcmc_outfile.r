@@ -1,6 +1,7 @@
 # This script file produces trace plots and histograms of the mcmc output files
 library(tidyverse)
 library(gridExtra)
+library(latex2exp)
 
 dir = 'Model_out/' 
 args <- commandArgs(TRUE)
@@ -18,15 +19,22 @@ index_post = (steps - burnin - n_post + 1):(steps - burnin)
 par_index = list( beta=1:12, misclass = 13:18, pi_logit=19:20,
                   mu_tilde = 21:23, log_tau2 = 24, upsilon = 25:33)
 
-index_seeds = c(1,3:4)
+index_seeds = c(1:5)
 
-labels <- c("Baseline: 1 -> 2", "Baseline: 1 -> 3", "Baseline: 2 -> 1",
-            "Baseline: 2 -> 3", "Baseline: 3 -> 1", "Baseline: 3 -> 2",
-            "Time: 1 -> 2", "Time: 1 -> 3", "Time: 2 -> 1",
-            "Time: 2 -> 3", "Time: 3 -> 1", "Time: 3 -> 2",
-            "P(obs. S2 | true S1)", "P(obs. S3 | true S1)", "P(obs. S1 | true S2)",
-            "P(obs. S3 | true S2)", "P(obs. S1 | true S3)", "P(obs. S2 | true S3)",
-            "P(init S2)", "P(init S3)", 21:33)
+labels <- c(TeX(r'($\hat{\beta}_{0,1}:$ Baseline: 1 $\to$ 2)'), TeX(r'($\hat{\beta}_{0,2}:$ Baseline: 1 $\to$ 3)'), 
+            TeX(r'($\hat{\beta}_{0,3}:$ Baseline: 2 $\to$ 1)'), TeX(r'($\hat{\beta}_{0,4}:$ Baseline: 2 $\to$ 3)'), 
+            TeX(r'($\hat{\beta}_{0,5}:$ Baseline: 3 $\to$ 1)'), TeX(r'($\hat{\beta}_{0,6}:$ Baseline: 3 $\to$ 2)'),
+            TeX(r'($\hat{\beta}_{1,1}:$ Time: 1 $\to$ 2)'), TeX(r'($\hat{\beta}_{1,2}:$ Time: 1 $\to$ 3)'), 
+            TeX(r'($\hat{\beta}_{1,3}:$ Time: 2 $\to$ 1)'), TeX(r'($\hat{\beta}_{1,4}:$ Time: 2 $\to$ 3)'), 
+            TeX(r'($\hat{\beta}_{1,5}:$ Time: 3 $\to$ 1)'), TeX(r'($\hat{\beta}_{1,6}:$ Time: 3 $\to$ 2)'),
+            TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'), TeX(r'(P(obs. S1 | true S2))'),
+            TeX(r'(P(obs. S3 | true S2))'), TeX(r'(P(obs. S1 | true S3))'), TeX(r'(P(obs. S2 | true S3))'),
+            TeX(r'(P(init S2))'), TeX(r'(P(init S3))'), 
+            TeX(r'($\tilde{\mu}_1$)'), TeX(r'($\tilde{\mu}_2$)'), TeX(r'($\tilde{\mu}_3$)'),
+            TeX(r'($\log(\tau^2)$)'), 
+            TeX(r'($\Upsilon_{1,1}$)'), TeX(r'($\Upsilon_{2,1}$)'), TeX(r'($\Upsilon_{3,1}$)'), 
+            TeX(r'($\Upsilon_{1,2}$)'), TeX(r'($\Upsilon_{2,2}$)'), TeX(r'($\Upsilon_{3,2}$)'),
+            TeX(r'($\Upsilon_{1,3}$)'), TeX(r'($\Upsilon_{2,3}$)'), TeX(r'($\Upsilon_{3,3}$)'))
 
 # -----------------------------------------------------------------------------
 # Create mcmc trace plots and histograms
@@ -63,7 +71,7 @@ par(mfrow=c(4, 2))
 stacked_chains = do.call( rbind, chain_list)
 par_mean = par_median = upper = lower = rep( NA, length(labels))
 
-labels_sub <- 1:20
+labels_sub <- 1:33
 
 for(r in 1:length(labels_sub)){
 

@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 6
+trial_num = 8
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
@@ -24,7 +24,7 @@ init_par = c(c(matrix(c( -7.5559073,    1.867881,
             c(diag(3)))
 
 # Initializing using the most recent MCMC -------------------------------------
-load(paste0('Model_out/mcmc_out_1_6.rda'))
+load(paste0('Model_out/mcmc_out_2_7.rda'))
 par_means = colMeans(mcmc_out$chain[4000:5000, ])
 init_par = par_means
 rm(mcmc_out)
@@ -58,8 +58,8 @@ y_1 = temp_data[,"State"]
 y_2 = temp_data[,"RSA"]
 t = temp_data[,"Time"]
 
-steps = 10000
-burnin = 5000
+steps = 8000
+burnin = 3000
 n_cores = 20
 
 s_time = Sys.time()

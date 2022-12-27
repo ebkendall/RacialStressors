@@ -185,20 +185,18 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   n_par = length(pars)
   chain = matrix( 0, steps, n_par)
 
-  # group = as.list(unlist(par_index))
-  # names(group) = NULL
-  # group = list(c(par_index$beta[c(1,7)]), c(par_index$beta[c(2,8)]), c(par_index$beta[c(3,9)]),
-  #              c(par_index$beta[c(4,10)]), c(par_index$beta[c(5,11)]), c(par_index$beta[c(6,12)]),
-  #              c(par_index$misclass), c(par_index$pi_logit), c(par_index$log_tau2))
-  group = list(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit)) # , c(par_index$log_tau2)
+  group = list(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit), c(par_index$log_tau2))
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
   # pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
   # pscale = rep( 1, n_group)
-  load(paste0('Model_out/mcmc_out_1_6.rda'))
+  load(paste0('Model_out/mcmc_out_2_7.rda'))
   pcov = mcmc_out$pcov
   pscale = mcmc_out$pscale
+  # adding the additional group
+  pcov[[4]] = diag(1)*0.001
+  pscale = c(pscale, 1)
   rm(mcmc_out)
 
   accept = rep( 0, n_group)
