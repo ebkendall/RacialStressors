@@ -170,7 +170,6 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
 
 }
 
-
 # -----------------------------------------------------------------------------
 # The mcmc routine for samping the parameters
 # -----------------------------------------------------------------------------
@@ -191,12 +190,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # proposal covariance and scale parameter for Metropolis step
   # pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
   # pscale = rep( 1, n_group)
-  load(paste0('Model_out/mcmc_out_2_7.rda'))
+  load(paste0('Model_out/mcmc_out_2_8.rda'))
   pcov = mcmc_out$pcov
   pscale = mcmc_out$pscale
-  # adding the additional group
-  pcov[[4]] = diag(1)*0.001
-  pscale = c(pscale, 1)
   rm(mcmc_out)
 
   accept = rep( 0, n_group)
@@ -218,17 +214,21 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain[1,] = pars
   for(ttt in 2:steps){
       
-    # # mu_tilde: Gibbs update
-    # pars[par_index$mu_tilde] = update_mu_tilde(pars, par_index, mu_i, n_sub)
+    # mu_tilde: Gibbs update
+    pars[par_index$mu_tilde] = update_mu_tilde(pars, par_index, mu_i, n_sub)
     chain[ttt, par_index$mu_tilde] = pars[par_index$mu_tilde]
     
-    # # upsilon: Gibbs update
-    # pars[par_index$upsilon] = update_upsilon(pars, par_index, mu_i, n_sub)
+    # upsilon: Gibbs update
+    pars[par_index$upsilon] = update_upsilon(pars, par_index, mu_i, n_sub)
     chain[ttt, par_index$upsilon] = pars[par_index$upsilon]
     
-    # # mu_i: update
-    # var_mu_i = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
-    # mu_i = rmvnorm(n_sub, mean = pars[par_index$mu_tilde], sigma = var_mu_i)
+    # mu_i: update
+    var_mu_i = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
+    mu_i = rmvnorm(n_sub, mean = pars[par_index$mu_tilde], sigma = var_mu_i)
+
+    if(ttt %% 1000 == 0) {
+      M[[ttt/1000]] = mu_i
+    }
       
     for(j in 1:n_group){
 
@@ -328,6 +328,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   print(accept/(steps-burnin))
 
   return(list( chain=chain[burnin:steps,], accept=accept/(steps-burnin),
-               pscale=pscale, pcov = pcov))
+               pscale=pscale, pcov = pcov, M = M))
 }
 # -----------------------------------------------------------------------------

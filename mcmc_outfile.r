@@ -10,9 +10,9 @@ trial_num = as.numeric(args[1])
 # Size of posterior sample from mcmc chains
 n_post = 4000
 # Step number at which the adaptive tuning scheme was frozen
-burnin = 5000
+burnin = 3000
 # Total number of steps the mcmc algorithm is computed for
-steps = 10000
+steps = 8000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 

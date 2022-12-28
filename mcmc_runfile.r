@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 8
+trial_num = 9
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
@@ -24,7 +24,7 @@ init_par = c(c(matrix(c( -7.5559073,    1.867881,
             c(diag(3)))
 
 # Initializing using the most recent MCMC -------------------------------------
-load(paste0('Model_out/mcmc_out_2_7.rda'))
+load(paste0('Model_out/mcmc_out_2_8.rda'))
 par_means = colMeans(mcmc_out$chain[4000:5000, ])
 init_par = par_means
 rm(mcmc_out)
