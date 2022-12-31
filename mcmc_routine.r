@@ -79,6 +79,29 @@ update_upsilon = function(pars, par_index, mu_i, n_sub) {
     return(c(rinvwishart(new_nu, new_psi)))
 }
 
+# Gibbs update of the mu_i
+update_mu_i = function(y_2, pars, par_index, mu_i, n_sub, D_i, eids, id) {
+    mu_i = foreach(i=1:n_sub) %dopar% {
+        
+        D_small = D_i[[i]]
+        upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
+        up_solve = solve(upsilon)
+        
+        y_sub = y_2[id == eids[i],,drop=F]
+        tau2 = exp(pars[par_index$log_tau2])
+        
+        V = solve((1/tau2) * (t(D_small) %*% D_small) + up_solve)
+        M = V %*% ((1/tau2) * (t(D_small) %*% y_sub) + up_solve %*% matrix(pars[par_index$mu_tilde],ncol=1))
+        
+        mu_i_small = rmvnorm(n = 1, mean = M, sigma = V)
+        
+        return(mu_i_small)
+    }
+    
+    return(mu_i)
+}
+
+
 # Evaluating the log posterior
 fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, mu_i) {
 
@@ -184,13 +207,13 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   n_par = length(pars)
   chain = matrix( 0, steps, n_par)
 
-  group = list(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit), c(par_index$log_tau2))
+  group = list(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit))
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
   # pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
   # pscale = rep( 1, n_group)
-  load(paste0('Model_out/mcmc_out_2_8.rda'))
+  load(paste0('Model_out/mcmc_out_2_7.rda'))
   pcov = mcmc_out$pcov
   pscale = mcmc_out$pscale
   rm(mcmc_out)
@@ -201,6 +224,17 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   load('Data/mean_RSA.rda')
   mu_i = mean_RSA
   M = vector(mode = "list", length = 10)
+
+  # Initializing the D_i matrix
+  D_i = vector(mode = 'list', length = n_sub)
+  eids = unique(id)
+  for(i in 1:length(eids)) {
+    state_sub = y_1[id == eids[i]]
+    D_i[[i]] = matrix(nrow = sum(id == eids[i]), ncol = 3)
+    D_i[[i]][,1] = (state_sub == 1)
+    D_i[[i]][,2] = (state_sub == 2)
+    D_i[[i]][,3] = (state_sub == 3)
+  }
 
   # Evaluate the log_post of the initial parameters
   log_post_prev = fn_log_post_continuous( pars, prior_par, par_index, y_1, y_2, t, id, mu_i)
@@ -222,9 +256,13 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     pars[par_index$upsilon] = update_upsilon(pars, par_index, mu_i, n_sub)
     chain[ttt, par_index$upsilon] = pars[par_index$upsilon]
     
-    # mu_i: update
+    # mu_i: Gibbs update
     var_mu_i = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
     mu_i = rmvnorm(n_sub, mean = pars[par_index$mu_tilde], sigma = var_mu_i)
+
+    # tau2: Gibbs update
+    pars[par_index$tau2] = update_upsilon(pars, par_index, mu_i, n_sub)
+    chain[ttt, par_index$tau2] = pars[par_index$tau2]
 
     if(ttt %% 1000 == 0) {
       M[[ttt/1000]] = mu_i
