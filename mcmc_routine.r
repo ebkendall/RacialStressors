@@ -80,25 +80,42 @@ update_upsilon = function(pars, par_index, mu_i, n_sub) {
 }
 
 # Gibbs update of the mu_i
-update_mu_i = function(y_2, pars, par_index, mu_i, n_sub, D_i, eids, id) {
-    mu_i = foreach(i=1:n_sub) %dopar% {
+update_mu_i = function(y_2, pars, par_index, n_sub, D_i, eids, id) {
+    mu_i = foreach(i=1:n_sub, .combine = 'rbind', .packages = "mvtnorm") %dopar% {
         
         D_small = D_i[[i]]
         upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
         up_solve = solve(upsilon)
         
-        y_sub = y_2[id == eids[i],,drop=F]
-        tau2 = exp(pars[par_index$log_tau2])
+        y_sub = matrix(y_2[id == eids[i]], ncol=1)
+        tau2 = pars[par_index$tau2]
         
         V = solve((1/tau2) * (t(D_small) %*% D_small) + up_solve)
         M = V %*% ((1/tau2) * (t(D_small) %*% y_sub) + up_solve %*% matrix(pars[par_index$mu_tilde],ncol=1))
         
-        mu_i_small = rmvnorm(n = 1, mean = M, sigma = V)
+        mu_i_small = c(rmvnorm(n = 1, mean = M, sigma = V))
         
         return(mu_i_small)
     }
     
     return(mu_i)
+}
+
+# Gibbs update of the tau2
+update_tau2 = function(y_2, pars, par_index, D_i, mu_i, n_sub, eids, id) {
+    a = b = 1
+    
+    temp = 0
+    for(i in 1:n_sub) {
+        y_sub = matrix(y_2[id == eids[i]], ncol=1)
+        mu_temp = t(mu_i[i,,drop=F])
+        temp = temp + t(y_sub - D_i[[i]] %*% mu_temp) %*% (y_sub - D_i[[i]] %*% mu_temp)
+    }
+    
+    a_new = a + 0.5 * length(y_2)
+    b_new = b + 0.5 * temp
+    
+    return(rinvgamma(n=1, shape = a_new, scale = b_new))
 }
 
 
@@ -119,7 +136,7 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
 
     resp_fnc = resp_fnc / rowSums(resp_fnc)
     
-    tau2 <- exp(pars[par_index$log_tau2])
+    tau2 <- pars[par_index$tau2]
     
     beta <- pars[par_index$beta]
 
@@ -187,7 +204,7 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
     mean = prior_par$prior_mean
     sd = diag(prior_par$prior_sd)
     log_prior_dens = dmvnorm( x=pars[c(c(par_index$beta), c(par_index$misclass), 
-                                       c(par_index$pi_logit), c(par_index$log_tau2))], 
+                                       c(par_index$pi_logit))], 
                                        mean=mean, sigma=sd, log=T)
     return(log_total_val + log_prior_dens)
 
@@ -207,22 +224,24 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   n_par = length(pars)
   chain = matrix( 0, steps, n_par)
 
-  group = list(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit))
+  group = list(c(par_index$beta[1:6]), c(par_index$beta[7:12]),
+               c(par_index$misclass), c(par_index$pi_logit))
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
-  # pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
-  # pscale = rep( 1, n_group)
-  load(paste0('Model_out/mcmc_out_2_7.rda'))
-  pcov = mcmc_out$pcov
-  pscale = mcmc_out$pscale
-  rm(mcmc_out)
+  pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
+  pscale = rep( 1, n_group)
+  # load(paste0('Model_out/mcmc_out_2_7.rda'))
+  # pcov = mcmc_out$pcov
+  # pscale = mcmc_out$pscale
+  # rm(mcmc_out)
 
   accept = rep( 0, n_group)
   
   # Initializing the random effects matrix mu_i
-  load('Data/mean_RSA.rda')
-  mu_i = mean_RSA
+  load('Model_out/mcmc_out_2_9.rda')
+  mu_i = mcmc_out$M[[8]]
+  rm(mcmc_out)
   M = vector(mode = "list", length = 10)
 
   # Initializing the D_i matrix
@@ -231,9 +250,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   for(i in 1:length(eids)) {
     state_sub = y_1[id == eids[i]]
     D_i[[i]] = matrix(nrow = sum(id == eids[i]), ncol = 3)
-    D_i[[i]][,1] = (state_sub == 1)
-    D_i[[i]][,2] = (state_sub == 2)
-    D_i[[i]][,3] = (state_sub == 3)
+    D_i[[i]][,1] = as.integer(state_sub == 1)
+    D_i[[i]][,2] = as.integer(state_sub == 2)
+    D_i[[i]][,3] = as.integer(state_sub == 3)
   }
 
   # Evaluate the log_post of the initial parameters
@@ -257,11 +276,10 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     chain[ttt, par_index$upsilon] = pars[par_index$upsilon]
     
     # mu_i: Gibbs update
-    var_mu_i = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
-    mu_i = rmvnorm(n_sub, mean = pars[par_index$mu_tilde], sigma = var_mu_i)
+    mu_i = update_mu_i(y_2, pars, par_index, n_sub, D_i, eids, id)
 
     # tau2: Gibbs update
-    pars[par_index$tau2] = update_upsilon(pars, par_index, mu_i, n_sub)
+    pars[par_index$tau2] = update_tau2(y_2, pars, par_index, D_i, mu_i, n_sub, eids, id)
     chain[ttt, par_index$tau2] = pars[par_index$tau2]
 
     if(ttt %% 1000 == 0) {
@@ -273,7 +291,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       # Propose an update
       ind_j = group[[j]]
       proposal = pars
-      if(length(ind_j > 1)) {
+      if(length(ind_j) > 1) {
           proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],sigma=pcov[[j]]*pscale[j])
       } else {
           proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],sd=sqrt(pcov[[j]]*pscale[j]))
@@ -302,6 +320,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
         log_post_prev = log_post
         pars[ind_j] = proposal[ind_j]
         accept[j] = accept[j] +1
+        # print("accept"); print(accept)
       }
       chain[ttt,ind_j] = pars[ind_j]
 

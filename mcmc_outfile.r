@@ -31,7 +31,7 @@ labels <- c(TeX(r'($\hat{\beta}_{0,1}:$ Baseline: 1 $\to$ 2)'), TeX(r'($\hat{\be
             TeX(r'(P(obs. S3 | true S2))'), TeX(r'(P(obs. S1 | true S3))'), TeX(r'(P(obs. S2 | true S3))'),
             TeX(r'(P(init S2))'), TeX(r'(P(init S3))'), 
             TeX(r'($\tilde{\mu}_1$)'), TeX(r'($\tilde{\mu}_2$)'), TeX(r'($\tilde{\mu}_3$)'),
-            TeX(r'($\log(\tau^2)$)'), 
+            TeX(r'($\tau^2$)'), 
             TeX(r'($\Upsilon_{1,1}$)'), TeX(r'($\Upsilon_{2,1}$)'), TeX(r'($\Upsilon_{3,1}$)'), 
             TeX(r'($\Upsilon_{1,2}$)'), TeX(r'($\Upsilon_{2,2}$)'), TeX(r'($\Upsilon_{3,2}$)'),
             TeX(r'($\Upsilon_{1,3}$)'), TeX(r'($\Upsilon_{2,3}$)'), TeX(r'($\Upsilon_{3,3}$)'))
