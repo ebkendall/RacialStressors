@@ -39,7 +39,9 @@ model_t <- function(t,p,parms) {
 }
 
 # Gibbs update of the mu_tilde
-update_mu_tilde = function(pars, par_index, mu_i, n_sub) {
+update_mu_tilde = function(pars, par_index, n_sub) {
+    
+    mu_i = matrix(pars[par_index$mu_i], ncol = 3)
     
     # Prior mean and variance for mu_tilde
     big_sigma = matrix(c(1.097200, 1.014710, 1.134521,
@@ -62,7 +64,10 @@ update_mu_tilde = function(pars, par_index, mu_i, n_sub) {
 }
 
 # Gibbs update of the mu_tilde
-update_upsilon = function(pars, par_index, mu_i, n_sub) {
+update_upsilon = function(pars, par_index, n_sub) {
+    
+    mu_i = matrix(pars[par_index$mu_i], ncol = 3)
+    
     sum_mu_i = (mu_i[1, ] - pars[par_index$mu_tilde]) %*% t(mu_i[1, ] - pars[par_index$mu_tilde])
     for(i in 2:n_sub) {
         sum_mu_i = sum_mu_i + (mu_i[i, ] - pars[par_index$mu_tilde]) %*% t(mu_i[i, ] - pars[par_index$mu_tilde])
@@ -102,8 +107,10 @@ update_mu_i = function(y_2, pars, par_index, n_sub, D_i, eids, id) {
 }
 
 # Gibbs update of the tau2
-update_tau2 = function(y_2, pars, par_index, D_i, mu_i, n_sub, eids, id) {
+update_tau2 = function(y_2, pars, par_index, D_i, n_sub, eids, id) {
+    
     a = b = 1
+    mu_i = matrix(pars[par_index$mu_i], ncol = 3)
     
     temp = 0
     for(i in 1:n_sub) {
@@ -120,7 +127,7 @@ update_tau2 = function(y_2, pars, par_index, D_i, mu_i, n_sub, eids, id) {
 
 
 # Evaluating the log posterior
-fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, mu_i) {
+fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id) {
 
     # Order: Base, Stress, Recov
     init_logit = c( 1, exp(pars[par_index$pi_logit][1]), exp(pars[par_index$pi_logit][2]))
@@ -139,6 +146,8 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
     tau2 <- pars[par_index$tau2]
     
     beta <- pars[par_index$beta]
+    
+    mu_i <- matrix(pars[par_index$mu_i], ncol = 3)
 
     # initial condition for deSolve
     p_ic <- c( p1=1, p2=0, p3=0,
@@ -150,8 +159,7 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
     # Parallelized computation of the log-likelihood
     log_total_val = foreach(i=unique(id), .combine='+', 
                             .export = c("model_t", "Q"), 
-                            .packages = c("deSolve"),
-                            .inorder=FALSE) %dopar% {
+                            .packages = c("deSolve")) %dopar% {
         
         f_i = val = 1
         y_1_i = y_1[id == i]    # the observed state
@@ -203,8 +211,8 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id, 
 
     mean = prior_par$prior_mean
     sd = diag(prior_par$prior_sd)
-    log_prior_dens = dmvnorm( x=pars[c(c(par_index$beta), c(par_index$misclass), 
-                                       c(par_index$pi_logit))], 
+    log_prior_dens = dmvnorm( x=pars[c(par_index$beta, par_index$misclass, 
+                                       par_index$pi_logit, par_index$mu_i)], 
                                        mean=mean, sigma=sd, log=T)
     return(log_total_val + log_prior_dens)
 
@@ -224,10 +232,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   n_par = length(pars)
   chain = matrix( 0, steps, n_par)
 
-  group = list(c(par_index$beta[c(1,7)]), c(par_index$beta[c(2,8)]),
-               c(par_index$beta[c(3,9)]), c(par_index$beta[c(4,10)]),
-               c(par_index$beta[c(5,11)]), c(par_index$beta[c(6,12)]),
-               c(par_index$misclass), c(par_index$pi_logit))
+  group = list(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit),
+               c(par_index$mu_i))
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
@@ -239,12 +245,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # rm(mcmc_out)
 
   accept = rep( 0, n_group)
-  
-  # Initializing the random effects matrix mu_i
-  load('Model_out/mcmc_out_2_10.rda')
-  mu_i = mcmc_out$M[[10]]
-  rm(mcmc_out)
-  M = vector(mode = "list", length = 10)
 
   # Initializing the D_i matrix
   D_i = vector(mode = 'list', length = n_sub)
@@ -258,7 +258,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   }
 
   # Evaluate the log_post of the initial parameters
-  log_post_prev = fn_log_post_continuous( pars, prior_par, par_index, y_1, y_2, t, id, mu_i)
+  log_post_prev = fn_log_post_continuous( pars, prior_par, par_index, y_1, y_2, t, id)
 
   if(!is.finite(log_post_prev)){
     print("Infinite log-posterior; choose better initial parameters")
@@ -270,23 +270,20 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   for(ttt in 2:steps){
       
     # mu_tilde: Gibbs update
-    pars[par_index$mu_tilde] = update_mu_tilde(pars, par_index, mu_i, n_sub)
+    pars[par_index$mu_tilde] = update_mu_tilde(pars, par_index, n_sub)
     chain[ttt, par_index$mu_tilde] = pars[par_index$mu_tilde]
     
     # upsilon: Gibbs update
-    pars[par_index$upsilon] = update_upsilon(pars, par_index, mu_i, n_sub)
+    pars[par_index$upsilon] = update_upsilon(pars, par_index, n_sub)
     chain[ttt, par_index$upsilon] = pars[par_index$upsilon]
     
     # mu_i: Gibbs update
-    mu_i = update_mu_i(y_2, pars, par_index, n_sub, D_i, eids, id)
+    pars[par_index$mu_i] = update_mu_i(y_2, pars, par_index, n_sub, D_i, eids, id)
+    chain[ttt, par_index$mu_i] = pars[par_index$mu_i]
 
     # tau2: Gibbs update
-    pars[par_index$tau2] = update_tau2(y_2, pars, par_index, D_i, mu_i, n_sub, eids, id)
+    pars[par_index$tau2] = update_tau2(y_2, pars, par_index, D_i, n_sub, eids, id)
     chain[ttt, par_index$tau2] = pars[par_index$tau2]
-
-    if(ttt %% 1000 == 0) {
-      M[[ttt/1000]] = mu_i
-    }
       
     for(j in 1:n_group){
 
@@ -300,7 +297,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       }
 
       # Compute the log density for the proposal
-      log_post = fn_log_post_continuous(proposal, prior_par, par_index, y_1, y_2, t, id, mu_i)
+      log_post = fn_log_post_continuous(proposal, prior_par, par_index, y_1, y_2, t, id)
 
       # Only propose valid parameters during the burnin period
       if(ttt < burnin){
@@ -313,7 +310,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
               proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],sd=sqrt(pcov[[j]]*pscale[j]))
           }
           
-          log_post = fn_log_post_continuous(proposal, prior_par, par_index, y_1, y_2, t, id, mu_i)
+          log_post = fn_log_post_continuous(proposal, prior_par, par_index, y_1, y_2, t, id)
         }
       }
 
@@ -387,6 +384,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   print(accept/(steps-burnin))
 
   return(list( chain=chain[burnin:steps,], accept=accept/(steps-burnin),
-               pscale=pscale, pcov = pcov, M = M))
+               pscale=pscale, pcov = pcov))
 }
 # -----------------------------------------------------------------------------
