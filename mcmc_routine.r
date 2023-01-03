@@ -224,7 +224,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   n_par = length(pars)
   chain = matrix( 0, steps, n_par)
 
-  group = list(c(par_index$beta[1:6]), c(par_index$beta[7:12]),
+  group = list(c(par_index$beta[c(1,7)]), c(par_index$beta[c(2,8)]),
+               c(par_index$beta[c(3,9)]), c(par_index$beta[c(4,10)]),
+               c(par_index$beta[c(5,11)]), c(par_index$beta[c(6,12)]),
                c(par_index$misclass), c(par_index$pi_logit))
   n_group = length(group)
 
@@ -239,8 +241,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   accept = rep( 0, n_group)
   
   # Initializing the random effects matrix mu_i
-  load('Model_out/mcmc_out_2_9.rda')
-  mu_i = mcmc_out$M[[8]]
+  load('Model_out/mcmc_out_2_10.rda')
+  mu_i = mcmc_out$M[[10]]
   rm(mcmc_out)
   M = vector(mode = "list", length = 10)
 
@@ -331,7 +333,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
         # transition.  This helps with mixing.
         if(ttt == 100)  pscale[j] = 1
         
-        if(ttt %% 100 == 0) {
+        if(ttt %% 50 == 0) {
             print("accept ratio")
             print(accept[j])
         }

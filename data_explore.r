@@ -33,6 +33,10 @@ data_format = data_format[!(data_format$ID.. %in% no_3), ]
 
 save(data_format, file = 'Data/data_format.rda')
 
+# -----------------------------------------------------------------------------
+# Summary of data investigation -----------------------------------------------
+# -----------------------------------------------------------------------------
+
 means = function(df) {
     means_df = rep(0, length(unique(df$ID..)))
     for(i in 1:length(means_df)) {
@@ -80,3 +84,44 @@ colMeans(mean_RSA, na.rm = T)
 # hist(mean_RSA[,2], breaks = sqrt(nrow(mean_RSA)), col = 2)
 # hist(mean_RSA[,1], breaks = sqrt(nrow(mean_RSA)), col = 3, add = T)
 # hist(mean_RSA[,3], breaks = sqrt(nrow(mean_RSA)), col = 4, add = T)
+
+# -----------------------------------------------------------------------------
+# Standard Deviation investigation --------------------------------------------
+# -----------------------------------------------------------------------------
+
+load('Data/data_format.rda')
+
+s1_df = data_format[data_format$State == 1, ]
+s2_df = data_format[data_format$State == 2, ]
+s3_df = data_format[data_format$State == 3, ]
+
+# Estimate of population standard deviation
+sd_1 = sd(s1_df[,"RSA"])
+sd_2 = sd(s2_df[,"RSA"])
+sd_3 = sd(s3_df[,"RSA"])
+
+# Individual standard deviations
+sd_and_mean = matrix(ncol=9, nrow = length(unique(data_format$ID..)))
+colnames(sd_and_mean) = c("m1", "m2", "m3", "sd1", "sd2", "sd3", "n1", "n2", "n3")
+for(i in 1:length(unique(data_format$ID..))) {
+    id = unique(data_format$ID..)[i]
+    sd_and_mean[i,1] = mean(s1_df[s1_df$ID.. == id, "RSA"])
+    sd_and_mean[i,2] = mean(s2_df[s2_df$ID.. == id, "RSA"])
+    sd_and_mean[i,3] = mean(s3_df[s3_df$ID.. == id, "RSA"])
+    
+    sd_and_mean[i,4] = sd(s1_df[s1_df$ID.. == id, "RSA"])
+    sd_and_mean[i,5] = sd(s2_df[s2_df$ID.. == id, "RSA"])
+    sd_and_mean[i,6] = sd(s3_df[s3_df$ID.. == id, "RSA"])
+    
+    sd_and_mean[i,7] = sum(s1_df$ID.. == id)
+    sd_and_mean[i,8] = sum(s2_df$ID.. == id)
+    sd_and_mean[i,9] = sum(s3_df$ID.. == id)
+}
+
+# Sample standard deviation
+sd(sd_and_mean[,"m1"]); sd_1 / sqrt(mean(sd_and_mean[,"n1"]))
+sd(sd_and_mean[,"m2"]); sd_2 / sqrt(mean(sd_and_mean[,"n2"]))
+sd(sd_and_mean[,"m3"]); sd_3 / sqrt(mean(sd_and_mean[,"n3"]))
+
+
+
