@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 12
+trial_num = 13
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
@@ -17,27 +17,29 @@ init_par = c(c(matrix(c(-4, 0,
                         -4, 0,
                         -4, 0,
                         -4, 0), ncol=2, byrow = T)),
-            c(-4, -4, -4, -4, -4, -4),
             c(-4, -4),
             c(6.411967, 6.481880, 6.335972), 
             1, 
             c(diag(3)),
             rep(1,273))
 
-par_index = list( beta=1:12, misclass = 13:18, pi_logit=19:20,
-                  mu_tilde = 21:23, tau2 = 24, upsilon = 25:33,
-                  mu_i = 34:306)
+par_index = list( beta=1:12, pi_logit=13:14,
+                  mu_tilde = 15:17, tau2 = 18, upsilon = 19:27,
+                  mu_i = 28:300)
 
 # Initializing using the most recent MCMC -------------------------------------
 load(paste0('Model_out/mcmc_out_2_10.rda'))
-par_means = colMeans(mcmc_out$chain[4000:5000, ])
-init_par[par_index$mu_tilde] = par_means[par_index$mu_tilde]
-init_par[par_index$tau2] = par_means[par_index$tau2]
-init_par[par_index$upsilon] = par_means[par_index$upsilon]
 init_par[par_index$mu_i] = c(mcmc_out$M[[10]])
+rm(mcmc_out)
+load(paste0('Model_out/mcmc_out_4_12.rda'))
+par_means = colMeans(mcmc_out$chain[14000:15000, ])
+init_par[-par_index$mu_i] = par_means
+rm(mcmc_out)
+# init_par[par_index$mu_tilde] = par_means[par_index$mu_tilde]
+# init_par[par_index$tau2] = par_means[par_index$tau2]
+# init_par[par_index$upsilon] = par_means[par_index$upsilon]
 # init_par[par_index$tau2] = exp(init_par[par_index$tau2])
 # init_par[par_index$mu_tilde] = c(6.411967, 6.481880, 6.335972)
-rm(mcmc_out)
 # -----------------------------------------------------------------------------
 
 prior_mean = c(c(matrix(c(-5, 0,
@@ -46,18 +48,14 @@ prior_mean = c(c(matrix(c(-5, 0,
                           -5, 0,
                           -5, 0,
                           -5, 0), ncol=2, byrow = T)),
-               c(-5, -5, -5, -5, -5, -5),
-               c(-5, -5),
-               rep(0, 273))  
+               c(-5, -5))  
 prior_sd = c(c(matrix(c(10, 5,
                         10, 5,
                         10, 5,
                         10, 5,
                         10, 5,
                         10, 5), ncol=2, byrow = T)),
-             c(5, 5, 5, 5, 5, 5),
-             c(5, 5),
-             rep(10, 273))
+             c(5, 5))
 prior_par = data.frame( prior_mean= prior_mean,
                         prior_sd= prior_sd)
 
@@ -67,7 +65,7 @@ y_1 = temp_data[,"State"]
 y_2 = temp_data[,"RSA"]
 t = temp_data[,"Time"]
 
-steps = 8000
+steps = 10000
 burnin = 3000
 n_cores = 20
 

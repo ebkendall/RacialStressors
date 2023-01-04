@@ -85,10 +85,10 @@ update_upsilon = function(pars, par_index, n_sub) {
 }
 
 # Gibbs update of the mu_i
-update_mu_i = function(y_2, pars, par_index, n_sub, D_i, eids, id) {
+update_mu_i = function(y_2, pars, par_index, n_sub, V_i, eids, id) {
     mu_i = foreach(i=1:n_sub, .combine = 'rbind', .packages = "mvtnorm") %dopar% {
         
-        D_small = D_i[[i]]
+        D_small = V_i[[i]]
         upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
         up_solve = solve(upsilon)
         
@@ -107,7 +107,7 @@ update_mu_i = function(y_2, pars, par_index, n_sub, D_i, eids, id) {
 }
 
 # Gibbs update of the tau2
-update_tau2 = function(y_2, pars, par_index, D_i, n_sub, eids, id) {
+update_tau2 = function(y_2, pars, par_index, V_i, n_sub, eids, id) {
     
     a = b = 1
     mu_i = matrix(pars[par_index$mu_i], ncol = 3)
@@ -116,7 +116,7 @@ update_tau2 = function(y_2, pars, par_index, D_i, n_sub, eids, id) {
     for(i in 1:n_sub) {
         y_sub = matrix(y_2[id == eids[i]], ncol=1)
         mu_temp = t(mu_i[i,,drop=F])
-        temp = temp + t(y_sub - D_i[[i]] %*% mu_temp) %*% (y_sub - D_i[[i]] %*% mu_temp)
+        temp = temp + t(y_sub - V_i[[i]] %*% mu_temp) %*% (y_sub - V_i[[i]] %*% mu_temp)
     }
     
     a_new = a + 0.5 * length(y_2)
@@ -136,18 +136,17 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id) 
     init = init_logit / sum(init_logit)
 
     # Misclassification response matrix
-    resp_fnc = matrix(c(1, exp(pars[par_index$misclass][1]), exp(pars[par_index$misclass][2]),
-                        exp(pars[par_index$misclass][3]), 1, exp(pars[par_index$misclass][4]),
-                        exp(pars[par_index$misclass][5]), exp(pars[par_index$misclass][6]), 1),
-                        ncol=3, byrow=TRUE)
+    # resp_fnc = matrix(c(1, exp(pars[par_index$misclass][1]), exp(pars[par_index$misclass][2]),
+    #                     exp(pars[par_index$misclass][3]), 1, exp(pars[par_index$misclass][4]),
+    #                     exp(pars[par_index$misclass][5]), exp(pars[par_index$misclass][6]), 1),
+    #                     ncol=3, byrow=TRUE)
 
-    resp_fnc = resp_fnc / rowSums(resp_fnc)
-    
-    tau2 <- pars[par_index$tau2]
+    # resp_fnc = resp_fnc / rowSums(resp_fnc)
+    # resp_fnc = diag(3)
     
     beta <- pars[par_index$beta]
     
-    mu_i <- matrix(pars[par_index$mu_i], ncol = 3)
+    # mu_i <- matrix(pars[par_index$mu_i], ncol = 3)
 
     # initial condition for deSolve
     p_ic <- c( p1=1, p2=0, p3=0,
@@ -163,21 +162,22 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id) 
         
         f_i = val = 1
         y_1_i = y_1[id == i]    # the observed state
-        y_2_i = y_2[id == i]    # the rsa measurements
+        # y_2_i = y_2[id == i]    # the rsa measurements
         t_i = t[id == i]        # time
         
-        mu_1 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
-        mu_2 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
-        mu_3 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
+        # mu_1 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
+        # mu_2 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
+        # mu_3 = dnorm(x = y_2_i[1], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
         
-        if(y_1_i[1] <= 3) { # observed state
-          f_i = init %*% diag(c(mu_1,mu_2,mu_3) * resp_fnc[, y_1_i[1]])
-        } else { # un-observed state (99)
-            print("un-observed state")
-            f_i = init %*% diag(c(mu_1,mu_2,mu_3))
-        }
+        # if(y_1_i[1] <= 3) { # observed state
+        #   f_i = init %*% diag(c(mu_1,mu_2,mu_3) * resp_fnc[, y_1_i[1]])
+        # } else { # un-observed state (99)
+        #     print("un-observed state")
+        #     f_i = init %*% diag(c(mu_1,mu_2,mu_3))
+        # }
 
-        log_norm = 0
+        # log_norm = 0
+        log_norm = log(init[y_1_i[1]])
         
         for(k in 2:length(t_i)) {
             out <- deSolve::ode(p_ic, times = t_i[(k-1):k], 
@@ -189,30 +189,31 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id) 
                            out[2,"p7"],  out[2,"p8"],  out[2,"p9"]),
                         nrow = 3, byrow = T)
             
-            mu_1 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
-            mu_2 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
-            mu_3 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
+            # mu_1 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 1], sd = sqrt(tau2))
+            # mu_2 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 2], sd = sqrt(tau2))
+            # mu_3 = dnorm(x = y_2_i[k], mean = mu_i[which(eids == i), 3], sd = sqrt(tau2))
 
-            if(y_1_i[k] <= 3) { # observed state
-              D_i = diag(c(mu_1,mu_2,mu_3) * resp_fnc[, y_1_i[k]])
-            } else { # unknown state (99)
-              D_i = diag(c(mu_1,mu_2,mu_3))
-            }
+            # if(y_1_i[k] <= 3) { # observed state
+            #   D_i = diag(c(mu_1,mu_2,mu_3) * resp_fnc[, y_1_i[k]])
+            # } else { # unknown state (99)
+            #   D_i = diag(c(mu_1,mu_2,mu_3))
+            # }
 
-            val = f_i %*% P %*% D_i
+            # val = f_i %*% P %*% D_i
 
-            norm_val = sqrt(sum(val^2))
-            f_i = val / norm_val
-            log_norm = log_norm + log(norm_val)
+            # norm_val = sqrt(sum(val^2))
+            # f_i = val / norm_val
+            # log_norm = log_norm + log(norm_val)
+            log_norm = log_norm + log(P[y_1_i[k-1], y_1_i[k]])
         }
 
-        return(log(sum(f_i)) + log_norm)
+        # return(log(sum(f_i)) + log_norm)
+        return(log_norm)
     }
 
     mean = prior_par$prior_mean
     sd = diag(prior_par$prior_sd)
-    log_prior_dens = dmvnorm( x=pars[c(par_index$beta, par_index$misclass, 
-                                       par_index$pi_logit, par_index$mu_i)], 
+    log_prior_dens = dmvnorm( x=pars[c(par_index$beta, par_index$pi_logit)], 
                                        mean=mean, sigma=sd, log=T)
     return(log_total_val + log_prior_dens)
 
@@ -230,31 +231,30 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   pars = init_par
   n = length(y_1)
   n_par = length(pars)
-  chain = matrix( 0, steps, n_par)
+  chain = matrix( 0, steps, n_par - length(par_index$mu_i))
 
-  group = list(c(par_index$beta), c(par_index$misclass), c(par_index$pi_logit),
-               c(par_index$mu_i))
+  group = list(c(par_index$beta), c(par_index$pi_logit))
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
-  pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
-  pscale = rep( 1, n_group)
-  # load(paste0('Model_out/mcmc_out_2_7.rda'))
-  # pcov = mcmc_out$pcov
-  # pscale = mcmc_out$pscale
-  # rm(mcmc_out)
+  # pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
+  # pscale = rep( 1, n_group)
+  load(paste0('Model_out/mcmc_out_4_12.rda'))
+  pcov = mcmc_out$pcov
+  pscale = mcmc_out$pscale
+  rm(mcmc_out)
 
   accept = rep( 0, n_group)
 
-  # Initializing the D_i matrix
-  D_i = vector(mode = 'list', length = n_sub)
+  # Initializing the V_i matrix
+  V_i = vector(mode = 'list', length = n_sub)
   eids = unique(id)
   for(i in 1:length(eids)) {
     state_sub = y_1[id == eids[i]]
-    D_i[[i]] = matrix(nrow = sum(id == eids[i]), ncol = 3)
-    D_i[[i]][,1] = as.integer(state_sub == 1)
-    D_i[[i]][,2] = as.integer(state_sub == 2)
-    D_i[[i]][,3] = as.integer(state_sub == 3)
+    V_i[[i]] = matrix(nrow = sum(id == eids[i]), ncol = 3)
+    V_i[[i]][,1] = as.integer(state_sub == 1)
+    V_i[[i]][,2] = as.integer(state_sub == 2)
+    V_i[[i]][,3] = as.integer(state_sub == 3)
   }
 
   # Evaluate the log_post of the initial parameters
@@ -266,7 +266,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   }
 
   # Begin the MCMC algorithm --------------------------------------------------
-  chain[1,] = pars
+  chain[1,] = pars[-par_index$mu_i]
   for(ttt in 2:steps){
       
     # mu_tilde: Gibbs update
@@ -278,11 +278,10 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     chain[ttt, par_index$upsilon] = pars[par_index$upsilon]
     
     # mu_i: Gibbs update
-    pars[par_index$mu_i] = update_mu_i(y_2, pars, par_index, n_sub, D_i, eids, id)
-    chain[ttt, par_index$mu_i] = pars[par_index$mu_i]
+    pars[par_index$mu_i] = update_mu_i(y_2, pars, par_index, n_sub, V_i, eids, id)
 
     # tau2: Gibbs update
-    pars[par_index$tau2] = update_tau2(y_2, pars, par_index, D_i, n_sub, eids, id)
+    pars[par_index$tau2] = update_tau2(y_2, pars, par_index, V_i, n_sub, eids, id)
     chain[ttt, par_index$tau2] = pars[par_index$tau2]
       
     for(j in 1:n_group){
