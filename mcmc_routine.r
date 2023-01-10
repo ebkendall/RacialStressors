@@ -4,6 +4,17 @@ library(doParallel, quietly=T)
 library(deSolve, quietly=T)
 library(LaplacesDemon, quietly=T)
 
+# Rcpp packages
+library(Rcpp, quietly=T)
+library(RcppArmadillo, quietly = T)
+library(RcppDist, quietly = T)
+sourceCpp("mcmc_routine_c.cpp")
+
+# Needed for OpenMP C++ parallel
+Sys.setenv("PKG_CXXFLAGS" = "-fopenmp")
+Sys.setenv("PKG_LIBS" = "-fopenmp")
+
+
 # Construct the transition rate matrix
 Q <- function(t,beta){
 
@@ -125,11 +136,72 @@ update_tau2 = function(y_2, pars, par_index, V_i, n_sub, eids, id) {
     return(rinvgamma(n=1, shape = a_new, scale = b_new))
 }
 
+# Metropolis-within-Gibbs update of the state space
+update_b_i = function(pars, par_index, V_i, y_1, y_2, t, n_sub, eids, id) {
+  Bi_Di = foreach( i=unique(id), .export=c( 'fn_log_post_continuous', 'Omega_fun_cpp_new')) %dopar% {
+		
+    y_1_i = y_1[id == i]    # the observed state
+    y_2_i = y_2[id == i]    # the rsa measurements
+    t_i = t[id == i]
+    n_i = length(y_1_i)
+    ii = which(eids == i)
+	
+		for(k in 1:(n_i-1)){
+			
+			t_pts = t_i[k:(k+1)]
+      
+      # Need to define a separate likelihood function************************
+			log_target_prev = fn_log_post_continuous(pars, prior_par, par_index, y_1, y_2, t_pts, i)
+			pr_B = B
+			pr_V = V_i
+		
+			# Sample and update the two neighboring states
+			Omega_set = Omega_fun_cpp_new( k, n_i, B[[ii]])
+			pr_B[[ii]][k:(k+1)] = Omega_set[ sample( 1:nrow(Omega_set), size=1),] 
+		
+			b_i = pr_B[[ii]]
+
+			# Adding clinical review
+			valid_prop = T
+			
+			if(valid_prop) {
+        pr_V[[ii]][,1] = as.integer(b_i == 1)
+        pr_V[[ii]][,2] = as.integer(b_i == 2)
+        pr_V[[ii]][,3] = as.integer(b_i == 3)
+				log_target = fn_log_post_continuous(pars, prior_par, par_index, y_1, y_2, t_pts, i)
+        # log_f_i( i,t_pts,par,par_index,A,pr_B,Y,z,pr_Dn,Xn,invKn)
+				
+				if( log_target - log_target_prev > log(runif(1,0,1)) ){
+					B = pr_B
+					V_i = pr_V
+				}
+			}
+		}
+		return(list( B[[ii]], V_i[[ii]]))
+	}
+	B = sapply( Bi_Di, '[', 1)
+	
+	V_i = sapply( Bi_Di, '[', 2)
+	
+	return(list( B, V_i))
+}
+
+update_V_i = function(B) {
+  V_i = vector(mode = 'list', length = length(B))
+  for(i in 1:length(B)) {
+    state_sub = c(B[[i]])
+    V_i[[i]] = matrix(nrow = length(state_sub), ncol = 3)
+    V_i[[i]][,1] = as.integer(state_sub == 1)
+    V_i[[i]][,2] = as.integer(state_sub == 2)
+    V_i[[i]][,3] = as.integer(state_sub == 3)
+  }
+  return(V_i)
+}
 
 # Evaluating the log posterior
 fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id) {
 
-    # Order: Base, Stress, Recov
+    # Order: Base, Stress, Recovery
     init_logit = c( 1, exp(pars[par_index$pi_logit][1]), exp(pars[par_index$pi_logit][2]))
 
     # Initial state probabilities
@@ -232,6 +304,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   n = length(y_1)
   n_par = length(pars)
   chain = matrix( 0, steps, n_par - length(par_index$mu_i))
+  B_chain = matrix( 0, steps - burnin, length(y_1))
 
   group = list(c(par_index$beta), c(par_index$pi_logit))
   n_group = length(group)
@@ -239,23 +312,27 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # proposal covariance and scale parameter for Metropolis step
   # pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
   # pscale = rep( 1, n_group)
-  load(paste0('Model_out/mcmc_out_4_12.rda'))
+  load(paste0('Model_out/mcmc_out_4_13.rda'))
   pcov = mcmc_out$pcov
   pscale = mcmc_out$pscale
   rm(mcmc_out)
 
   accept = rep( 0, n_group)
 
-  # Initializing the V_i matrix
-  V_i = vector(mode = 'list', length = n_sub)
+  # Initializing the state space list B
+  B = list()
   eids = unique(id)
   for(i in 1:length(eids)) {
     state_sub = y_1[id == eids[i]]
-    V_i[[i]] = matrix(nrow = sum(id == eids[i]), ncol = 3)
-    V_i[[i]][,1] = as.integer(state_sub == 1)
-    V_i[[i]][,2] = as.integer(state_sub == 2)
-    V_i[[i]][,3] = as.integer(state_sub == 3)
+    b_temp = matrix(state_sub, ncol = 1)
+    B[[i]] = b_temp
   }
+
+  # Initializing the V_i matrix
+  V_i = update_V_i(B)
+
+  # Vector to store the values of mu_i
+  M = vector(mode = 'list', length = 10)
 
   # Evaluate the log_post of the initial parameters
   log_post_prev = fn_log_post_continuous( pars, prior_par, par_index, y_1, y_2, t, id)
@@ -279,10 +356,16 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     
     # mu_i: Gibbs update
     pars[par_index$mu_i] = update_mu_i(y_2, pars, par_index, n_sub, V_i, eids, id)
+    if(ttt %% 1000 == 0) M[[ttt/1000]] = pars[par_index$mu_i]
 
     # tau2: Gibbs update
     pars[par_index$tau2] = update_tau2(y_2, pars, par_index, V_i, n_sub, eids, id)
     chain[ttt, par_index$tau2] = pars[par_index$tau2]
+    
+    # S_chain: Metropolis-within-Gibbs update
+    # B_Dn = update_b_i_cpp(16, as.numeric(EIDs), par, par_index, A, B, Y, z, Dn, Xn, invKn)
+    # B = B_Dn[[1]]; names(B) = EIDs
+    # Dn = B_Dn[[2]]; names(Dn) = EIDs
       
     for(j in 1:n_group){
 
@@ -372,8 +455,12 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       }
       # -----------------------------------------------------------------------
     }
+
     # Restart the acceptance ratio at burnin.
     if(ttt == burnin)  accept = rep( 0, n_group)
+    if(ttt > burnin) {
+      B_chain[ttt - burnin, ] = do.call( 'c', B)
+    }
 
     if(ttt%%1==0)  cat('--->',ttt,'\n')
   }
@@ -382,7 +469,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   stopCluster(cl)
   print(accept/(steps-burnin))
 
-  return(list( chain=chain[burnin:steps,], accept=accept/(steps-burnin),
-               pscale=pscale, pcov = pcov))
+  return(list( chain=chain[burnin:steps,], B_chain = B_chain,
+               accept=accept/(steps-burnin),
+               pscale=pscale, pcov = pcov, M = M))
 }
 # -----------------------------------------------------------------------------

@@ -31,15 +31,10 @@ par_index = list( beta=1:12, pi_logit=13:14,
 load(paste0('Model_out/mcmc_out_2_10.rda'))
 init_par[par_index$mu_i] = c(mcmc_out$M[[10]])
 rm(mcmc_out)
-load(paste0('Model_out/mcmc_out_4_12.rda'))
+load(paste0('Model_out/mcmc_out_4_13.rda'))
 par_means = colMeans(mcmc_out$chain[14000:15000, ])
 init_par[-par_index$mu_i] = par_means
 rm(mcmc_out)
-# init_par[par_index$mu_tilde] = par_means[par_index$mu_tilde]
-# init_par[par_index$tau2] = par_means[par_index$tau2]
-# init_par[par_index$upsilon] = par_means[par_index$upsilon]
-# init_par[par_index$tau2] = exp(init_par[par_index$tau2])
-# init_par[par_index$mu_tilde] = c(6.411967, 6.481880, 6.335972)
 # -----------------------------------------------------------------------------
 
 prior_mean = c(c(matrix(c(-5, 0,
