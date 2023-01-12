@@ -6,13 +6,12 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 13
+trial_num = 14
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
 
 init_par = c(c(matrix(c(-4, 0,
-                        -4, 0,
                         -4, 0,
                         -4, 0,
                         -4, 0,
@@ -23,9 +22,9 @@ init_par = c(c(matrix(c(-4, 0,
             c(diag(3)),
             rep(1,273))
 
-par_index = list( beta=1:12, pi_logit=13:14,
-                  mu_tilde = 15:17, tau2 = 18, upsilon = 19:27,
-                  mu_i = 28:300)
+par_index = list( beta=1:10, misclass=11:12,
+                  mu_tilde = 13:15, tau2 = 16, upsilon = 17:25,
+                  mu_i = 26:298)
 
 # Initializing using the most recent MCMC -------------------------------------
 load(paste0('Model_out/mcmc_out_2_10.rda'))
@@ -33,7 +32,10 @@ init_par[par_index$mu_i] = c(mcmc_out$M[[10]])
 rm(mcmc_out)
 load(paste0('Model_out/mcmc_out_4_13.rda'))
 par_means = colMeans(mcmc_out$chain[14000:15000, ])
-init_par[-par_index$mu_i] = par_means
+init_par[par_index$beta] = par_means[par_index$beta]
+init_par[par_index$mu_tilde] = par_means[par_index$mu_tilde]
+init_par[par_index$tau2] = par_means[par_index$tau2]
+init_par[par_index$upsilon] = par_means[par_index$upsilon]
 rm(mcmc_out)
 # -----------------------------------------------------------------------------
 
@@ -51,8 +53,9 @@ prior_sd = c(c(matrix(c(10, 5,
                         10, 5,
                         10, 5), ncol=2, byrow = T)),
              c(5, 5))
-prior_par = data.frame( prior_mean= prior_mean,
-                        prior_sd= prior_sd)
+prior_par = list()
+prior_par[[1]] = prior_mean
+prior_par[[2]] = prior_sd
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL
 id = temp_data[,"ID.."]

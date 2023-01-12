@@ -14,41 +14,6 @@ sourceCpp("mcmc_routine_c.cpp")
 Sys.setenv("PKG_CXXFLAGS" = "-fopenmp")
 Sys.setenv("PKG_LIBS" = "-fopenmp")
 
-
-# Construct the transition rate matrix
-Q <- function(t,beta){
-
-    betaMat = matrix(beta, ncol = 2, byrow = F) # determine the covariates
-  
-    q1  = exp( c(1,t) %*% betaMat[1,] )  # Transition from Base   to  Stress
-    q2  = exp( c(1,t) %*% betaMat[2,] )  # Transition from Base   to  Recov
-    q3  = exp( c(1,t) %*% betaMat[3,] )  # Transition from Stress to  Base
-    q4  = exp( c(1,t) %*% betaMat[4,] )  # Transition from Stress to  Recov
-    q5  = exp( c(1,t) %*% betaMat[5,] )  # Transition from Recov  to  Base
-    q6  = exp( c(1,t) %*% betaMat[6,] )  # Transition from Recov  to  Stress
-    
-    qmat = matrix(c(  0,  q1,  q2,
-                     q3,   0,  q4,
-                     q5,  q6,   0),
-                nrow = 3, byrow = T)
-    diag(qmat) = -rowSums(qmat)
-
-  return(qmat)
-}
-
-# Setting up the differential equations for deSolve
-model_t <- function(t,p,parms) {
-    qmat = Q(t, parms$b)
-    pmat = matrix(c(  p[1],  p[2], p[3],
-                      p[4],  p[5], p[6],
-                      p[7],  p[8], p[9]),
-                nrow = 3, byrow = T)
-    
-    # Vectorizing the matrix multiplication row-wise
-    dP = c(t(pmat %*% qmat))
-    return(list(dP))
-}
-
 # Gibbs update of the mu_tilde
 update_mu_tilde = function(pars, par_index, n_sub) {
     
@@ -151,7 +116,7 @@ update_b_i = function(pars, par_index, V_i, y_1, y_2, t, n_sub, eids, id) {
 			t_pts = t_i[k:(k+1)]
       
       # Need to define a separate likelihood function************************
-			log_target_prev = fn_log_post_continuous(pars, prior_par, par_index, y_1, y_2, t_pts, i)
+			log_target_prev = fn_log_post_continuous(pars, prior_par, par_index, y_1, y_2, t_pts, i, k)
 			pr_B = B
 			pr_V = V_i
 		
@@ -208,13 +173,12 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id) 
     init = init_logit / sum(init_logit)
 
     # Misclassification response matrix
-    # resp_fnc = matrix(c(1, exp(pars[par_index$misclass][1]), exp(pars[par_index$misclass][2]),
-    #                     exp(pars[par_index$misclass][3]), 1, exp(pars[par_index$misclass][4]),
-    #                     exp(pars[par_index$misclass][5]), exp(pars[par_index$misclass][6]), 1),
-    #                     ncol=3, byrow=TRUE)
+    resp_fnc = matrix(c(1, exp(pars[par_index$misclass][1]), exp(pars[par_index$misclass][2]),
+                        exp(pars[par_index$misclass][3]), 1, exp(pars[par_index$misclass][4]),
+                        exp(pars[par_index$misclass][5]), exp(pars[par_index$misclass][6]), 1),
+                        ncol=3, byrow=TRUE)
 
-    # resp_fnc = resp_fnc / rowSums(resp_fnc)
-    # resp_fnc = diag(3)
+    resp_fnc = resp_fnc / rowSums(resp_fnc)
     
     beta <- pars[par_index$beta]
     
@@ -285,7 +249,7 @@ fn_log_post_continuous <- function(pars, prior_par, par_index, y_1, y_2, t, id) 
 
     mean = prior_par$prior_mean
     sd = diag(prior_par$prior_sd)
-    log_prior_dens = dmvnorm( x=pars[c(par_index$beta, par_index$pi_logit)], 
+    log_prior_dens = dmvnorm( x=pars[c(par_index$beta, par_index$misclass)], 
                                        mean=mean, sigma=sd, log=T)
     return(log_total_val + log_prior_dens)
 
@@ -306,16 +270,16 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain = matrix( 0, steps, n_par - length(par_index$mu_i))
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
-  group = list(c(par_index$beta), c(par_index$pi_logit))
+  group = list(c(par_index$beta), c(par_index$misclass))
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
-  # pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
-  # pscale = rep( 1, n_group)
-  load(paste0('Model_out/mcmc_out_4_13.rda'))
-  pcov = mcmc_out$pcov
-  pscale = mcmc_out$pscale
-  rm(mcmc_out)
+  pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
+  pscale = rep( 1, n_group)
+  # load(paste0('Model_out/mcmc_out_4_13.rda'))
+  # pcov = mcmc_out$pcov
+  # pscale = mcmc_out$pscale
+  # rm(mcmc_out)
 
   accept = rep( 0, n_group)
 
@@ -332,10 +296,10 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   V_i = update_V_i(B)
 
   # Vector to store the values of mu_i
-  M = vector(mode = 'list', length = 10)
+  big_mu_i = vector(mode = 'list', length = 10)
 
   # Evaluate the log_post of the initial parameters
-  log_post_prev = fn_log_post_continuous( pars, prior_par, par_index, y_1, y_2, t, id)
+  log_post_prev = fn_log_post_continuous( pars, prior_par, par_index, y_1, y_2, t, id, B, V_i)
 
   if(!is.finite(log_post_prev)){
     print("Infinite log-posterior; choose better initial parameters")
