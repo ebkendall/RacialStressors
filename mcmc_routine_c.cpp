@@ -151,13 +151,12 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     arma::mat beta = arma::reshape(vec_beta_content, 5, 2);
     arma::mat M = { {1, 0, 0},
                     {0, 1, exp(vec_misclass_content(0))},
-                    {0, exp(vec_misclass_content(0)), 1}};
+                    {0, exp(vec_misclass_content(1)), 1}};
     arma::vec m_row_sums = arma::sum(M, 1);
-    M = M.each_col() / m_row_sums; // DOUBLE CHECK!!
+    M = M.each_col() / m_row_sums; 
     
     // The time-homogeneous probability transition matrix
     arma::uvec sub_ind = arma::find(eids == i);
-    int n_i = sub_ind.max() - sub_ind.min() + 1;
     
     // Subsetting the data to relate only to this participant
     arma::mat b_i = B;
@@ -194,7 +193,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     arma::vec p_mean = prior_par(0);
     arma::mat p_sd = arma::diagmat(prior_par(1));
     arma::mat x = arma::join_cols(vec_beta_content, vec_misclass_content);
-    arma::vec log_prior_dens = dmvnorm(x, p_mean, p_sd, true);
+    arma::vec log_prior_dens = dmvnorm(x.t(), p_mean, p_sd, true);
     
     in_value = in_value + log_prior_dens(0);
     
@@ -218,7 +217,7 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
         int i = EIDs(ii);
         arma::uvec sub_ind = arma::find(id == i);
         int n_i = sub_ind.max() - sub_ind.min();
-        arma::vec it_indices = arma::linspace(1, n_i); // DOUBLE CHECK (always skip initial state)
+        arma::vec it_indices = arma::linspace(1, n_i, n_i); 
         in_vals(ii) = log_f_i_cpp(i, ii, pars, prior_par, par_index, y_1, t_pts, id, B(ii), it_indices);
     }
     
@@ -227,50 +226,36 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
     return in_value;
 }
 
-// [[Rcpp::export]]
-Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &pars,  
+Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &pars,
                           const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
                           const arma::vec &y_1, arma::vec t_pts, const arma::vec &id,
                           const arma::field <arma::vec> &B) {
-    
+
     // par_index KEY: (0) beta, (1) misclass, (2) mu_tilde, (3) tau2, (4) upsilon, (5) mu_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     //  ALWAYS DOUBLE CHECK THESE INDICES. WE LOSE THE NAMES FEATURE
-    
+
     arma::field<arma::vec> B_return(EIDs.n_elem);
     arma::field<arma::mat> V_return(EIDs.n_elem);
-    
+
     omp_set_num_threads(t) ;
     # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
-        arma::uvec sub_ind = arma::find(eids == i);
-        
-        int n_i = sub_ind.n_elem;
-        
-        int rbc_rule = rbc_rule_vec(sub_ind.min());
-        int clinic_rule = clinic_rule_vec(sub_ind.min());
-        
-        // Subsetting the data to only be a function of each ii is needed for parallel
+        arma::uvec sub_ind = arma::find(id == i);
+
+        int n_i = sub_ind.n_elem; // DOUBLE CHECK and compare to other method
+
         // Subsetting fields
         arma::vec B_temp = B(ii);
-        arma::mat Dn_temp = Dn(ii);
-        arma::vec A_temp = A(ii);
-        arma::mat Xn_temp = Xn(ii);
-        arma::sp_mat invKn_temp = invKn(ii);
-        
-        // Subsetting the remaining data
-        arma::mat Y_temp = Y.rows(sub_ind);
-        arma::mat z_temp = z.rows(sub_ind);
-        
+
         // keep the last state at state 1 so we only iterate to n_i-1
-        for (int k = 0; k < n_i - 2; k++) {
-            
+        for (int k = 0; k < n_i - 1; k++) {
+
             arma::vec t_pts = arma::linspace(k+1, k+2, 2);
             arma::vec pr_B = B_temp;
-            arma::mat pr_Dn = Dn_temp;
-            
+
             // Sample and update the two neighboring states
             arma::mat Omega_set;
             if (clinic_rule >= 0) {
@@ -278,16 +263,16 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
             } else {
                 Omega_set = Omega_fun_cpp_new(k + 1, n_i, B_temp, true);
             }
-            
+
             int sampled_index = arma::randi(arma::distr_param(1, Omega_set.n_rows));
-            
+
             pr_B.rows(k, k+1) = Omega_set.row(sampled_index-1).t();
-            
+
             arma::vec b_i = pr_B;
-            
+
             // Adding clinical review
             bool valid_prop = false;
-            
+
             if(clinic_rule >= 0) {
                 bool b_i_rule = arma::any(arma::vectorise(b_i)==2);
                 if (clinic_rule == 1) {
@@ -298,28 +283,28 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
             } else {  // evaluate the posterior regardless for clinic_rule=-1
                 valid_prop = true;
             }
-            
+
             if(valid_prop) {
                 double log_target_prev = log_f_i_cpp(i, ii, t_pts, par, par_index,A_temp,B_temp,Y_temp,z_temp,Dn_temp,Xn_temp,invKn_temp);
-                
+
                 arma::vec twos(b_i.n_elem, arma::fill::zeros);
                 arma::vec threes = twos; arma::vec fours = twos; arma::vec fives = twos;
-                
+
                 twos.elem(arma::find(b_i == 2)) += 1;
                 threes.elem(arma::find(b_i == 3)) += 1;
                 fours.elem(arma::find(b_i == 4)) += 1;
                 fives.elem(arma::find(b_i == 5)) += 1;
-                
+
                 arma::vec ones(b_i.n_elem, arma::fill::ones);
-                
+
                 arma::mat bigB = arma::join_rows(ones, arma::cumsum(twos));
                 bigB = arma::join_rows(bigB, arma::cumsum(threes));
                 bigB = arma::join_rows(bigB, arma::cumsum(fours));
                 bigB = arma::join_rows(bigB, arma::cumsum(fives));
-                
+
                 pr_Dn = arma::kron(arma::eye(4,4), bigB);
                 double log_target = log_f_i_cpp( i,ii,t_pts,par,par_index,A_temp,pr_B,Y_temp,z_temp,pr_Dn,Xn_temp,invKn_temp);
-                
+
                 // Note that the proposal probs cancel in the MH ratio
                 double diff_check = log_target - log_target_prev;
                 double min_log = log(arma::randu(arma::distr_param(0,1)));
@@ -332,8 +317,56 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
         B_return(ii) = B_temp;
         V_return(ii) = Dn_temp;
     }
-    
+
     List B_Dn = List::create(B_return, V_return);
-    
+
     return B_Dn;
+}
+
+// Gibbs update of the mu_i
+
+// arma::mat update_mu_i(const arma::vec &y_2, const arma::vec &pars,  
+//                       const arma::field<arma::uvec> &par_index,
+//                       const int n_sub, const arma::field<arma::mat> &V_i, 
+//                       const arma::vec &eids, const arma::vec &id) {
+//     mu_i = foreach(i=1:n_sub, .combine = 'rbind', .packages = "mvtnorm") %dopar% {
+//         
+//         D_small = V_i[[i]]
+//         upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
+//         up_solve = solve(upsilon)
+//         
+//         y_sub = matrix(y_2[id == eids[i]], ncol=1)
+//         tau2 = pars[par_index$tau2]
+//         
+//         V = solve((1/tau2) * (t(D_small) %*% D_small) + up_solve)
+//         M = V %*% ((1/tau2) * (t(D_small) %*% y_sub) + up_solve %*% matrix(pars[par_index$mu_tilde],ncol=1))
+//         
+//         mu_i_small = c(rmvnorm(n = 1, mean = M, sigma = V))
+//         
+//         return(mu_i_small)
+//     }
+//     
+//     return(mu_i)
+// }
+
+
+
+// [[Rcpp::export]]
+void test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_par, 
+                    const arma::field<arma::uvec> &par_index) {
+    
+    arma::uvec vec_beta_ind = par_index(0);
+    arma::uvec vec_misclass_ind = par_index(1);
+    
+    arma::vec vec_beta_content = pars.elem(vec_beta_ind - 1);
+    arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
+    
+    arma::vec p_mean = prior_par(0);
+    arma::mat p_sd = arma::diagmat(prior_par(1));
+    arma::mat x = arma::join_cols(vec_beta_content, vec_misclass_content);
+    
+    arma::vec log_prior_dens = dmvnorm(x.t(), p_mean, p_sd, true);
+    
+    Rcpp::Rcout << log_prior_dens << std::endl;
+    
 }
