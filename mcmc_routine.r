@@ -101,56 +101,6 @@ update_tau2 = function(y_2, pars, par_index, V_i, n_sub, eids, id) {
     return(rinvgamma(n=1, shape = a_new, scale = b_new))
 }
 
-# Metropolis-within-Gibbs update of the state space
-update_b_i = function(pars, par_index, V_i, y_1, y_2, t, n_sub, eids, id) {
-  Bi_Di = foreach( i=unique(id), .export=c( 'fn_log_post_continuous', 'Omega_fun_cpp_new')) %dopar% {
-		
-    y_1_i = y_1[id == i]    # the observed state
-    y_2_i = y_2[id == i]    # the rsa measurements
-    t_i = t[id == i]
-    n_i = length(y_1_i)
-    ii = which(eids == i)
-	
-		for(k in 1:(n_i-1)){
-			
-			t_pts = t_i[k:(k+1)]
-      
-      # Need to define a separate likelihood function************************
-			log_target_prev = fn_log_post_continuous(pars, prior_par, par_index, y_1, y_2, t_pts, i, k)
-			pr_B = B
-			pr_V = V_i
-		
-			# Sample and update the two neighboring states
-			Omega_set = Omega_fun_cpp_new( k, n_i, B[[ii]])
-			pr_B[[ii]][k:(k+1)] = Omega_set[ sample( 1:nrow(Omega_set), size=1),] 
-		
-			b_i = pr_B[[ii]]
-
-			# Adding clinical review
-			valid_prop = T
-			
-			if(valid_prop) {
-        pr_V[[ii]][,1] = as.integer(b_i == 1)
-        pr_V[[ii]][,2] = as.integer(b_i == 2)
-        pr_V[[ii]][,3] = as.integer(b_i == 3)
-				log_target = fn_log_post_continuous(pars, prior_par, par_index, y_1, y_2, t_pts, i)
-        # log_f_i( i,t_pts,par,par_index,A,pr_B,Y,z,pr_Dn,Xn,invKn)
-				
-				if( log_target - log_target_prev > log(runif(1,0,1)) ){
-					B = pr_B
-					V_i = pr_V
-				}
-			}
-		}
-		return(list( B[[ii]], V_i[[ii]]))
-	}
-	B = sapply( Bi_Di, '[', 1)
-	
-	V_i = sapply( Bi_Di, '[', 2)
-	
-	return(list( B, V_i))
-}
-
 update_V_i = function(B) {
   V_i = vector(mode = 'list', length = length(B))
   for(i in 1:length(B)) {
@@ -298,14 +248,16 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # Vector to store the values of mu_i
   big_mu_i = vector(mode = 'list', length = 10)
 
+  EIDs = unique(id)
+  
   # Evaluate the log_post of the initial parameters
-  log_post_prev = fn_log_post_continuous( pars, prior_par, par_index, y_1, y_2, t, id, B, V_i)
+  log_post_prev = log_f_i_cpp_total(EIDs, pars, prior_par, par_index, y_1, t, id, B)
 
   if(!is.finite(log_post_prev)){
     print("Infinite log-posterior; choose better initial parameters")
     break
   }
-
+ 
   # Begin the MCMC algorithm --------------------------------------------------
   chain[1,] = pars[-par_index$mu_i]
   for(ttt in 2:steps){
@@ -327,9 +279,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     chain[ttt, par_index$tau2] = pars[par_index$tau2]
     
     # S_chain: Metropolis-within-Gibbs update
-    # B_Dn = update_b_i_cpp(16, as.numeric(EIDs), par, par_index, A, B, Y, z, Dn, Xn, invKn)
-    # B = B_Dn[[1]]; names(B) = EIDs
-    # Dn = B_Dn[[2]]; names(Dn) = EIDs
+    B_V = update_b_i_cpp(8, EIDs, pars, prior_par, par_index, y_1, t, id, B, V_i)
+    B = B_V[[1]]
+    V_i = B_V[[2]]
       
     for(j in 1:n_group){
 
@@ -343,7 +295,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       }
 
       # Compute the log density for the proposal
-      log_post = fn_log_post_continuous(proposal, prior_par, par_index, y_1, y_2, t, id)
+      log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, t, id, B)
 
       # Only propose valid parameters during the burnin period
       if(ttt < burnin){
@@ -356,7 +308,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
               proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],sd=sqrt(pcov[[j]]*pscale[j]))
           }
           
-          log_post = fn_log_post_continuous(proposal, prior_par, par_index, y_1, y_2, t, id)
+          log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, t, id, B)
         }
       }
 

@@ -226,10 +226,11 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
     return in_value;
 }
 
+// [[Rcpp::export]]
 Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &pars,
                           const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
                           const arma::vec &y_1, arma::vec t_pts, const arma::vec &id,
-                          const arma::field <arma::vec> &B) {
+                          arma::field <arma::vec> &B, arma::field <arma::mat> &V_i) {
 
     // par_index KEY: (0) beta, (1) misclass, (2) mu_tilde, (3) tau2, (4) upsilon, (5) mu_i
     // "i" is the numeric EID number
@@ -246,81 +247,63 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
         arma::uvec sub_ind = arma::find(id == i);
 
         int n_i = sub_ind.n_elem; // DOUBLE CHECK and compare to other method
+        arma::vec y_1_sub = y_1.elem(sub_ind);
 
         // Subsetting fields
         arma::vec B_temp = B(ii);
+        arma::mat V_temp = V_i(ii);
 
-        // keep the last state at state 1 so we only iterate to n_i-1
-        for (int k = 0; k < n_i - 1; k++) {
+        // The first state is always S1, therefore we start at 1 instead of 0
+        for (int k = 1; k < n_i - 1; k++) {
 
-            arma::vec t_pts = arma::linspace(k+1, k+2, 2);
+            arma::vec it_indices = {k, k+1};
             arma::vec pr_B = B_temp;
+            arma::mat pr_V = V_temp;
 
             // Sample and update the two neighboring states
-            arma::mat Omega_set;
-            if (clinic_rule >= 0) {
-                Omega_set = Omega_fun_cpp_new(k + 1, n_i, B_temp, false);
-            } else {
-                Omega_set = Omega_fun_cpp_new(k + 1, n_i, B_temp, true);
-            }
+            arma::mat Omega_set = Omega_fun_cpp_new(k + 1, n_i, B_temp);
 
             int sampled_index = arma::randi(arma::distr_param(1, Omega_set.n_rows));
 
             pr_B.rows(k, k+1) = Omega_set.row(sampled_index-1).t();
 
-            arma::vec b_i = pr_B;
-
             // Adding clinical review
-            bool valid_prop = false;
-
-            if(clinic_rule >= 0) {
-                bool b_i_rule = arma::any(arma::vectorise(b_i)==2);
-                if (clinic_rule == 1) {
-                    if(b_i_rule) {valid_prop = true;}
-                } else {
-                    if (rbc_rule == 0 || (rbc_rule == 1 && b_i_rule)) {valid_prop = true;}
-                }
-            } else {  // evaluate the posterior regardless for clinic_rule=-1
-                valid_prop = true;
-            }
+            bool valid_prop = true;
 
             if(valid_prop) {
-                double log_target_prev = log_f_i_cpp(i, ii, t_pts, par, par_index,A_temp,B_temp,Y_temp,z_temp,Dn_temp,Xn_temp,invKn_temp);
+                double log_target_prev = log_f_i_cpp(i, ii, pars, prior_par, 
+                                                     par_index, y_1, t_pts, id,
+                                                     B_temp, it_indices);
 
-                arma::vec twos(b_i.n_elem, arma::fill::zeros);
-                arma::vec threes = twos; arma::vec fours = twos; arma::vec fives = twos;
-
-                twos.elem(arma::find(b_i == 2)) += 1;
-                threes.elem(arma::find(b_i == 3)) += 1;
-                fours.elem(arma::find(b_i == 4)) += 1;
-                fives.elem(arma::find(b_i == 5)) += 1;
-
-                arma::vec ones(b_i.n_elem, arma::fill::ones);
-
-                arma::mat bigB = arma::join_rows(ones, arma::cumsum(twos));
-                bigB = arma::join_rows(bigB, arma::cumsum(threes));
-                bigB = arma::join_rows(bigB, arma::cumsum(fours));
-                bigB = arma::join_rows(bigB, arma::cumsum(fives));
-
-                pr_Dn = arma::kron(arma::eye(4,4), bigB);
-                double log_target = log_f_i_cpp( i,ii,t_pts,par,par_index,A_temp,pr_B,Y_temp,z_temp,pr_Dn,Xn_temp,invKn_temp);
-
+                double log_target = log_f_i_cpp(i, ii, pars, prior_par, 
+                                                par_index, y_1, t_pts, id,
+                                                pr_B, it_indices);
+                
+                arma::vec col1(pr_B.n_elem, arma::fill::zeros);
+                col1.elem(arma::find(pr_B == 1)).ones(); // DOUBLE CHECK
+                arma::vec col2(pr_B.n_elem, arma::fill::zeros);
+                col2.elem(arma::find(pr_B == 2)).ones(); // DOUBLE CHECK
+                arma::vec col3(pr_B.n_elem, arma::fill::zeros);
+                col3.elem(arma::find(pr_B == 3)).ones(); // DOUBLE CHECK
+                
+                pr_V = arma::join_horiz(col1, arma::join_horiz(col2, col3));
+                
                 // Note that the proposal probs cancel in the MH ratio
                 double diff_check = log_target - log_target_prev;
                 double min_log = log(arma::randu(arma::distr_param(0,1)));
                 if(diff_check > min_log){
                     B_temp = pr_B;
-                    Dn_temp = pr_Dn;
+                    V_temp = pr_V;
                 }
             }
         }
         B_return(ii) = B_temp;
-        V_return(ii) = Dn_temp;
+        V_return(ii) = V_temp;
     }
 
-    List B_Dn = List::create(B_return, V_return);
+    List B_V = List::create(B_return, V_return);
 
-    return B_Dn;
+    return B_V;
 }
 
 // Gibbs update of the mu_i
