@@ -306,31 +306,51 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
     return B_V;
 }
 
-// Gibbs update of the mu_i
-
-// arma::mat update_mu_i(const arma::vec &y_2, const arma::vec &pars,  
-//                       const arma::field<arma::uvec> &par_index,
-//                       const int n_sub, const arma::field<arma::mat> &V_i, 
-//                       const arma::vec &eids, const arma::vec &id) {
-//     mu_i = foreach(i=1:n_sub, .combine = 'rbind', .packages = "mvtnorm") %dopar% {
-//         
-//         D_small = V_i[[i]]
-//         upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
-//         up_solve = solve(upsilon)
-//         
-//         y_sub = matrix(y_2[id == eids[i]], ncol=1)
-//         tau2 = pars[par_index$tau2]
-//         
-//         V = solve((1/tau2) * (t(D_small) %*% D_small) + up_solve)
-//         M = V %*% ((1/tau2) * (t(D_small) %*% y_sub) + up_solve %*% matrix(pars[par_index$mu_tilde],ncol=1))
-//         
-//         mu_i_small = c(rmvnorm(n = 1, mean = M, sigma = V))
-//         
-//         return(mu_i_small)
-//     }
-//     
-//     return(mu_i)
-// }
+// [[Rcpp::export]]
+arma::mat update_mu_i_cpp(const arma::vec &y_2, const arma::vec &pars,
+                          const arma::field<arma::uvec> &par_index,
+                          const arma::field<arma::mat> &V_i,
+                          const arma::vec &EIDs, const arma::vec &id) {
+    // par_index KEY: (0) beta, (1) misclass, (2) mu_tilde, (3) tau2, (4) upsilon, (5) mu_i
+    // "i" is the numeric EID number
+    // "ii" is the index of the EID
+    
+    arma::mat mu_i(EIDs.n_elem, 3);
+    
+    omp_set_num_threads(8);
+    # pragma omp parallel for
+    for (int ii = 0; ii < EIDs.n_elem; ii++) {
+        int i = EIDs(ii);
+        
+        arma::mat V_small = V_i(ii);
+        
+        arma::uvec vec_upsilon_ind = par_index(4);
+        arma::vec vec_upsilon_content = pars.elem(vec_upsilon_ind - 1);
+        arma::mat upsilon = arma::reshape(vec_upsilon_content, 3, 3);
+        
+        arma::mat up_solve = arma::inv_sympd(upsilon);
+        
+        arma::uvec sub_ind = arma::find(id == i);
+        arma::vec y_sub = y_2.elem(sub_ind); // DOUBLE CHECK
+        
+        arma::vec vec_tau2 = pars.elem(par_index(3) - 1);
+        double tau2 = vec_tau2(0);
+        
+        arma::mat mu_tilde = pars.elem(par_index(2) - 1);
+        
+        arma::mat V_inv = (1/tau2) * (V_small.t() * V_small) + up_solve;
+        arma::mat V = arma::inv(V_inv);
+        
+        arma::vec M = V * ((1/tau2) * (V_small.t() * y_sub) + up_solve * mu_tilde);
+        
+        arma::mat mu_i_small = arma::mvnrnd(M, V, 1);
+        
+        mu_i.row(ii) = mu_i_small;
+        
+    }
+    
+    return mu_i;
+}
 
 
 
