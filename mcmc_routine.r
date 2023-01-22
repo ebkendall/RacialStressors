@@ -20,10 +20,11 @@ update_mu_tilde = function(pars, par_index, n_sub) {
     mu_i = matrix(pars[par_index$mu_i], ncol = 3)
     
     # Prior mean and variance for mu_tilde
-    big_sigma = matrix(c(1.097200, 1.014710, 1.134521,
-                         1.014710, 1.332313, 1.475067,
-                         1.134521, 1.475067, 2.024380), ncol = 3, byrow = T)
-    big_sigma_inv = solve(big_sigma)
+    # big_sigma = matrix(c(1.097200, 1.014710, 1.134521,
+    #                      1.014710, 1.332313, 1.475067,
+    #                      1.134521, 1.475067, 2.024380), ncol = 3, byrow = T)
+    # big_sigma_inv = solve(big_sigma)
+    big_sigma_inv = diag(rep(0.01, 3))
     mu_0 = c(6.411967, 6.481880, 6.335972)
     
     # variance for mu^(i)
@@ -58,28 +59,6 @@ update_upsilon = function(pars, par_index, n_sub) {
     new_nu  = nu + n_sub
     
     return(c(rinvwishart(new_nu, new_psi)))
-}
-
-# Gibbs update of the mu_i
-update_mu_i = function(y_2, pars, par_index, n_sub, V_i, EIDs, id) {
-    mu_i = foreach(i=1:n_sub, .combine = 'rbind', .packages = "mvtnorm") %dopar% {
-        
-        D_small = V_i[[i]]
-        upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
-        up_solve = solve(upsilon)
-        
-        y_sub = matrix(y_2[id == EIDs[i]], ncol=1)
-        tau2 = pars[par_index$tau2]
-        
-        V = solve((1/tau2) * (t(D_small) %*% D_small) + up_solve)
-        M = V %*% ((1/tau2) * (t(D_small) %*% y_sub) + up_solve %*% matrix(pars[par_index$mu_tilde],ncol=1))
-        
-        mu_i_small = c(rmvnorm(n = 1, mean = M, sigma = V))
-        
-        return(mu_i_small)
-    }
-    
-    return(mu_i)
 }
 
 # Gibbs update of the tau2
@@ -128,7 +107,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain = matrix( 0, steps, n_par - length(par_index$mu_i))
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
-  group = list(c(par_index$beta), c(par_index$misclass))
+  # group = list(c(par_index$beta)) #, c(par_index$misclass))
+  group = as.list(unlist(par_index$beta))
+  names(group) = NULL
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
@@ -157,7 +138,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # Vector to store the values of mu_i
   big_mu_i = vector(mode = 'list', length = 10)
 
-  
   # Evaluate the log_post of the initial parameters
   log_post_prev = log_f_i_cpp_total(EIDs, pars, prior_par, par_index, y_1, t, id, B)
 
@@ -179,17 +159,17 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     chain[ttt, par_index$upsilon] = pars[par_index$upsilon]
     
     # mu_i: Gibbs update
-    pars[par_index$mu_i] = update_mu_i_cpp(y_2, pars, par_index, V_i, EIDs, id)
-    if(ttt %% 1000 == 0) M[[ttt/1000]] = pars[par_index$mu_i]
+    pars[par_index$mu_i] = c(update_mu_i_cpp(y_2, pars, par_index, V_i, EIDs, id))
+    if(ttt %% 1000 == 0) big_mu_i[[ttt/1000]] = matrix(pars[par_index$mu_i], ncol=3)
 
     # tau2: Gibbs update
     pars[par_index$tau2] = update_tau2(y_2, pars, par_index, V_i, n_sub, EIDs, id)
     chain[ttt, par_index$tau2] = pars[par_index$tau2]
     
     # S_chain: Metropolis-within-Gibbs update
-    B_V = update_b_i_cpp(8, EIDs, pars, prior_par, par_index, y_1, t, id, B, V_i)
-    B = B_V[[1]]
-    V_i = B_V[[2]]
+    # B_V = update_b_i_cpp(8, EIDs, pars, prior_par, par_index, y_1, t, id, B, V_i)
+    # B = B_V[[1]]
+    # V_i = B_V[[2]]
       
     for(j in 1:n_group){
 
@@ -204,6 +184,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
 
       # Compute the log density for the proposal
       log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, t, id, B)
+      
 
       # Only propose valid parameters during the burnin period
       if(ttt < burnin){
@@ -219,6 +200,10 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
           log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, t, id, B)
         }
       }
+
+
+      # print(paste0("Log_post_prev: ", round(log_post_prev, 3)))
+      # print(paste0("Log_post: ", round(log_post, 3)))
 
       # Evaluate the Metropolis-Hastings ratio
       if( log_post - log_post_prev > log(runif(1,0,1)) ){
@@ -236,7 +221,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
         # transition.  This helps with mixing.
         if(ttt == 100)  pscale[j] = 1
         
-        if(ttt %% 50 == 0) {
+        if(ttt %% 150 == 0) {
             print("accept ratio")
             print(accept[j])
         }
@@ -295,6 +280,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
 
   return(list( chain=chain[burnin:steps,], B_chain = B_chain,
                accept=accept/(steps-burnin),
-               pscale=pscale, pcov = pcov, M = M))
+               pscale=pscale, pcov = pcov, big_mu_i = big_mu_i))
 }
 # -----------------------------------------------------------------------------

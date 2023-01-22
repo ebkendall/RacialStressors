@@ -49,11 +49,5 @@ prior_par[[2]] = prior_sd
 
 test_functions(init_par, prior_par, par_index)
 
-r_val = dmvnorm(x = init_par[c(par_index$beta, par_index$misclass)], 
-                mean = prior_par[[1]],
-                sigma = diag(prior_par[[2]]),
-                log = T)
-print(r_val)
-
 
 

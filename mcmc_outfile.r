@@ -10,27 +10,26 @@ trial_num = as.numeric(args[1])
 # Size of posterior sample from mcmc chains
 n_post = 5000
 # Step number at which the adaptive tuning scheme was frozen
-burnin = 3000
+burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
 steps = 10000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-par_index = list( beta=1:12, pi_logit=13:14,
-                  mu_tilde = 15:17, tau2 = 18, upsilon = 19:27,
-                  mu_i = 28:300)
+par_index = list( beta=1:10, misclass=11:12,
+                  mu_tilde = 13:15, tau2 = 16, upsilon = 17:25,
+                  mu_i = 26:298)
 
-index_seeds = c(2:5)
+index_seeds = c(1:3)
 
-labels <- c(TeX(r'($\hat{\beta}_{0,1}:$ Baseline: 1 $\to$ 2)'), TeX(r'($\hat{\beta}_{0,2}:$ Baseline: 1 $\to$ 3)'), 
+labels <- c(TeX(r'($\hat{\beta}_{0,1}:$ Baseline: 1 $\to$ 2)'),  
             TeX(r'($\hat{\beta}_{0,3}:$ Baseline: 2 $\to$ 1)'), TeX(r'($\hat{\beta}_{0,4}:$ Baseline: 2 $\to$ 3)'), 
             TeX(r'($\hat{\beta}_{0,5}:$ Baseline: 3 $\to$ 1)'), TeX(r'($\hat{\beta}_{0,6}:$ Baseline: 3 $\to$ 2)'),
-            TeX(r'($\hat{\beta}_{1,1}:$ Time: 1 $\to$ 2)'), TeX(r'($\hat{\beta}_{1,2}:$ Time: 1 $\to$ 3)'), 
+            TeX(r'($\hat{\beta}_{1,1}:$ Time: 1 $\to$ 2)'), 
             TeX(r'($\hat{\beta}_{1,3}:$ Time: 2 $\to$ 1)'), TeX(r'($\hat{\beta}_{1,4}:$ Time: 2 $\to$ 3)'), 
             TeX(r'($\hat{\beta}_{1,5}:$ Time: 3 $\to$ 1)'), TeX(r'($\hat{\beta}_{1,6}:$ Time: 3 $\to$ 2)'),
             # TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'), TeX(r'(P(obs. S1 | true S2))'),
-            # TeX(r'(P(obs. S3 | true S2))'), TeX(r'(P(obs. S1 | true S3))'), TeX(r'(P(obs. S2 | true S3))'),
-            TeX(r'(P(init S2))'), TeX(r'(P(init S3))'), 
+            TeX(r'(P(obs. S3 | true S2))'), TeX(r'(P(obs. S2 | true S3))'),
             TeX(r'($\tilde{\mu}_1$)'), TeX(r'($\tilde{\mu}_2$)'), TeX(r'($\tilde{\mu}_3$)'),
             TeX(r'($\tau^2$)'), 
             TeX(r'($\Upsilon_{1,1}$)'), TeX(r'($\Upsilon_{2,1}$)'), TeX(r'($\Upsilon_{3,1}$)'), 
@@ -72,7 +71,7 @@ par(mfrow=c(4, 2))
 stacked_chains = do.call( rbind, chain_list)
 par_mean = par_median = upper = lower = rep( NA, length(labels))
 
-labels_sub <- 1:27
+labels_sub <- 1:length(labels)
 
 for(r in 1:length(labels_sub)){
 

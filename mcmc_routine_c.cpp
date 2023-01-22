@@ -149,11 +149,11 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     
     // Manually populate the matrix
     arma::mat beta = arma::reshape(vec_beta_content, 5, 2);
-    arma::mat M = { {1, 0, 0},
-                    {0, 1, exp(vec_misclass_content(0))},
-                    {0, exp(vec_misclass_content(1)), 1}};
-    arma::vec m_row_sums = arma::sum(M, 1);
-    M = M.each_col() / m_row_sums; 
+    // arma::mat M = { {1, 0, 0},
+    //                 {0, 1, exp(vec_misclass_content(0))},
+    //                 {0, exp(vec_misclass_content(1)), 1}};
+    // arma::vec m_row_sums = arma::sum(M, 1);
+    // M = M.each_col() / m_row_sums; 
     
     // The time-homogeneous probability transition matrix
     arma::uvec sub_ind = arma::find(eids == i);
@@ -165,7 +165,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     for(int w=0; w < it_indices.n_elem;++w){
-        arma::colvec z_i = {1, t_pts_sub(it_indices(w) - 1)}; // using the time point before
+        arma::colvec z_i = {1, t_pts_sub(it_indices(w))}; // using the current time point
         double q1_sub = arma::as_scalar(beta.row(0) * z_i);
         double q1 = exp(q1_sub);
         double q2_sub = arma::as_scalar(beta.row(1) * z_i);
@@ -177,25 +177,29 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         double q5_sub = arma::as_scalar(beta.row(4) * z_i);
         double q5 = exp(q5_sub);
         
-        arma::mat Q = { {-q1,         q1,         0},
-                        { q2,   -q2 - q3,        q3},
-                        { q4,         q5,  -q4 - q5}};
-        Q = (t_pts_sub(it_indices(w)) - t_pts_sub(it_indices(w) - 1)) * Q;
+        arma::mat Q = { {  1,  q1,   0},
+                        { q2,   1,  q3},
+                        { q4,  q5,   1}};
         
-        arma::mat P_i = arma::expmat(Q);
+        arma::vec q_row_sums = arma::sum(Q, 1);
+        arma::mat P_i = Q.each_col() / q_row_sums;
+        // Q = (t_pts_sub(it_indices(w)) - t_pts_sub(it_indices(w) - 1)) * Q;
+        // arma::mat P_i = arma::expmat(Q);
+        
         int b_k_1 = b_i(it_indices(w)-1,0);
         int b_k = b_i(it_indices(w), 0);
         int y_1_k = y_1_sub(it_indices(w));
-        in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(M(b_k - 1, y_1_k-1));
+        in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)); // + log(M(b_k - 1, y_1_k-1));
     }
     
     // Likelihood components from the other parts
     arma::vec p_mean = prior_par(0);
     arma::mat p_sd = arma::diagmat(prior_par(1));
-    arma::mat x = arma::join_cols(vec_beta_content, vec_misclass_content);
-    arma::vec log_prior_dens = dmvnorm(x.t(), p_mean, p_sd, true);
-    
-    in_value = in_value + log_prior_dens(0);
+    arma::mat x = vec_beta_content;
+    // arma::mat x = arma::join_cols(vec_beta_content, vec_misclass_content);
+    double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
+
+    in_value = in_value + log_prior_dens;
     
     return in_value;
 }
@@ -217,6 +221,9 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
         int i = EIDs(ii);
         arma::uvec sub_ind = arma::find(id == i);
         int n_i = sub_ind.max() - sub_ind.min();
+        
+        // Starting the it_indices at 1 instead of 0 because there is 
+        //      no contribution to the likelihood at the initial state
         arma::vec it_indices = arma::linspace(1, n_i, n_i); 
         in_vals(ii) = log_f_i_cpp(i, ii, pars, prior_par, par_index, y_1, t_pts, id, B(ii), it_indices);
     }
@@ -246,7 +253,7 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
         int i = EIDs(ii);
         arma::uvec sub_ind = arma::find(id == i);
 
-        int n_i = sub_ind.n_elem; // DOUBLE CHECK and compare to other method
+        int n_i = sub_ind.n_elem; 
         arma::vec y_1_sub = y_1.elem(sub_ind);
 
         // Subsetting fields
@@ -280,11 +287,11 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
                                                 pr_B, it_indices);
                 
                 arma::vec col1(pr_B.n_elem, arma::fill::zeros);
-                col1.elem(arma::find(pr_B == 1)).ones(); // DOUBLE CHECK
+                col1.elem(arma::find(pr_B == 1)).ones(); 
                 arma::vec col2(pr_B.n_elem, arma::fill::zeros);
-                col2.elem(arma::find(pr_B == 2)).ones(); // DOUBLE CHECK
+                col2.elem(arma::find(pr_B == 2)).ones(); 
                 arma::vec col3(pr_B.n_elem, arma::fill::zeros);
-                col3.elem(arma::find(pr_B == 3)).ones(); // DOUBLE CHECK
+                col3.elem(arma::find(pr_B == 3)).ones(); 
                 
                 pr_V = arma::join_horiz(col1, arma::join_horiz(col2, col3));
                 
@@ -317,8 +324,8 @@ arma::mat update_mu_i_cpp(const arma::vec &y_2, const arma::vec &pars,
     
     arma::mat mu_i(EIDs.n_elem, 3);
     
-    omp_set_num_threads(8);
-    # pragma omp parallel for
+    // omp_set_num_threads(8);
+    // # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
         
@@ -331,19 +338,19 @@ arma::mat update_mu_i_cpp(const arma::vec &y_2, const arma::vec &pars,
         arma::mat up_solve = arma::inv_sympd(upsilon);
         
         arma::uvec sub_ind = arma::find(id == i);
-        arma::vec y_sub = y_2.elem(sub_ind); // DOUBLE CHECK
+        arma::vec y_sub = y_2.elem(sub_ind); 
         
         arma::vec vec_tau2 = pars.elem(par_index(3) - 1);
         double tau2 = vec_tau2(0);
         
-        arma::mat mu_tilde = pars.elem(par_index(2) - 1);
+        arma::vec mu_tilde = pars.elem(par_index(2) - 1);
         
         arma::mat V_inv = (1/tau2) * (V_small.t() * V_small) + up_solve;
         arma::mat V = arma::inv(V_inv);
         
         arma::vec M = V * ((1/tau2) * (V_small.t() * y_sub) + up_solve * mu_tilde);
         
-        arma::mat mu_i_small = arma::mvnrnd(M, V, 1);
+        arma::mat mu_i_small = rmvnorm(1, M, V);
         
         mu_i.row(ii) = mu_i_small;
         
@@ -358,6 +365,7 @@ arma::mat update_mu_i_cpp(const arma::vec &y_2, const arma::vec &pars,
 void test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_par, 
                     const arma::field<arma::uvec> &par_index) {
     
+    // Multivariate Normal Check
     arma::uvec vec_beta_ind = par_index(0);
     arma::uvec vec_misclass_ind = par_index(1);
     
@@ -371,5 +379,32 @@ void test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_p
     arma::vec log_prior_dens = dmvnorm(x.t(), p_mean, p_sd, true);
     
     Rcpp::Rcout << log_prior_dens << std::endl;
+    
+    //  Sub setting check
+    arma::vec id = {1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,3,3,3,3,3};
+    arma::vec y_1 = 5 * id;
+    arma::uvec sub_ind = arma::find(id == 2);
+    
+    int n_i = sub_ind.n_elem; // DOUBLE CHECK and compare to other method
+    arma::vec y_1_sub = y_1.elem(sub_ind);
+    
+    Rcpp::Rcout << sub_ind << std::endl;
+    Rcpp::Rcout << y_1_sub << std::endl;
+    
+    Rcpp::Rcout << "Attempt 1: " << n_i << std::endl;
+    
+    int n_i_2 = sub_ind.max() - sub_ind.min() + 1;
+    Rcpp::Rcout << sub_ind.max() << " " << sub_ind.min() << std::endl;
+    
+    arma::vec col1(id.n_elem, arma::fill::zeros);
+    col1.elem(arma::find(id == 1)).ones();
+    arma::vec col2(id.n_elem, arma::fill::zeros);
+    col2.elem(arma::find(id == 2)).ones();
+    arma::vec col3(id.n_elem, arma::fill::zeros);
+    col3.elem(arma::find(id == 3)).ones();
+    
+    arma::mat pr_V = arma::join_horiz(col1, arma::join_horiz(col2, col3));
+    
+    Rcpp::Rcout << pr_V << std::endl;
     
 }
