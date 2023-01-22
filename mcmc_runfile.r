@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 1
+trial_num = 2
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
@@ -30,8 +30,9 @@ par_index = list( beta=1:10, misclass=11:12,
 #                   mu_i = 28:300)
 
 # Initializing using the most recent MCMC -------------------------------------
-load(paste0('Model_out/mcmc_out_2_10.rda'))
-init_par[par_index$mu_i] = c(mcmc_out$M[[10]])
+load(paste0('Model_out/mcmc_out_2_1.rda'))
+init_par[par_index$mu_i] = c(mcmc_out$big_mu_i[[10]])
+init_par[-par_index$mu_i] = colMeans(mcmc_out$chain)
 rm(mcmc_out)
 # -----------------------------------------------------------------------------
 
