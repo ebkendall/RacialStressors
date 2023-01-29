@@ -95,10 +95,68 @@ s1_df = data_format[data_format$State == 1, ]
 s2_df = data_format[data_format$State == 2, ]
 s3_df = data_format[data_format$State == 3, ]
 
-# Estimate of population standard deviation
+# One-way random effects ANOVA ----------------------------------------------
+s1_anova = s1_df[,c("ID..", "RSA")]; s1_anova$ID.. = as.factor(s1_anova$ID..)
+s2_anova = s2_df[,c("ID..", "RSA")]; s2_anova$ID.. = as.factor(s2_anova$ID..)
+s3_anova = s3_df[,c("ID..", "RSA")]; s3_anova$ID.. = as.factor(s3_anova$ID..)
+
+# https://stat.ethz.ch/~meier/teaching/anova/random-and-mixed-effects-models.html
+library(lme4)
+fit_1 <- lmer(RSA ~ (1 | ID..), data = s1_anova); summary(fit_1)
+fit_2 <- lmer(RSA ~ (1 | ID..), data = s2_anova); summary(fit_2)
+fit_3 <- lmer(RSA ~ (1 | ID..), data = s3_anova); summary(fit_3)
+
+n_i = table(s1_df$ID..); n_i = t(n_i); colnames(n_i) = NULL
+N = nrow(s1_anova)
+n_0 = (1/90) * (N - (sum(n_i^2) / N))
+F_hyp = qf(p = 0.95, df1 = 90, df2 = N - 91)
+
+# STATE 1
+sigma_i = 1.0365; sigma_res = 0.5693
+F_stat_1 = (sigma_res + n_0 * sigma_i)/sigma_res
+pf(F_stat_1, df1 = 90, df2 = N - 91, lower.tail = F)
+# (F_stat_1 > F_hyp)
+
+# STATE 2
+sigma_i = 1.2908; sigma_res = 0.4845
+F_stat_2 = (sigma_res + n_0 * sigma_i)/sigma_res
+pf(F_stat_2, df1 = 90, df2 = N - 91, lower.tail = F)
+# (F_stat_2 > F_hyp)
+
+# STATE 3
+sigma_i = 1.9359; sigma_res = 0.3202
+F_stat_3 = (sigma_res + n_0 * sigma_i)/sigma_res
+pf(F_stat_3, df1 = 90, df2 = N - 91, lower.tail = F)
+# (F_stat_3 > F_hyp)
+
+# Standard deviation derivations ----------------------------------------------
 sd_1 = sd(s1_df[,"RSA"])
 sd_2 = sd(s2_df[,"RSA"])
 sd_3 = sd(s3_df[,"RSA"])
+
+sd_and_mean = matrix(ncol=9, nrow = length(unique(data_format$ID..)))
+colnames(sd_and_mean) = c("m1", "m2", "m3", 
+                          "sd1", "sd2", "sd3", 
+                          "n1", "n2", "n3")
+for(i in 1:length(unique(data_format$ID..))) {
+    id = unique(data_format$ID..)[i]
+    sd_and_mean[i,1] = mean(s1_df[s1_df$ID.. == id, "RSA"])
+    sd_and_mean[i,2] = mean(s2_df[s2_df$ID.. == id, "RSA"])
+    sd_and_mean[i,3] = mean(s3_df[s3_df$ID.. == id, "RSA"])
+    
+    sd_and_mean[i,4] = sd(s1_df[s1_df$ID.. == id, "RSA"])
+    sd_and_mean[i,5] = sd(s2_df[s2_df$ID.. == id, "RSA"])
+    sd_and_mean[i,6] = sd(s3_df[s3_df$ID.. == id, "RSA"])
+    
+    sd_and_mean[i,7] = sum(s1_df$ID.. == id)
+    sd_and_mean[i,8] = sum(s2_df$ID.. == id)
+    sd_and_mean[i,9] = sum(s3_df$ID.. == id)
+}
+
+sd(sd_and_mean[,"m1"]); sd(sd_and_mean[,"m2"]); sd(sd_and_mean[,"m3"])
+mean(sd_and_mean[,"sd1"] / sqrt(sd_and_mean[,"n1"]))
+mean(sd_and_mean[,"sd2"] / sqrt(sd_and_mean[,"n2"]))
+mean(sd_and_mean[,"sd3"] / sqrt(sd_and_mean[,"n3"]))
 
 m_1 = mean(s1_df[,"RSA"])
 m_2 = mean(s2_df[,"RSA"])
@@ -119,26 +177,6 @@ abline(v = m_3, col = 'green')
 legend(10, 0.25, legend=c("Nominal", "Stress", "Recovery"), 
        fill = c("black","red", "green"))
     
-
-# Individual standard deviations
-sd_and_mean = matrix(ncol=9, nrow = length(unique(data_format$ID..)))
-colnames(sd_and_mean) = c("m1", "m2", "m3", 
-                          "sd1", "sd2", "sd3", 
-                          "n1", "n2", "n3")
-for(i in 1:length(unique(data_format$ID..))) {
-    id = unique(data_format$ID..)[i]
-    sd_and_mean[i,1] = mean(s1_df[s1_df$ID.. == id, "RSA"])
-    sd_and_mean[i,2] = mean(s2_df[s2_df$ID.. == id, "RSA"])
-    sd_and_mean[i,3] = mean(s3_df[s3_df$ID.. == id, "RSA"])
-    
-    sd_and_mean[i,4] = sd(s1_df[s1_df$ID.. == id, "RSA"])
-    sd_and_mean[i,5] = sd(s2_df[s2_df$ID.. == id, "RSA"])
-    sd_and_mean[i,6] = sd(s3_df[s3_df$ID.. == id, "RSA"])
-    
-    sd_and_mean[i,7] = sum(s1_df$ID.. == id)
-    sd_and_mean[i,8] = sum(s2_df$ID.. == id)
-    sd_and_mean[i,9] = sum(s3_df$ID.. == id)
-}
 
 # Sampling standard deviations
 new_sd1 = sd_and_mean[,"sd1"] * sqrt(sd_and_mean[,"n1"])

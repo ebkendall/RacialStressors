@@ -14,20 +14,20 @@ sourceCpp("mcmc_routine_c.cpp")
 Sys.setenv("PKG_CXXFLAGS" = "-fopenmp")
 Sys.setenv("PKG_LIBS" = "-fopenmp")
 
-# Gibbs update of the mu_tilde
-update_mu_tilde = function(pars, par_index, n_sub) {
+# Gibbs update of the delta
+update_delta = function(pars, par_index, n_sub) {
     
-    mu_i = matrix(pars[par_index$mu_i], ncol = 3)
+    delta_i = matrix(pars[par_index$delta_i], ncol = 3)
     
-    # Prior mean and variance for mu_tilde
+    # Prior mean and variance for delta
     # big_sigma = matrix(c(1.097200, 1.014710, 1.134521,
     #                      1.014710, 1.332313, 1.475067,
     #                      1.134521, 1.475067, 2.024380), ncol = 3, byrow = T)
     # big_sigma_inv = solve(big_sigma)
-    big_sigma_inv = diag(rep(0.01, 3))
-    mu_0 = c(6.411967, 6.481880, 6.335972)
+    big_sigma_inv = diag(c(0.01, 0.2, 0.2))
+    delta_0 = c(0, 0, 0)
     
-    # variance for mu^(i)
+    # variance for delta^(i)
     upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
     upsilon_inv = solve(upsilon)
     
@@ -35,19 +35,19 @@ update_mu_tilde = function(pars, par_index, n_sub) {
     V = solve(big_sigma_inv + n_sub * upsilon_inv)
     
     # Mean of Gibbs update
-    M = V %*% (big_sigma_inv %*% mu_0 + n_sub * (upsilon_inv %*% colMeans(mu_i)) )
+    M = V %*% (big_sigma_inv %*% delta_0 + n_sub * (upsilon_inv %*% colMeans(delta_i)) )
     
     return(rmvnorm(1, mean = M, sigma = V))
 }
 
-# Gibbs update of the mu_tilde
 update_upsilon = function(pars, par_index, n_sub) {
     
-    mu_i = matrix(pars[par_index$mu_i], ncol = 3)
+    delta_i = matrix(pars[par_index$delta_i], ncol = 3)
     
-    sum_mu_i = (mu_i[1, ] - pars[par_index$mu_tilde]) %*% t(mu_i[1, ] - pars[par_index$mu_tilde])
+    # Double check this is an outer product
+    sum_delta_i = (delta_i[1, ] - pars[par_index$delta]) %*% t(delta_i[1, ] - pars[par_index$delta])
     for(i in 2:n_sub) {
-        sum_mu_i = sum_mu_i + (mu_i[i, ] - pars[par_index$mu_tilde]) %*% t(mu_i[i, ] - pars[par_index$mu_tilde])
+        sum_delta_i = sum_delta_i + (delta_i[i, ] - pars[par_index$delta]) %*% t(delta_i[i, ] - pars[par_index$delta])
     }
     
     # Prior for Upsilon
@@ -55,7 +55,7 @@ update_upsilon = function(pars, par_index, n_sub) {
     nu = 3 + 2
     
     # Gibbs update
-    new_psi = psi + sum_mu_i
+    new_psi = psi + sum_delta_i
     new_nu  = nu + n_sub
     
     return(c(rinvwishart(new_nu, new_psi)))
@@ -65,13 +65,13 @@ update_upsilon = function(pars, par_index, n_sub) {
 update_tau2 = function(y_2, pars, par_index, V_i, n_sub, EIDs, id) {
     
     a = b = 1
-    mu_i = matrix(pars[par_index$mu_i], ncol = 3)
+    delta_i = matrix(pars[par_index$delta_i], ncol = 3)
     
     temp = 0
     for(i in 1:n_sub) {
         y_sub = matrix(y_2[id == EIDs[i]], ncol=1)
-        mu_temp = t(mu_i[i,,drop=F])
-        temp = temp + t(y_sub - V_i[[i]] %*% mu_temp) %*% (y_sub - V_i[[i]] %*% mu_temp)
+        delta_temp = t(delta_i[i,,drop=F])
+        temp = temp + t(y_sub - V_i[[i]] %*% delta_temp) %*% (y_sub - V_i[[i]] %*% delta_temp)
     }
     
     a_new = a + 0.5 * length(y_2)
@@ -84,8 +84,8 @@ update_V_i = function(B) {
   V_i = vector(mode = 'list', length = length(B))
   for(i in 1:length(B)) {
     state_sub = c(B[[i]])
-    V_i[[i]] = matrix(nrow = length(state_sub), ncol = 3)
-    V_i[[i]][,1] = as.integer(state_sub == 1)
+    V_i[[i]] = matrix(1, nrow = length(state_sub), ncol = 3)
+
     V_i[[i]][,2] = as.integer(state_sub == 2)
     V_i[[i]][,3] = as.integer(state_sub == 3)
   }
@@ -104,21 +104,21 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   pars = init_par
   n = length(y_1)
   n_par = length(pars)
-  chain = matrix( 0, steps, n_par - length(par_index$mu_i))
+  chain = matrix( 0, steps, n_par - length(par_index$delta_i))
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
-  # group = list(c(par_index$beta)) #, c(par_index$misclass))
-  group = as.list(unlist(par_index$beta))
+  # group = list(c(par_index$zeta)) #, c(par_index$misclass))
+  group = as.list(unlist(par_index$zeta))
   names(group) = NULL
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
-  # pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
-  # pscale = rep( 1, n_group)
-  load(paste0('Model_out/mcmc_out_2_1.rda'))
-  pcov = mcmc_out$pcov
-  pscale = mcmc_out$pscale
-  rm(mcmc_out)
+  pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
+  pscale = rep( 1, n_group)
+  # load(paste0('Model_out/mcmc_out_2_1.rda'))
+  # pcov = mcmc_out$pcov
+  # pscale = mcmc_out$pscale
+  # rm(mcmc_out)
 
   accept = rep( 0, n_group)
 
@@ -135,8 +135,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # Initializing the V_i matrix
   V_i = update_V_i(B)
 
-  # Vector to store the values of mu_i
-  big_mu_i = vector(mode = 'list', length = 10)
+  # Vector to store the values of delta_i
+  big_delta_i = vector(mode = 'list', length = 10)
 
   # Evaluate the log_post of the initial parameters
   log_post_prev = log_f_i_cpp_total(EIDs, pars, prior_par, par_index, y_1, t, id, B)
@@ -147,20 +147,20 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   }
  
   # Begin the MCMC algorithm --------------------------------------------------
-  chain[1,] = pars[-par_index$mu_i]
+  chain[1,] = pars[-par_index$delta_i]
   for(ttt in 2:steps){
       
-    # mu_tilde: Gibbs update
-    pars[par_index$mu_tilde] = update_mu_tilde(pars, par_index, n_sub)
-    chain[ttt, par_index$mu_tilde] = pars[par_index$mu_tilde]
+    # delta: Gibbs update
+    pars[par_index$delta] = update_delta(pars, par_index, n_sub)
+    chain[ttt, par_index$delta] = pars[par_index$delta]
     
     # upsilon: Gibbs update
     pars[par_index$upsilon] = update_upsilon(pars, par_index, n_sub)
     chain[ttt, par_index$upsilon] = pars[par_index$upsilon]
     
-    # mu_i: Gibbs update
-    pars[par_index$mu_i] = c(update_mu_i_cpp(y_2, pars, par_index, V_i, EIDs, id))
-    if(ttt %% 1000 == 0) big_mu_i[[ttt/1000]] = matrix(pars[par_index$mu_i], ncol=3)
+    # delta_i: Gibbs update
+    pars[par_index$delta_i] = c(update_delta_i_cpp(y_2, pars, par_index, V_i, EIDs, id))
+    if(ttt %% 1000 == 0) big_delta_i[[ttt/1000]] = matrix(pars[par_index$delta_i], ncol=3)
 
     # tau2: Gibbs update
     pars[par_index$tau2] = update_tau2(y_2, pars, par_index, V_i, n_sub, EIDs, id)
@@ -280,6 +280,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
 
   return(list( chain=chain[burnin:steps,], B_chain = B_chain,
                accept=accept/(steps-burnin),
-               pscale=pscale, pcov = pcov, big_mu_i = big_mu_i))
+               pscale=pscale, pcov = pcov, big_delta_i = big_delta_i))
 }
 # -----------------------------------------------------------------------------

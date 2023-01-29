@@ -135,25 +135,25 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
                    const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
                    const arma::vec &y_1, arma::vec t_pts, const arma::vec &id, 
                    const arma::vec &B, arma::vec it_indices) {
-    // par_index KEY: (0) beta, (1) misclass, (2) mu_tilde, (3) tau2, (4) upsilon, (5) mu_i
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     double in_value = 0;
     
     arma::vec eids = id;
-    arma::uvec vec_beta_ind = par_index(0);
+    arma::uvec vec_zeta_ind = par_index(0);
     arma::uvec vec_misclass_ind = par_index(1);
     
-    arma::vec vec_beta_content = pars.elem(vec_beta_ind - 1);
+    arma::vec vec_zeta_content = pars.elem(vec_zeta_ind - 1);
     arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
     
     // Manually populate the matrix
-    arma::mat beta = arma::reshape(vec_beta_content, 5, 2);
-    // arma::mat M = { {1, 0, 0},
-    //                 {0, 1, exp(vec_misclass_content(0))},
-    //                 {0, exp(vec_misclass_content(1)), 1}};
-    // arma::vec m_row_sums = arma::sum(M, 1);
-    // M = M.each_col() / m_row_sums; 
+    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 2);
+    arma::mat M = {{1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+                   {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
+                   {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
+    arma::vec m_row_sums = arma::sum(M, 1);
+    M = M.each_col() / m_row_sums; 
     
     // The time-homogeneous probability transition matrix
     arma::uvec sub_ind = arma::find(eids == i);
@@ -166,15 +166,15 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     for(int w=0; w < it_indices.n_elem;++w){
         arma::colvec z_i = {1, t_pts_sub(it_indices(w))}; // using the current time point
-        double q1_sub = arma::as_scalar(beta.row(0) * z_i);
+        double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
         double q1 = exp(q1_sub);
-        double q2_sub = arma::as_scalar(beta.row(1) * z_i);
+        double q2_sub = arma::as_scalar(zeta.row(1) * z_i);
         double q2 = exp(q2_sub);
-        double q3_sub = arma::as_scalar(beta.row(2) * z_i);
+        double q3_sub = arma::as_scalar(zeta.row(2) * z_i);
         double q3 = exp(q3_sub);
-        double q4_sub = arma::as_scalar(beta.row(3) * z_i);
+        double q4_sub = arma::as_scalar(zeta.row(3) * z_i);
         double q4 = exp(q4_sub);
-        double q5_sub = arma::as_scalar(beta.row(4) * z_i);
+        double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
         double q5 = exp(q5_sub);
         
         arma::mat Q = { {  1,  q1,   0},
@@ -189,14 +189,14 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         int b_k_1 = b_i(it_indices(w)-1,0);
         int b_k = b_i(it_indices(w), 0);
         int y_1_k = y_1_sub(it_indices(w));
-        in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)); // + log(M(b_k - 1, y_1_k-1));
+        in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(M(b_k - 1, y_1_k-1));
     }
     
     // Likelihood components from the other parts
     arma::vec p_mean = prior_par(0);
     arma::mat p_sd = arma::diagmat(prior_par(1));
-    arma::mat x = vec_beta_content;
-    // arma::mat x = arma::join_cols(vec_beta_content, vec_misclass_content);
+    // arma::mat x = vec_zeta_content;
+    arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
     double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
 
     in_value = in_value + log_prior_dens;
@@ -210,7 +210,7 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
                          const arma::vec &y_1, arma::vec t_pts, const arma::vec &id,
                          const arma::field <arma::vec> &B) {
     
-    // par_index KEY: (0) beta, (1) misclass, (2) mu_tilde, (3) tau2, (4) upsilon, (5) mu_i
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     arma::vec in_vals(EIDs.n_elem, arma::fill::zeros);
@@ -239,7 +239,7 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
                           const arma::vec &y_1, arma::vec t_pts, const arma::vec &id,
                           arma::field <arma::vec> &B, arma::field <arma::mat> &V_i) {
 
-    // par_index KEY: (0) beta, (1) misclass, (2) mu_tilde, (3) tau2, (4) upsilon, (5) mu_i
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     //  ALWAYS DOUBLE CHECK THESE INDICES. WE LOSE THE NAMES FEATURE
@@ -286,8 +286,7 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
                                                 par_index, y_1, t_pts, id,
                                                 pr_B, it_indices);
                 
-                arma::vec col1(pr_B.n_elem, arma::fill::zeros);
-                col1.elem(arma::find(pr_B == 1)).ones(); 
+                arma::vec col1(pr_B.n_elem, arma::fill::ones);
                 arma::vec col2(pr_B.n_elem, arma::fill::zeros);
                 col2.elem(arma::find(pr_B == 2)).ones(); 
                 arma::vec col3(pr_B.n_elem, arma::fill::zeros);
@@ -314,15 +313,15 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
 }
 
 // [[Rcpp::export]]
-arma::mat update_mu_i_cpp(const arma::vec &y_2, const arma::vec &pars,
+arma::mat update_delta_i_cpp(const arma::vec &y_2, const arma::vec &pars,
                           const arma::field<arma::uvec> &par_index,
                           const arma::field<arma::mat> &V_i,
                           const arma::vec &EIDs, const arma::vec &id) {
-    // par_index KEY: (0) beta, (1) misclass, (2) mu_tilde, (3) tau2, (4) upsilon, (5) mu_i
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     
-    arma::mat mu_i(EIDs.n_elem, 3);
+    arma::mat delta_i(EIDs.n_elem, 3);
     
     // omp_set_num_threads(8);
     // # pragma omp parallel for
@@ -343,20 +342,20 @@ arma::mat update_mu_i_cpp(const arma::vec &y_2, const arma::vec &pars,
         arma::vec vec_tau2 = pars.elem(par_index(3) - 1);
         double tau2 = vec_tau2(0);
         
-        arma::vec mu_tilde = pars.elem(par_index(2) - 1);
+        arma::vec delta = pars.elem(par_index(2) - 1);
         
         arma::mat V_inv = (1/tau2) * (V_small.t() * V_small) + up_solve;
         arma::mat V = arma::inv(V_inv);
         
-        arma::vec M = V * ((1/tau2) * (V_small.t() * y_sub) + up_solve * mu_tilde);
+        arma::vec M = V * ((1/tau2) * (V_small.t() * y_sub) + up_solve * delta);
         
-        arma::mat mu_i_small = rmvnorm(1, M, V);
+        arma::mat delta_i_small = rmvnorm(1, M, V);
         
-        mu_i.row(ii) = mu_i_small;
+        delta_i.row(ii) = delta_i_small;
         
     }
     
-    return mu_i;
+    return delta_i;
 }
 
 
@@ -366,15 +365,15 @@ void test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_p
                     const arma::field<arma::uvec> &par_index) {
     
     // Multivariate Normal Check
-    arma::uvec vec_beta_ind = par_index(0);
+    arma::uvec vec_zeta_ind = par_index(0);
     arma::uvec vec_misclass_ind = par_index(1);
     
-    arma::vec vec_beta_content = pars.elem(vec_beta_ind - 1);
+    arma::vec vec_zeta_content = pars.elem(vec_zeta_ind - 1);
     arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
     
     arma::vec p_mean = prior_par(0);
     arma::mat p_sd = arma::diagmat(prior_par(1));
-    arma::mat x = arma::join_cols(vec_beta_content, vec_misclass_content);
+    arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
     
     arma::vec log_prior_dens = dmvnorm(x.t(), p_mean, p_sd, true);
     

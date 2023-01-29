@@ -16,23 +16,27 @@ init_par = c(c(matrix(c( -11,  2.5,
                           -7, 0.84,
                         -5.6, -1.7,
                         -5.2, -1.8), ncol=2, byrow = T)),
-            c(-4, -4),
+            c(-4, -4, -4, -4, -4, -4),
             c(6.411967, 6.481880, 6.335972), 
             1, 
             c(diag(3)),
             rep(1,273))
 
-par_index = list( beta=1:10, misclass=11:12,
-                  mu_tilde = 13:15, tau2 = 16, upsilon = 17:25,
-                  mu_i = 26:298)
-# par_index = list( beta=1:12, pi_logit=13:14,
+par_index = list( zeta=1:10, misclass=11:16,
+                  delta = 17:19, tau2 = 20, upsilon = 21:29,
+                  delta_i = 30:302)
+
+# par_index = list( zeta=1:10, misclass=11:12,
+#                   mu_tilde = 13:15, tau2 = 16, upsilon = 17:25,
+#                   mu_i = 26:298)
+# par_index = list( zeta=1:12, pi_logit=13:14,
 #                   mu_tilde = 15:17, tau2 = 18, upsilon = 19:27,
 #                   mu_i = 28:300)
 
 # Initializing using the most recent MCMC -------------------------------------
 load(paste0('Model_out/mcmc_out_2_1.rda'))
-init_par[par_index$mu_i] = c(mcmc_out$big_mu_i[[10]])
-init_par[-par_index$mu_i] = colMeans(mcmc_out$chain)
+init_par[par_index$delta_i] = c(mcmc_out$big_mu_i[[10]])
+# init_par[-par_index$delta_i] = colMeans(mcmc_out$chain)
 rm(mcmc_out)
 # -----------------------------------------------------------------------------
 
@@ -40,14 +44,14 @@ prior_mean = c(c(matrix(c(-5, 0,
                           -5, 0,
                           -5, 0,
                           -5, 0,
-                          -5, 0), ncol=2, byrow = T)))
-            #    c(-5, -5))  
+                          -5, 0), ncol=2, byrow = T)),
+               c(-5, -5, -5, -5, -5, -5))  
 prior_sd = c(c(matrix(c(10, 5,
                         10, 5,
                         10, 5,
                         10, 5,
-                        10, 5), ncol=2, byrow = T))) 
-            #  c(5, 5))
+                        10, 5), ncol=2, byrow = T)),
+             c(5, 5, 5, 5, 5, 5))
 prior_par = list()
 prior_par[[1]] = prior_mean
 prior_par[[2]] = prior_sd
