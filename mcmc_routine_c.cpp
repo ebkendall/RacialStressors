@@ -285,6 +285,7 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
                 double log_target = log_f_i_cpp(i, ii, pars, prior_par, 
                                                 par_index, y_1, t_pts, id,
                                                 pr_B, it_indices);
+                // Rcpp::Rcout << log_target_prev << "   " << log_target << std::endl;
                 
                 arma::vec col1(pr_B.n_elem, arma::fill::ones);
                 arma::vec col2(pr_B.n_elem, arma::fill::zeros);
@@ -297,6 +298,7 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
                 // Note that the proposal probs cancel in the MH ratio
                 double diff_check = log_target - log_target_prev;
                 double min_log = log(arma::randu(arma::distr_param(0,1)));
+                // Rcpp::Rcout << diff_check << "  " << min_log << std::endl;
                 if(diff_check > min_log){
                     B_temp = pr_B;
                     V_temp = pr_V;

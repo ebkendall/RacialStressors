@@ -6,10 +6,11 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 2
+trial_num = 4
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
+load('Data/new_delta_est.rda')
 
 init_par = c(c(matrix(c( -11,  2.5,
                           -6, -1.7,
@@ -17,10 +18,10 @@ init_par = c(c(matrix(c( -11,  2.5,
                         -5.6, -1.7,
                         -5.2, -1.8), ncol=2, byrow = T)),
             c(-4, -4, -4, -4, -4, -4),
-            c(6.411967, 6.481880, 6.335972), 
+            c(6.411967, 0, 0), 
             1, 
             c(diag(3)),
-            rep(1,273))
+            c(new_delta_est))
 
 par_index = list( zeta=1:10, misclass=11:16,
                   delta = 17:19, tau2 = 20, upsilon = 21:29,
@@ -34,10 +35,10 @@ par_index = list( zeta=1:10, misclass=11:16,
 #                   mu_i = 28:300)
 
 # Initializing using the most recent MCMC -------------------------------------
-load(paste0('Model_out/mcmc_out_2_1.rda'))
-init_par[par_index$delta_i] = c(mcmc_out$big_mu_i[[10]])
+# load(paste0('Model_out/mcmc_out_2_1.rda'))
+# init_par[par_index$delta_i] = c(mcmc_out$big_mu_i[[10]])
 # init_par[-par_index$delta_i] = colMeans(mcmc_out$chain)
-rm(mcmc_out)
+# rm(mcmc_out)
 # -----------------------------------------------------------------------------
 
 prior_mean = c(c(matrix(c(-5, 0,

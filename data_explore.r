@@ -241,10 +241,22 @@ for(i in 1:length(unique(data_format$ID..))) {
 dev.off()
 
 
+load('Data/data_format.rda')
 
+new_delta_est = matrix(nrow = length(unique(data_format$ID..)), ncol = 3)
+for(i in 1:length(unique(data_format$ID..))) {
+    sub_dat = data_format[data_format$ID.. == unique(data_format$ID..)[i], ]
+    
+    baseline = mean(sub_dat$RSA[sub_dat$State==1])
+    
+    s2_diff = mean(sub_dat$RSA[sub_dat$State==2] - baseline)
+    s3_diff = mean(sub_dat$RSA[sub_dat$State==3] - baseline)
+    new_delta_est[i,] = c(baseline, s2_diff, s3_diff)
+}
 
+colMeans(new_delta_est)
 
-
+save(new_delta_est, file = "Data/new_delta_est.rda")
 
 
 

@@ -4,7 +4,7 @@ library(plotrix)
 args <- commandArgs(TRUE)
 set.seed(args[1])
 
-trialNum = 2 # CHANGE EVERY TIME ******************
+trialNum = 4 # CHANGE EVERY TIME ******************
 
 Dir = 'Model_out/'
 

@@ -16,11 +16,11 @@ steps = 10000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-par_index = list( beta=1:10, misclass=11:12,
-                  mu_tilde = 13:15, tau2 = 16, upsilon = 17:25,
-                  mu_i = 26:298)
+par_index = list( zeta=1:10, misclass=11:16,
+                  delta = 17:19, tau2 = 20, upsilon = 21:29,
+                  delta_i = 30:302)
 
-index_seeds = c(1:3)
+index_seeds = c(4)
 
 labels <- c(TeX(r'($\hat{\beta}_{0,1}:$ Baseline: 1 $\to$ 2)'),  
             TeX(r'($\hat{\beta}_{0,3}:$ Baseline: 2 $\to$ 1)'), TeX(r'($\hat{\beta}_{0,4}:$ Baseline: 2 $\to$ 3)'), 
@@ -28,8 +28,8 @@ labels <- c(TeX(r'($\hat{\beta}_{0,1}:$ Baseline: 1 $\to$ 2)'),
             TeX(r'($\hat{\beta}_{1,1}:$ Time: 1 $\to$ 2)'), 
             TeX(r'($\hat{\beta}_{1,3}:$ Time: 2 $\to$ 1)'), TeX(r'($\hat{\beta}_{1,4}:$ Time: 2 $\to$ 3)'), 
             TeX(r'($\hat{\beta}_{1,5}:$ Time: 3 $\to$ 1)'), TeX(r'($\hat{\beta}_{1,6}:$ Time: 3 $\to$ 2)'),
-            # TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'), TeX(r'(P(obs. S1 | true S2))'),
-            TeX(r'(P(obs. S3 | true S2))'), TeX(r'(P(obs. S2 | true S3))'),
+            TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'), TeX(r'(P(obs. S1 | true S2))'),
+            TeX(r'(P(obs. S3 | true S2))'), TeX(r'(P(obs. S1 | true S3))'), TeX(r'(P(obs. S2 | true S3))'),
             TeX(r'($\tilde{\mu}_1$)'), TeX(r'($\tilde{\mu}_2$)'), TeX(r'($\tilde{\mu}_3$)'),
             TeX(r'($\tau^2$)'), 
             TeX(r'($\Upsilon_{1,1}$)'), TeX(r'($\Upsilon_{2,1}$)'), TeX(r'($\Upsilon_{3,1}$)'), 
