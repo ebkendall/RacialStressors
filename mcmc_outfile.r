@@ -12,7 +12,7 @@ n_post = 5000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 10000
+steps = 20000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
@@ -20,7 +20,7 @@ par_index = list( zeta=1:10, misclass=11:16,
                   delta = 17:19, tau2 = 20, upsilon = 21:29,
                   delta_i = 30:302)
 
-index_seeds = c(4)
+index_seeds = c(1:5)
 
 labels <- c(TeX(r'($\hat{\beta}_{0,1}:$ Baseline: 1 $\to$ 2)'),  
             TeX(r'($\hat{\beta}_{0,3}:$ Baseline: 2 $\to$ 1)'), TeX(r'($\hat{\beta}_{0,4}:$ Baseline: 2 $\to$ 3)'), 

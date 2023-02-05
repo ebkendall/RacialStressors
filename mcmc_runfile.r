@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 4
+trial_num = 2
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
@@ -41,18 +41,21 @@ par_index = list( zeta=1:10, misclass=11:16,
 # rm(mcmc_out)
 # -----------------------------------------------------------------------------
 
-prior_mean = c(c(matrix(c(-5, 0,
-                          -5, 0,
-                          -5, 0,
-                          -5, 0,
-                          -5, 0), ncol=2, byrow = T)),
-               c(-5, -5, -5, -5, -5, -5))  
-prior_sd = c(c(matrix(c(10, 5,
-                        10, 5,
-                        10, 5,
-                        10, 5,
-                        10, 5), ncol=2, byrow = T)),
-             c(5, 5, 5, 5, 5, 5))
+# prior_mean = c(c(matrix(c(-5, 0,
+#                           -5, 0,
+#                           -5, 0,
+#                           -5, 0,
+#                           -5, 0), ncol=2, byrow = T)),
+#                c(-5, -5, -5, -5, -5, -5))  
+# prior_sd = c(c(matrix(c(10, 5,
+#                         10, 5,
+#                         10, 5,
+#                         10, 5,
+#                         10, 5), ncol=2, byrow = T)),
+#              c(5, 5, 5, 5, 5, 5))
+prior_mean = rep(0, 16)
+prior_sd = rep(20,16)
+
 prior_par = list()
 prior_par[[1]] = prior_mean
 prior_par[[2]] = prior_sd
@@ -63,7 +66,7 @@ y_1 = temp_data[,"State"]
 y_2 = temp_data[,"RSA"]
 t = temp_data[,"Time"]
 
-steps = 10000
+steps = 20000
 burnin = 5000
 n_cores = 20
 

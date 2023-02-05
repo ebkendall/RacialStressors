@@ -107,8 +107,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain = matrix( 0, steps, n_par - length(par_index$delta_i))
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
-  # group = list(c(par_index$zeta), c(par_index$misclass))
-  group = as.list(c(par_index$zeta, par_index$misclass))
+  group = list(c(par_index$zeta), c(par_index$misclass))
+  # group = as.list(c(par_index$zeta, par_index$misclass))
   names(group) = NULL
   n_group = length(group)
 
@@ -165,10 +165,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
 
     # Evaluate the log_post of the initial parameters
     log_post_prev = log_f_i_cpp_total(EIDs, pars, prior_par, par_index, y_1, t, id, B)
-  #     if(!is.finite(log_post_prev)){
-  #   print("Infinite log-posterior; choose better initial parameters")
-  #   break
-  # }
       
     for(j in 1:n_group){
 
@@ -200,17 +196,13 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
         }
       }
 
-
-      # print(paste0("Log_post_prev: ", round(log_post_prev, 3)))
-      # print(paste0("Log_post: ", round(log_post, 3)))
-
       # Evaluate the Metropolis-Hastings ratio
       if( log_post - log_post_prev > log(runif(1,0,1)) ){
         log_post_prev = log_post
         pars[ind_j] = proposal[ind_j]
         accept[j] = accept[j] +1
-        # print("accept"); print(accept)
       }
+      
       chain[ttt,ind_j] = pars[ind_j]
 
       # Proposal tuning scheme ------------------------------------------------

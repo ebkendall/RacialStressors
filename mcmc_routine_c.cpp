@@ -160,8 +160,12 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     
     // Subsetting the data to relate only to this participant
     arma::mat b_i = B;
-    arma::vec t_pts_sub = t_pts.elem(sub_ind);
     arma::vec y_1_sub = y_1.elem(sub_ind);
+    
+    // Full likelihood evaluation is not needed for updating pairs of b_i components
+    if (any(t_pts == -1)) { t_pts = arma::linspace(1, n_i, n_i);}
+    
+    arma::vec t_pts_sub = t_pts.elem(sub_ind);
     
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     for(int w=0; w < it_indices.n_elem;++w){
@@ -195,7 +199,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     // Likelihood components from the other parts
     arma::vec p_mean = prior_par(0);
     arma::mat p_sd = arma::diagmat(prior_par(1));
-    // arma::mat x = vec_zeta_content;
+
     arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
     double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
 
@@ -285,7 +289,6 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
                 double log_target = log_f_i_cpp(i, ii, pars, prior_par, 
                                                 par_index, y_1, t_pts, id,
                                                 pr_B, it_indices);
-                // Rcpp::Rcout << log_target_prev << "   " << log_target << std::endl;
                 
                 arma::vec col1(pr_B.n_elem, arma::fill::ones);
                 arma::vec col2(pr_B.n_elem, arma::fill::zeros);
