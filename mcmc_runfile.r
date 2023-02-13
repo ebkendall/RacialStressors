@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 6
+trial_num = 8
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
@@ -17,7 +17,7 @@ init_par = c(c(matrix(c( -11,  2.5,
                           -7, 0.84,
                         -5.6, -1.7,
                         -5.2, -1.8), ncol=2, byrow = T)),
-            c(-4, -4, -4, -4, -4, -4),
+            c(0, 0, 0, 0, 0, 0),
             c(6.411967, 0, 0), 
             1, 
             c(diag(3)),
@@ -47,9 +47,7 @@ par_index = list( zeta=1:10, misclass=11:16,
 #                         10, 5), ncol=2, byrow = T)),
 #              c(5, 5, 5, 5, 5, 5))
 prior_mean = rep(0, 16)
-prior_mean[c(13, 16)] = 2
 prior_sd = rep(20,16)
-prior_sd[c(2, 16)] = 2
 
 prior_par = list()
 prior_par[[1]] = prior_mean

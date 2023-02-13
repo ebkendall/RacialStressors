@@ -188,8 +188,8 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         arma::vec q_row_sums = arma::sum(Q, 1);
         arma::mat P_i = Q.each_col() / q_row_sums;
         
-        int b_k_1 = b_i(k-1,0);
-        int b_k = b_i(k, 0);
+        int b_k_1 = b_i(k-1);
+        int b_k = b_i(k);
         int y_1_k = y_1_sub(k);
         in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(M(b_k - 1, y_1_k-1));
     }
@@ -361,47 +361,76 @@ arma::mat update_delta_i_cpp(const arma::vec &y_2, const arma::vec &pars,
 // [[Rcpp::export]]
 void test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_par, 
                     const arma::field<arma::uvec> &par_index) {
+
+    int N = 3;
+    Rcpp::Rcout << "Case (c) Full" << std::endl;
+    for(int w=0; w < N; w++) {
+      Rcpp::Rcout << "() -> () -> " << w+1 << std::endl;
+      Rcpp::Rcout << Omega_List_GLOBAL(0)(w) << std::endl;
+    }
     
+    Rcpp::Rcout << "Case (b) Full" << std::endl;
+    for(int i = 0; i < N; i++) {
+      for(int j = 0; j < N; j++) {
+        Rcpp::Rcout << i+1 << "-->" << j+1 << std::endl;
+        Rcpp::Rcout << Omega_List_GLOBAL(1)(i, j) << std::endl;
+      }
+    }
+    
+    Rcpp::Rcout << "Case (a) Full" << std::endl;
+    for(int w=0; w < N; w++) {
+      Rcpp::Rcout << w + 1 << " -> () -> ()" << std::endl;
+      Rcpp::Rcout << Omega_List_GLOBAL(2)(w) << std::endl;
+    }
+
+    arma::vec temp = {1,2};
+    Rcpp::Rcout << temp + 1 << std::endl;
+
+    for(int i = 0; i < 30; i++) {
+      int sampled_index = arma::randi(arma::distr_param(1, 5));
+      Rcpp::Rcout << sampled_index << std::endl;
+    }
+
     // Multivariate Normal Check
-    arma::uvec vec_zeta_ind = par_index(0);
-    arma::uvec vec_misclass_ind = par_index(1);
+    // arma::uvec vec_zeta_ind = par_index(0);
+    // arma::uvec vec_misclass_ind = par_index(1);
     
-    arma::vec vec_zeta_content = pars.elem(vec_zeta_ind - 1);
-    arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
+    // arma::vec vec_zeta_content = pars.elem(vec_zeta_ind - 1);
+    // arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
     
-    arma::vec p_mean = prior_par(0);
-    arma::mat p_sd = arma::diagmat(prior_par(1));
-    arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
+    // arma::vec p_mean = prior_par(0);
+    // arma::mat p_sd = arma::diagmat(prior_par(1));
+    // arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
     
-    arma::vec log_prior_dens = dmvnorm(x.t(), p_mean, p_sd, true);
+    // arma::vec log_prior_dens = dmvnorm(x.t(), p_mean, p_sd, true);
     
-    Rcpp::Rcout << log_prior_dens << std::endl;
+    // Rcpp::Rcout << log_prior_dens << std::endl;
     
-    //  Sub setting check
-    arma::vec id = {1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,3,3,3,3,3};
-    arma::vec y_1 = 5 * id;
-    arma::uvec sub_ind = arma::find(id == 2);
+    // //  Sub setting check
+    // arma::vec id = {1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,3,3,3,3,3};
+    // arma::vec y_1 = 5 * id;
+    // arma::uvec sub_ind = arma::find(id == 2);
     
-    int n_i = sub_ind.n_elem; // DOUBLE CHECK and compare to other method
-    arma::vec y_1_sub = y_1.elem(sub_ind);
+    // int n_i = sub_ind.n_elem; // DOUBLE CHECK and compare to other method
+    // arma::vec y_1_sub = y_1.elem(sub_ind);
     
-    Rcpp::Rcout << sub_ind << std::endl;
-    Rcpp::Rcout << y_1_sub << std::endl;
+    // Rcpp::Rcout << sub_ind << std::endl;
+    // Rcpp::Rcout << y_1_sub << std::endl;
     
-    Rcpp::Rcout << "Attempt 1: " << n_i << std::endl;
+    // Rcpp::Rcout << "Attempt 1: " << n_i << std::endl;
     
-    int n_i_2 = sub_ind.max() - sub_ind.min() + 1;
-    Rcpp::Rcout << sub_ind.max() << " " << sub_ind.min() << std::endl;
+    // int n_i_2 = sub_ind.max() - sub_ind.min() + 1;
+    // Rcpp::Rcout << sub_ind.max() << " " << sub_ind.min() << std::endl;
     
-    arma::vec col1(id.n_elem, arma::fill::zeros);
-    col1.elem(arma::find(id == 1)).ones();
-    arma::vec col2(id.n_elem, arma::fill::zeros);
-    col2.elem(arma::find(id == 2)).ones();
-    arma::vec col3(id.n_elem, arma::fill::zeros);
-    col3.elem(arma::find(id == 3)).ones();
+    // arma::vec col1(id.n_elem, arma::fill::zeros);
+    // col1.elem(arma::find(id == 1)).ones();
+    // arma::vec col2(id.n_elem, arma::fill::zeros);
+    // col2.elem(arma::find(id == 2)).ones();
+    // arma::vec col3(id.n_elem, arma::fill::zeros);
+    // col3.elem(arma::find(id == 3)).ones();
     
-    arma::mat pr_V = arma::join_horiz(col1, arma::join_horiz(col2, col3));
+    // arma::mat pr_V = arma::join_horiz(col1, arma::join_horiz(col2, col3));
     
-    Rcpp::Rcout << pr_V << std::endl;
+    // Rcpp::Rcout << pr_V << std::endl;
     
 }

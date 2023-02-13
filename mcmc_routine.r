@@ -25,7 +25,7 @@ update_delta = function(pars, par_index, n_sub) {
     
     big_sigma_inv = solve(big_sigma)
     # big_sigma_inv = diag(c(0.01, 0.2, 0.2))
-    delta_0 = c(6.41196731,  -1, 1)
+    delta_0 = c(6.41196731,  -2, -0.5)
     
     # variance for delta^(i)
     upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
@@ -44,14 +44,13 @@ update_upsilon = function(pars, par_index, n_sub) {
     
     delta_i = matrix(pars[par_index$delta_i], ncol = 3)
     
-    # Double check this is an outer product
     sum_delta_i = (delta_i[1, ] - pars[par_index$delta]) %*% t(delta_i[1, ] - pars[par_index$delta])
     for(i in 2:n_sub) {
         sum_delta_i = sum_delta_i + (delta_i[i, ] - pars[par_index$delta]) %*% t(delta_i[i, ] - pars[par_index$delta])
     }
     
     # Prior for Upsilon
-    psi = diag(3)
+    psi = diag(c(3,0.4,0.4))
     nu = 3 + 2
     
     # Gibbs update
@@ -98,9 +97,6 @@ update_V_i = function(B) {
 mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
                          steps, burnin, n_cores, n_sub){
 
-  # cl <- makeCluster(n_cores, outfile="")
-  # registerDoParallel(cl)
-
   pars = init_par
   n = length(y_1)
   n_par = length(pars)
@@ -127,7 +123,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # Initializing the state space list B
   B = list()
   for(i in 1:length(EIDs)) {
-    state_sub = y_1[id == EIDs[i]]
+    state_sub = rep(1, length(y_1[id == EIDs[i]]))
     b_temp = matrix(state_sub, ncol = 1)
     B[[i]] = b_temp
   }
