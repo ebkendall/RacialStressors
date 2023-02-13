@@ -134,7 +134,7 @@ arma::mat Omega_fun_cpp_new(const int k, const int n_i, const arma::vec &b_i) {
 double log_f_i_cpp(const int i, const int ii, const arma::vec &pars, 
                    const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
                    const arma::vec &y_1, arma::vec t_pts, const arma::vec &id, 
-                   const arma::vec &B, arma::vec it_indices) {
+                   const arma::vec &B) {
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
@@ -163,13 +163,13 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     arma::vec y_1_sub = y_1.elem(sub_ind);
     
     // Full likelihood evaluation is not needed for updating pairs of b_i components
-    if (any(t_pts == -1)) { t_pts = arma::linspace(1, n_i, n_i);}
-    
-    arma::vec t_pts_sub = t_pts.elem(sub_ind);
+    int n_i = sub_ind.max() - sub_ind.min() + 1;
+    if (any(t_pts == -1)) { t_pts = arma::linspace(1, n_i - 1, n_i - 1);}
     
     // Full likelihood evaluation is not needed for updating pairs of b_i components
-    for(int w=0; w < it_indices.n_elem;++w){
-        arma::colvec z_i = {1, t_pts_sub(it_indices(w))}; // using the current time point
+    for(int w=0; w < t_pts.n_elem; ++w){
+        int k = t_pts(w);
+        arma::colvec z_i = {1, k}; // using the current time point
         double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
         double q1 = exp(q1_sub);
         double q2_sub = arma::as_scalar(zeta.row(1) * z_i);
@@ -187,12 +187,10 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         
         arma::vec q_row_sums = arma::sum(Q, 1);
         arma::mat P_i = Q.each_col() / q_row_sums;
-        // Q = (t_pts_sub(it_indices(w)) - t_pts_sub(it_indices(w) - 1)) * Q;
-        // arma::mat P_i = arma::expmat(Q);
         
-        int b_k_1 = b_i(it_indices(w)-1,0);
-        int b_k = b_i(it_indices(w), 0);
-        int y_1_k = y_1_sub(it_indices(w));
+        int b_k_1 = b_i(k-1,0);
+        int b_k = b_i(k, 0);
+        int y_1_k = y_1_sub(k);
         in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(M(b_k - 1, y_1_k-1));
     }
     
@@ -211,8 +209,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
 // [[Rcpp::export]]
 double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,  
                          const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
-                         const arma::vec &y_1, arma::vec t_pts, const arma::vec &id,
-                         const arma::field <arma::vec> &B) {
+                         const arma::vec &y_1, const arma::vec &id, const arma::field <arma::vec> &B) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
     // "i" is the numeric EID number
@@ -223,13 +220,9 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
     # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
-        arma::uvec sub_ind = arma::find(id == i);
-        int n_i = sub_ind.max() - sub_ind.min();
-        
-        // Starting the it_indices at 1 instead of 0 because there is 
-        //      no contribution to the likelihood at the initial state
-        arma::vec it_indices = arma::linspace(1, n_i, n_i); 
-        in_vals(ii) = log_f_i_cpp(i, ii, pars, prior_par, par_index, y_1, t_pts, id, B(ii), it_indices);
+
+        arma::vec t_pts = {-1}; 
+        in_vals(ii) = log_f_i_cpp(i, ii, pars, prior_par, par_index, y_1, t_pts, id, B(ii));
     }
     
     double in_value = arma::accu(in_vals);
@@ -240,7 +233,7 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
 // [[Rcpp::export]]
 Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &pars,
                           const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
-                          const arma::vec &y_1, arma::vec t_pts, const arma::vec &id,
+                          const arma::vec &y_1, const arma::vec &id,
                           arma::field <arma::vec> &B, arma::field <arma::mat> &V_i) {
 
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
@@ -267,7 +260,7 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
         // The first state is always S1, therefore we start at 1 instead of 0
         for (int k = 1; k < n_i - 1; k++) {
 
-            arma::vec it_indices = {k, k+1};
+            arma::vec t_pts = {k, k+1};
             arma::vec pr_B = B_temp;
             arma::mat pr_V = V_temp;
 
@@ -284,11 +277,11 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
             if(valid_prop) {
                 double log_target_prev = log_f_i_cpp(i, ii, pars, prior_par, 
                                                      par_index, y_1, t_pts, id,
-                                                     B_temp, it_indices);
+                                                     B_temp);
 
                 double log_target = log_f_i_cpp(i, ii, pars, prior_par, 
                                                 par_index, y_1, t_pts, id,
-                                                pr_B, it_indices);
+                                                pr_B);
                 
                 arma::vec col1(pr_B.n_elem, arma::fill::ones);
                 arma::vec col2(pr_B.n_elem, arma::fill::zeros);

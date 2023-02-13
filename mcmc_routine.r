@@ -1,6 +1,4 @@
 library(mvtnorm, quietly=T)
-library(foreach, quietly=T)
-library(doParallel, quietly=T)
 library(deSolve, quietly=T)
 library(LaplacesDemon, quietly=T)
 
@@ -20,12 +18,14 @@ update_delta = function(pars, par_index, n_sub) {
     delta_i = matrix(pars[par_index$delta_i], ncol = 3)
     
     # Prior mean and variance for delta
-    big_sigma = matrix(c( 1.09719994, -0.08249012, 0.03732079,
-                         -0.08249012,  0.40009306, 0.42303634,
-                          0.03732079,  0.42303634, 0.85253893), ncol = 3, byrow = T)
+    # big_sigma = matrix(c( 1.09719994, -0.08249012, 0.03732079,
+    #                      -0.08249012,  0.40009306, 0.42303634,
+    #                       0.03732079,  0.42303634, 0.40009306), ncol = 3, byrow = T)
+    big_sigma = diag(c(3,0.4,0.4))
+    
     big_sigma_inv = solve(big_sigma)
     # big_sigma_inv = diag(c(0.01, 0.2, 0.2))
-    delta_0 = c(6.41196731,  0.06991253, -0.07599504)
+    delta_0 = c(6.41196731,  -1, 1)
     
     # variance for delta^(i)
     upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
@@ -98,8 +98,8 @@ update_V_i = function(B) {
 mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
                          steps, burnin, n_cores, n_sub){
 
-  cl <- makeCluster(n_cores, outfile="")
-  registerDoParallel(cl)
+  # cl <- makeCluster(n_cores, outfile="")
+  # registerDoParallel(cl)
 
   pars = init_par
   n = length(y_1)
@@ -107,8 +107,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain = matrix( 0, steps, n_par - length(par_index$delta_i))
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
-  group = list(c(par_index$zeta), c(par_index$misclass))
-  # group = as.list(c(par_index$zeta, par_index$misclass))
+  # group = list(c(par_index$zeta), c(par_index$misclass))
+  group = as.list(c(par_index$zeta, par_index$misclass))
   names(group) = NULL
   n_group = length(group)
 
@@ -159,12 +159,12 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     chain[ttt, par_index$tau2] = pars[par_index$tau2]
     
     # S_chain: Metropolis-within-Gibbs update
-    B_V = update_b_i_cpp(8, EIDs, pars, prior_par, par_index, y_1, t, id, B, V_i)
+    B_V = update_b_i_cpp(8, EIDs, pars, prior_par, par_index, y_1, id, B, V_i)
     B = B_V[[1]]
     V_i = B_V[[2]]
 
     # Evaluate the log_post of the initial parameters
-    log_post_prev = log_f_i_cpp_total(EIDs, pars, prior_par, par_index, y_1, t, id, B)
+    log_post_prev = log_f_i_cpp_total(EIDs, pars, prior_par, par_index, y_1, id, B)
       
     for(j in 1:n_group){
 
@@ -178,7 +178,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       }
 
       # Compute the log density for the proposal
-      log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, t, id, B)
+      log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, id, B)
       
 
       # Only propose valid parameters during the burnin period
@@ -192,7 +192,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
               proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],sd=sqrt(pcov[[j]]*pscale[j]))
           }
           
-          log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, t, id, B)
+          log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, id, B)
         }
       }
 
@@ -266,7 +266,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   }
   # ---------------------------------------------------------------------------
 
-  stopCluster(cl)
+  # stopCluster(cl)
   print(accept/(steps-burnin))
 
   return(list( chain=chain[burnin:steps,], B_chain = B_chain,

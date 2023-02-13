@@ -258,5 +258,41 @@ colMeans(new_delta_est)
 
 save(new_delta_est, file = "Data/new_delta_est.rda")
 
+# Class Intro Presentation:
+load('Data/data_format.rda')
+sub_int = data_format[data_format$ID.. == 26746, ]
+
+plot(sub_int$Time, sub_int$RSA, main = "Participant 26746 RSA Measurements (Before)",
+     xlab = 'time', ylab = 'RSA')
+abline(v = 1.69, col = "blue", lwd = 3)
+abline(v = 4.69, col = "red", lwd = 3)
+abline(v = 8.59, col = "lightgreen", lwd = 3)
+
+b1 = mean(sub_int$RSA[1:10])
+r1 = mean(sub_int$RSA[11:23])
+g1 = mean(sub_int$RSA[24:27])
+
+lines(sub_int$Time[1:11], rep(b1, length(sub_int$Time[1:11])), col = "blue", lwd = 3)
+lines(sub_int$Time[11:24], rep(r1, length(sub_int$Time[11:24])), col = "red", lwd = 3)
+lines(sub_int$Time[24:27], rep(g1, length(sub_int$Time[24:27])), col = "lightgreen", lwd = 3)
+legend( 'topright', inset=c(0,-0.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+        legend=c( 'Nominal', 'Stress', 'Recovery'), pch=15, pt.cex=1.5, 
+        col=c( 'blue', 'red', 'lightgreen'))
 
 
+plot(sub_int$Time, sub_int$RSA, main = "Participant 26746 RSA Measurements (After)",
+     xlab = 'time', ylab = 'RSA')
+abline(v = 1.69, col = "blue", lwd = 3)
+abline(v = 4.69, col = "red", lwd = 3)
+abline(v = 6.19, col = "lightgreen", lwd = 3)
+
+b1 = mean(sub_int$RSA[1:10])
+r1 = mean(sub_int$RSA[11:15])
+g1 = mean(sub_int$RSA[16:27])
+
+lines(sub_int$Time[1:11], rep(b1, length(sub_int$Time[1:11])), col = "blue", lwd = 3)
+lines(sub_int$Time[11:16], rep(r1, length(sub_int$Time[11:16])), col = "red", lwd = 3)
+lines(sub_int$Time[16:27], rep(g1, length(sub_int$Time[16:27])), col = "lightgreen", lwd = 3)
+legend( 'topright', inset=c(0,-0.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+        legend=c( 'Nominal', 'Stress', 'Recovery'), pch=15, pt.cex=1.5, 
+        col=c( 'blue', 'red', 'lightgreen'))
