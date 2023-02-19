@@ -50,7 +50,8 @@ update_upsilon = function(pars, par_index, n_sub) {
     }
     
     # Prior for Upsilon
-    psi = diag(c(3,0.4,0.4))
+    # psi = diag(c(3,0.4,0.4))
+    psi = diag(3)
     nu = 3 + 2
     
     # Gibbs update
@@ -104,7 +105,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
   # group = list(c(par_index$zeta), c(par_index$misclass))
-  group = as.list(c(par_index$zeta, par_index$misclass))
+  group = as.list(c(par_index$zeta))
   names(group) = NULL
   n_group = length(group)
 

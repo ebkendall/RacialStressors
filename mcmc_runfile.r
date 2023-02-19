@@ -6,17 +6,16 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 11
+trial_num = 19
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
 load('Data/new_delta_est.rda')
 
-init_par = c(c(matrix(c(-4,
-                        -4,
-                        -4,
-                        -4,
-                        -4), ncol=1, byrow = T)),
+init_par = c(c(matrix(c(-4,0,
+                        -4,0,
+                        -4,0,
+                        -4,0), ncol=2, byrow = T)),
             c(-4, -4, -4, -4, -4, -4),
             c(6.411967, 0, 0), 
             1, 
@@ -26,9 +25,12 @@ init_par = c(c(matrix(c(-4,
 # par_index = list( zeta=1:10, misclass=11:16,
 #                   delta = 17:19, tau2 = 20, upsilon = 21:29,
 #                   delta_i = 30:302)
-par_index = list( zeta=1:5, misclass=6:11,
-                  delta = 12:14, tau2 = 15, upsilon = 16:24,
-                  delta_i = 25:297)
+# par_index = list( zeta=1:5, misclass=6:11,
+#                   delta = 12:14, tau2 = 15, upsilon = 16:24,
+#                   delta_i = 25:297)
+par_index = list( zeta=1:8, misclass=9:14,
+                  delta = 15:17, tau2 = 18, upsilon = 19:27,
+                  delta_i = 28:300)
 
 # Initializing using the most recent MCMC -------------------------------------
 # load(paste0('Model_out/mcmc_out_2_1.rda'))
@@ -37,20 +39,8 @@ par_index = list( zeta=1:5, misclass=6:11,
 # rm(mcmc_out)
 # -----------------------------------------------------------------------------
 
-# prior_mean = c(c(matrix(c(-5, 0,
-#                           -5, 0,
-#                           -5, 0,
-#                           -5, 0,
-#                           -5, 0), ncol=2, byrow = T)),
-#                c(-5, -5, -5, -5, -5, -5))  
-# prior_sd = c(c(matrix(c(10, 5,
-#                         10, 5,
-#                         10, 5,
-#                         10, 5,
-#                         10, 5), ncol=2, byrow = T)),
-#              c(5, 5, 5, 5, 5, 5))
-prior_mean = rep(0, 11)
-prior_sd = rep(20,11)
+prior_mean = rep(0, 8)
+prior_sd = rep(20,8)
 
 prior_par = list()
 prior_par[[1]] = prior_mean

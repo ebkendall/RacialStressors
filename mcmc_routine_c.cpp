@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 // Defining the Omega_List as a global variable when pre-compiling ----------
 const arma::mat adj_mat = {{1, 1, 0},
-                           {1, 1, 1},
+                           {0, 1, 1},
                            {1, 1, 1}};
 
 
@@ -142,18 +142,18 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     
     arma::vec eids = id;
     arma::uvec vec_zeta_ind = par_index(0);
-    arma::uvec vec_misclass_ind = par_index(1);
+    // arma::uvec vec_misclass_ind = par_index(1);
     
     arma::vec vec_zeta_content = pars.elem(vec_zeta_ind - 1);
-    arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
+    // arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
     
     // Manually populate the matrix
-    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 1);
-    arma::mat M = {{1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
-                   {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
-                   {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
-    arma::vec m_row_sums = arma::sum(M, 1);
-    M = M.each_col() / m_row_sums; 
+    arma::mat zeta = arma::reshape(vec_zeta_content, 4, 2);
+    // arma::mat M = {{1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+    //                {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
+    //                {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
+    // arma::vec m_row_sums = arma::sum(M, 1);
+    // M = M.each_col() / m_row_sums; 
     
     // The time-homogeneous probability transition matrix
     arma::uvec sub_ind = arma::find(eids == i);
@@ -169,7 +169,9 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     for(int w=0; w < t_pts.n_elem; ++w){
         int k = t_pts(w);
-        arma::colvec z_i = {1}; // using the current time point
+        double k_scale = k / 10;         // scaling time by 10
+
+        arma::colvec z_i = {1, k_scale}; // using the current time point
         double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
         double q1 = exp(q1_sub);
         double q2_sub = arma::as_scalar(zeta.row(1) * z_i);
@@ -178,12 +180,12 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         double q3 = exp(q3_sub);
         double q4_sub = arma::as_scalar(zeta.row(3) * z_i);
         double q4 = exp(q4_sub);
-        double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
-        double q5 = exp(q5_sub);
+        // double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
+        // double q5 = exp(q5_sub);
         
         arma::mat Q = { {  1,  q1,   0},
-                        { q2,   1,  q3},
-                        { q4,  q5,   1}};
+                        {  0,   1,  q2},
+                        { q3,  q4,   1}};
         
         arma::vec q_row_sums = arma::sum(Q, 1);
         arma::mat P_i = Q.each_col() / q_row_sums;
@@ -191,14 +193,15 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         int b_k_1 = b_i(k-1);
         int b_k = b_i(k);
         int y_1_k = y_1_sub(k);
-        in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(M(b_k - 1, y_1_k-1));
+        in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1));// + log(M(b_k - 1, y_1_k-1));
     }
     
     // Likelihood components from the other parts
     arma::vec p_mean = prior_par(0);
     arma::mat p_sd = arma::diagmat(prior_par(1));
 
-    arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
+    // arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
+    arma::mat x = vec_zeta_content;
     double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
 
     in_value = in_value + log_prior_dens;
