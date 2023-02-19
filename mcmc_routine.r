@@ -123,7 +123,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # Initializing the state space list B
   B = list()
   for(i in 1:length(EIDs)) {
-    state_sub = rep(1, length(y_1[id == EIDs[i]]))
+    # state_sub = rep(1, length(y_1[id == EIDs[i]]))
+    state_sub = y_1[id == EIDs[i]]
     b_temp = matrix(state_sub, ncol = 1)
     B[[i]] = b_temp
   }

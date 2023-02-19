@@ -148,7 +148,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
     
     // Manually populate the matrix
-    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 2);
+    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 1);
     arma::mat M = {{1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
                    {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
                    {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
@@ -169,7 +169,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     for(int w=0; w < t_pts.n_elem; ++w){
         int k = t_pts(w);
-        arma::colvec z_i = {1, k}; // using the current time point
+        arma::colvec z_i = {1}; // using the current time point
         double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
         double q1 = exp(q1_sub);
         double q2_sub = arma::as_scalar(zeta.row(1) * z_i);

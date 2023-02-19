@@ -6,26 +6,29 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 8
+trial_num = 11
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
 load('Data/new_delta_est.rda')
 
-init_par = c(c(matrix(c( -11,  2.5,
-                          -6, -1.7,
-                          -7, 0.84,
-                        -5.6, -1.7,
-                        -5.2, -1.8), ncol=2, byrow = T)),
-            c(0, 0, 0, 0, 0, 0),
+init_par = c(c(matrix(c(-4,
+                        -4,
+                        -4,
+                        -4,
+                        -4), ncol=1, byrow = T)),
+            c(-4, -4, -4, -4, -4, -4),
             c(6.411967, 0, 0), 
             1, 
             c(diag(3)),
-            c(new_delta_est))
+            c(rep(6.411967, 91), rep(0, 91), rep(0,91)))
 
-par_index = list( zeta=1:10, misclass=11:16,
-                  delta = 17:19, tau2 = 20, upsilon = 21:29,
-                  delta_i = 30:302)
+# par_index = list( zeta=1:10, misclass=11:16,
+#                   delta = 17:19, tau2 = 20, upsilon = 21:29,
+#                   delta_i = 30:302)
+par_index = list( zeta=1:5, misclass=6:11,
+                  delta = 12:14, tau2 = 15, upsilon = 16:24,
+                  delta_i = 25:297)
 
 # Initializing using the most recent MCMC -------------------------------------
 # load(paste0('Model_out/mcmc_out_2_1.rda'))
@@ -46,8 +49,8 @@ par_index = list( zeta=1:10, misclass=11:16,
 #                         10, 5,
 #                         10, 5), ncol=2, byrow = T)),
 #              c(5, 5, 5, 5, 5, 5))
-prior_mean = rep(0, 16)
-prior_sd = rep(20,16)
+prior_mean = rep(0, 11)
+prior_sd = rep(20,11)
 
 prior_par = list()
 prior_par[[1]] = prior_mean
