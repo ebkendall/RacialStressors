@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 19
+trial_num = 20
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
@@ -39,8 +39,8 @@ par_index = list( zeta=1:8, misclass=9:14,
 # rm(mcmc_out)
 # -----------------------------------------------------------------------------
 
-prior_mean = rep(0, 8)
-prior_sd = rep(20,8)
+prior_mean = rep(0, 14)
+prior_sd = rep(20,14)
 
 prior_par = list()
 prior_par[[1]] = prior_mean

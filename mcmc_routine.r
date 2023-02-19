@@ -105,7 +105,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
   # group = list(c(par_index$zeta), c(par_index$misclass))
-  group = as.list(c(par_index$zeta))
+  group = as.list(c(par_index$zeta, par_index$misclass))
   names(group) = NULL
   n_group = length(group)
 

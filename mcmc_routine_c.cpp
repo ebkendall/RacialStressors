@@ -142,18 +142,18 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     
     arma::vec eids = id;
     arma::uvec vec_zeta_ind = par_index(0);
-    // arma::uvec vec_misclass_ind = par_index(1);
+    arma::uvec vec_misclass_ind = par_index(1);
     
     arma::vec vec_zeta_content = pars.elem(vec_zeta_ind - 1);
-    // arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
+    arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
     
     // Manually populate the matrix
     arma::mat zeta = arma::reshape(vec_zeta_content, 4, 2);
-    // arma::mat M = {{1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
-    //                {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
-    //                {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
-    // arma::vec m_row_sums = arma::sum(M, 1);
-    // M = M.each_col() / m_row_sums; 
+    arma::mat M = {{1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+                   {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
+                   {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
+    arma::vec m_row_sums = arma::sum(M, 1);
+    M = M.each_col() / m_row_sums; 
     
     // The time-homogeneous probability transition matrix
     arma::uvec sub_ind = arma::find(eids == i);
@@ -193,15 +193,15 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         int b_k_1 = b_i(k-1);
         int b_k = b_i(k);
         int y_1_k = y_1_sub(k);
-        in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1));// + log(M(b_k - 1, y_1_k-1));
+        in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(M(b_k - 1, y_1_k-1));
     }
     
     // Likelihood components from the other parts
     arma::vec p_mean = prior_par(0);
     arma::mat p_sd = arma::diagmat(prior_par(1));
 
-    // arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
-    arma::mat x = vec_zeta_content;
+    arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
+    // arma::mat x = vec_zeta_content;
     double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
 
     in_value = in_value + log_prior_dens;
