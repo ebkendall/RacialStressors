@@ -12,7 +12,7 @@ length(unique(data_format$ID..))
 data_format$Time = data_format$Time / 100
 
 data_format$State[data_format$State == "Baseline"] = 1
-data_format$State[data_format$State == "Stress"] = 2
+data_format$State[data_format$State == "Stress"]   = 2
 data_format$State[data_format$State == "Recovery"] = 3
 data_format$State[data_format$State == "recovery"] = 3
 
@@ -296,3 +296,58 @@ lines(sub_int$Time[16:27], rep(g1, length(sub_int$Time[16:27])), col = "lightgre
 legend( 'topright', inset=c(0,-0.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
         legend=c( 'Nominal', 'Stress', 'Recovery'), pch=15, pt.cex=1.5, 
         col=c( 'blue', 'red', 'lightgreen'))
+
+
+
+
+# Sanity checking the current data with the older ones ------------------------
+# First, compare the data sent to us with the old data
+curr_data = read.csv('Data/_FinalDataforRSASecondsStatesCovariates.csv')
+curr_id = unique(curr_data$ID..)
+
+old_data = read.csv('Data/Study Dataset RSA Values Journal Adolescent Health Paper.csv')
+old_id = unique(old_data$ID)
+
+means_compare = matrix(data = c(curr_id, rep(NA, 125*9)), nrow = length(curr_id))
+colnames(means_compare) = c('id', 'rsa_1_curr', 'rsa_1_old_no_epoch', 'rsa_1_old_30',
+                            'rsa_2_curr', 'rsa_2_old_no_epoch', 'rsa_2_old_30',
+                            'rsa_3_curr', 'rsa_3_old_no_epoch', 'rsa_3_old_30')
+for(i in 1:length(curr_id)) {
+    print(curr_id[i])
+    if(curr_id[i] %in% old_id){
+        sub_curr = curr_data[curr_data$ID.. == curr_id[i], ]
+        sub_old = old_data[old_data$ID == curr_id[i], ]
+        
+        means_row = c(curr_id[i], rep(NA, 9))
+        
+        means_row[c(3,4,6,7,9,10)] = c(sub_old$Baseline_1_Output_no_epoch, sub_old$Baseline_1_Output_30,
+                                       sub_old$Stress_1_Output_no_epoch, sub_old$Stress_1_Output_30,
+                                       sub_old$Recovery_1_Output_no_epoch, sub_old$Recovery_1_Output_30)
+        
+        if(length(unique(sub_curr$State)) >=3) {
+            curr_s1 = sub_curr$RSA[sub_curr$State == "Baseline"]
+            curr_s2 = sub_curr$RSA[sub_curr$State == "Stress"]
+            curr_s3 = sub_curr$RSA[sub_curr$State == "Recovery" | sub_curr$State == "recovery"]
+            
+            means_row[c(2,5,8)] = c(mean(curr_s1), mean(curr_s2), mean(curr_s3))
+        }
+        
+        means_compare[i, ] = means_row
+    }
+}
+
+# simplifying the means_compare
+means_compare = means_compare[!is.na(means_compare[,2]), ]
+means_compare = means_compare[!is.na(means_compare[,6]), ]
+temp = colMeans(means_compare)
+names(temp) = NULL
+temp[c(2,5,8)]
+temp[c(3,6,9)]
+temp[c(4,7,10)]
+
+
+# Second, compare the formatted data with the old data
+load('Data/data_format.rda')
+mean(data_format$RSA[data_format$State == 1])
+mean(data_format$RSA[data_format$State == 2])
+mean(data_format$RSA[data_format$State == 3])

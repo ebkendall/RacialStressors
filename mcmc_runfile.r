@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 20
+trial_num = 22
 
 load('Data/data_format.rda')
 n_sub = length(unique(data_format$ID..))
@@ -33,10 +33,10 @@ par_index = list( zeta=1:8, misclass=9:14,
                   delta_i = 28:300)
 
 # Initializing using the most recent MCMC -------------------------------------
-# load(paste0('Model_out/mcmc_out_2_1.rda'))
-# init_par[par_index$delta_i] = c(mcmc_out$big_mu_i[[10]])
-# init_par[-par_index$delta_i] = colMeans(mcmc_out$chain)
-# rm(mcmc_out)
+load('Model_out/mcmc_out_2_21.rda')
+init_par[par_index$delta_i] = c(mcmc_out$big_delta_i[[20]])
+init_par[-par_index$delta_i] = colMeans(mcmc_out$chain)
+rm(mcmc_out)
 # -----------------------------------------------------------------------------
 
 prior_mean = rep(0, 14)
@@ -52,7 +52,7 @@ y_1 = temp_data[,"State"]
 y_2 = temp_data[,"RSA"]
 t = temp_data[,"Time"]
 
-steps = 20000
+steps = 60000
 burnin = 5000
 n_cores = 20
 
