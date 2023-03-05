@@ -386,14 +386,27 @@ void test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_p
       Rcpp::Rcout << Omega_List_GLOBAL(2)(w) << std::endl;
     }
 
-    arma::vec temp = {1,2};
-    Rcpp::Rcout << temp + 1 << std::endl;
+    // arma::vec temp = {1,2};
+    // Rcpp::Rcout << temp + 1 << std::endl;
+    // 
+    // for(int i = 0; i < 30; i++) {
+    //   int sampled_index = arma::randi(arma::distr_param(1, 5));
+    //   Rcpp::Rcout << sampled_index << std::endl;
+    // }
 
-    for(int i = 0; i < 30; i++) {
-      int sampled_index = arma::randi(arma::distr_param(1, 5));
-      Rcpp::Rcout << sampled_index << std::endl;
+    arma::vec t_pts = {1,2};
+    if(any(t_pts == -1)) {
+        Rcpp::Rcout << "wrong" << std::endl;
+    } else{
+        Rcpp::Rcout << "correct" << std::endl;
     }
-
+    
+    t_pts = {-1};
+    if(any(t_pts == -1)) {
+        Rcpp::Rcout << "correct" << std::endl;
+    } else{
+        Rcpp::Rcout << "wrong" << std::endl;
+    }
     // Multivariate Normal Check
     // arma::uvec vec_zeta_ind = par_index(0);
     // arma::uvec vec_misclass_ind = par_index(1);

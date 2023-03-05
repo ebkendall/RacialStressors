@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 23
+trial_num = 24
 
 # Real data analysis
 # load('Data/data_format.rda')
@@ -17,7 +17,7 @@ data_format = sim_data
 
 n_sub = length(unique(data_format[,'ID..']))
 
-load('Data/new_delta_est.rda')
+# load('Data/new_delta_est.rda')
 load('Data/Simulation/true_par.rda')
 
 init_par = c(c(matrix(c(-4,0,
@@ -41,15 +41,24 @@ par_index = list( zeta=1:8, misclass=9:14,
                   delta_i = 28:300)
 
 # Initializing using the most recent MCMC -------------------------------------
-load('Model_out/mcmc_out_2_21.rda')
+load('Model_out/mcmc_out_2_23.rda')
 init_par[par_index$delta_i] = c(mcmc_out$big_delta_i[[20]])
 # init_par[-par_index$delta_i] = colMeans(mcmc_out$chain)
 init_par[-par_index$delta_i] = true_par
 rm(mcmc_out)
 # -----------------------------------------------------------------------------
 
-prior_mean = rep(0, 14)
-prior_sd = rep(20,14)
+prior_mean = c(c(matrix(c( -3,  2.1,
+                           -4,  2.1,
+                           -6, -1.7,
+                           -6, -1.7), ncol=2, byrow = T)),
+               c(-10, -10, -10, -10, -10, -10))
+
+prior_sd = c(c(matrix(c(2,2,
+                        2,2,
+                        2,2,
+                        2,2), ncol=2, byrow = T)),
+             c(5, 5, 5, 5, 5, 5))
 
 prior_par = list()
 prior_par[[1]] = prior_mean
@@ -61,7 +70,7 @@ y_1 = temp_data[,"State"]
 y_2 = temp_data[,"RSA"]
 t = temp_data[,"Time"]
 
-steps = 40000
+steps = 20000
 burnin = 5000
 n_cores = 20
 

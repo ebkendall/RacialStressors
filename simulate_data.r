@@ -1,7 +1,7 @@
 library(mvtnorm)
 
 # Load the current data ------------------------------------------------------
-load('Data/data_format.rda')
+load('Data/Old_data/data_format.rda')
 N = length(unique(data_format$ID..))
 n_sim = 1
 
@@ -9,13 +9,17 @@ n_sim = 1
 par_index = list( zeta=1:8, misclass=9:14,
                   delta = 15:17, tau2 = 18, upsilon = 19:27,
                   delta_i = 28:300)
+# par_index = list( zeta=1:4, misclass=5:10,
+#                   delta = 11:13, tau2 = 14, upsilon = 15:23,
+#                   delta_i = 24:296)
 
+# Baseline only transition matrix
 # Logit transition probability parameters
 # 1->2, 2->3, 3->1, 3->2
-zeta = matrix(c(   -3,  3.6,
-                   -4,  1.3,
-                 -0.9, -1.7,
-                 -0.7, -1.7), ncol = 2, byrow = T)
+zeta = matrix(c(   -3,  2.1,
+                   -4,  2.1,
+                   -6, -1.7,
+                   -6, -1.7), ncol = 2, byrow = T)
 
 # Logit misclassification probability parameters
 misclass = c(   -6-4, -5-5,
