@@ -110,12 +110,12 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
-  # pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
-  # pscale = rep( 1, n_group)
-  load('Model_out/mcmc_out_2_21.rda')
-  pcov = mcmc_out$pcov
-  pscale = mcmc_out$pscale
-  rm(mcmc_out)
+  pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
+  pscale = rep( 1, n_group)
+  # load('Model_out/mcmc_out_2_21.rda')
+  # pcov = mcmc_out$pcov
+  # pscale = mcmc_out$pscale
+  # rm(mcmc_out)
 
   accept = rep( 0, n_group)
 

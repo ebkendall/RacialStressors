@@ -333,6 +333,8 @@ for(i in 1:length(curr_id)) {
         }
         
         means_compare[i, ] = means_row
+    } else {
+        print('not in old dataset')
     }
 }
 
@@ -351,3 +353,4 @@ load('Data/data_format.rda')
 mean(data_format$RSA[data_format$State == 1])
 mean(data_format$RSA[data_format$State == 2])
 mean(data_format$RSA[data_format$State == 3])
+

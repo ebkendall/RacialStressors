@@ -4,18 +4,23 @@ library(plotrix)
 args <- commandArgs(TRUE)
 set.seed(args[1])
 
-trialNum = 22 # CHANGE EVERY TIME ******************
+simulation = args[2]
+
+trialNum = 23 # CHANGE EVERY TIME ******************
 
 Dir = 'Model_out/'
 
 # load(paste0( Dir, 'post_mcmc_out_dev',args[1],'_', trialNum, '.rda'))
 load(paste0(Dir,'mcmc_out_',toString(args[1]),'_', trialNum,'.rda'))
 
-simulation=F
+if(simulation) {
+    load('Data/Simulation/sim_data_1.rda')
+    data_format = sim_data
+} else {
+    load('Data/data_format.rda')
+}
 
-load('Data/data_format.rda')
-
-EIDs = unique(data_format$ID..)
+EIDs = unique(data_format[,"ID.."])
 
 # New patients ---------------------------------------------------------------
 pdf(paste0('Plots/chart_plot_', trialNum, '_seed',toString(args[1]), '.pdf'))
@@ -25,28 +30,42 @@ par(mfrow=panels, mar=c(2,4,2,4), bg='black', fg='green')
 for(i in EIDs){
 	print(which(EIDs == i))
 	indices_i = (data_format[,'ID..']==i)
-	sub_dat = data_format[data_format$ID.. == i, ]
+	sub_dat = data_format[data_format[,"ID.."] == i, ]
+	n_i = sum(indices_i)
 
-	t_grid = data_format$Time[indices_i]
+	t_grid = data_format[indices_i, "Time"]
 	
-	# n_i = sum(indices_i)
+	if(simulation){
+	    b_i = data_format[ indices_i,'True_state']
+	    to_s1 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==1]
+	    to_s2 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==2]
+	    to_s3 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==3]
+	}
+	
 	# bar_grid = seq( 0, n_i, by=5)[-1]
 
 	color_choice = c('blue', 'red', 'green')
 
-	plot(t_grid, data_format$RSA[indices_i], xlab='time', ylab = 'RSA', 
+	plot(t_grid, data_format[indices_i, "RSA"], xlab='time', ylab = 'RSA', 
 		col.main='green', main = paste0('Participant: ', i))
 	axis( side=1, at=t_grid, col.axis='green', labels=t_grid / 4)
-	axis( side=2, at=seq(min(data_format$RSA[indices_i]), max(data_format$RSA[indices_i])), col.axis='green')
-
-	s = diff(data_format$State[indices_i])
-    	abline(v = t_grid[1], col = color_choice[sub_dat$State[1]], lwd = 2)
-	for(j in 1:sum(s)){
-		t_switch = which(s==1)[j]+1
-		abline(v = t_grid[t_switch], 
-			col = color_choice[sub_dat$State[t_switch]],
-			lwd = 2)
+	axis( side=2, at=seq(min(data_format[indices_i, "RSA"]), max(data_format[indices_i, "RSA"])), col.axis='green')
+	
+	if(simulation){
+	    abline( v=t_grid[to_s1], col='dodgerblue', lwd=2)
+	    abline( v=t_grid[to_s2], col='firebrick1', lwd=2)
+	    abline( v=t_grid[to_s3], col='yellow2', lwd=2)
+	    col_choice = c('dodgerblue', 'firebrick1', 'yellow2')
+	    abline( v= t_grid[1], col = col_choice[b_i[1]], lwd = 2)
 	}
+# 	s = diff(data_format$State[indices_i])
+#     	abline(v = t_grid[1], col = color_choice[sub_dat$State[1]], lwd = 2)
+# 	for(j in 1:sum(s)){
+# 		t_switch = which(s==1)[j]+1
+# 		abline(v = t_grid[t_switch], 
+# 			col = color_choice[sub_dat$State[t_switch]],
+# 			lwd = 2)
+# 	}
 
 	barplot( rbind(   colMeans(mcmc_out$B_chain[, indices_i] == 1),
 				colMeans(mcmc_out$B_chain[, indices_i] == 2),

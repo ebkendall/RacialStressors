@@ -6,11 +6,19 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 22
+trial_num = 23
 
-load('Data/data_format.rda')
-n_sub = length(unique(data_format$ID..))
+# Real data analysis
+# load('Data/data_format.rda')
+
+# Simulation
+load('Data/Simulation/sim_data_1.rda')
+data_format = sim_data
+
+n_sub = length(unique(data_format[,'ID..']))
+
 load('Data/new_delta_est.rda')
+load('Data/Simulation/true_par.rda')
 
 init_par = c(c(matrix(c(-4,0,
                         -4,0,
@@ -35,7 +43,8 @@ par_index = list( zeta=1:8, misclass=9:14,
 # Initializing using the most recent MCMC -------------------------------------
 load('Model_out/mcmc_out_2_21.rda')
 init_par[par_index$delta_i] = c(mcmc_out$big_delta_i[[20]])
-init_par[-par_index$delta_i] = colMeans(mcmc_out$chain)
+# init_par[-par_index$delta_i] = colMeans(mcmc_out$chain)
+init_par[-par_index$delta_i] = true_par
 rm(mcmc_out)
 # -----------------------------------------------------------------------------
 
@@ -52,7 +61,7 @@ y_1 = temp_data[,"State"]
 y_2 = temp_data[,"RSA"]
 t = temp_data[,"Time"]
 
-steps = 60000
+steps = 40000
 burnin = 5000
 n_cores = 20
 

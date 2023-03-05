@@ -6,37 +6,41 @@ library(latex2exp)
 dir = 'Model_out/' 
 args <- commandArgs(TRUE)
 trial_num = as.numeric(args[1])
+simulation = as.numeric(args[2])
 
 # Size of posterior sample from mcmc chains
 n_post = 5000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 60000
+steps = 20000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-par_index = list( zeta=1:10, misclass=11:16,
-                  delta = 17:19, tau2 = 20, upsilon = 21:29,
-                  delta_i = 30:302)
+# par_index = list( zeta=1:10, misclass=11:16,
+#                   delta = 17:19, tau2 = 20, upsilon = 21:29,
+#                   delta_i = 30:302)
 # par_index = list( zeta=1:5, misclass=6:11,
 #                   delta = 12:14, tau2 = 15, upsilon = 16:24,
 #                   delta_i = 25:297)
-index_seeds = c(1:3)
+par_index = list( zeta=1:8, misclass=9:14,
+                  delta = 15:17, tau2 = 18, upsilon = 19:27,
+                  delta_i = 28:300)
+index_seeds = c(1:5)
 
-labels <- c(TeX(r'($\hat{\beta}_{0,1}:$ Baseline: 1 $\to$ 2)'),  
-            # TeX(r'($\hat{\beta}_{0,3}:$ Baseline: 2 $\to$ 1)'), 
-            TeX(r'($\hat{\beta}_{0,4}:$ Baseline: 2 $\to$ 3)'), 
-            TeX(r'($\hat{\beta}_{0,5}:$ Baseline: 3 $\to$ 1)'),
-            TeX(r'($\hat{\beta}_{0,6}:$ Baseline: 3 $\to$ 2)'),
-            TeX(r'($\hat{\beta}_{1,1}:$ Time: 1 $\to$ 2)'), 
-            # TeX(r'($\hat{\beta}_{1,3}:$ Time: 2 $\to$ 1)'), 
-            TeX(r'($\hat{\beta}_{1,4}:$ Time: 2 $\to$ 3)'), 
-            TeX(r'($\hat{\beta}_{1,5}:$ Time: 3 $\to$ 1)'), 
-            TeX(r'($\hat{\beta}_{1,6}:$ Time: 3 $\to$ 2)'),
+labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'),  
+            # TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 1)'), 
+            TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 2 $\to$ 3)'), 
+            TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 1)'),
+            TeX(r'($\hat{\zeta}_{0,6}:$ Baseline: 3 $\to$ 2)'),
+            TeX(r'($\hat{\zeta}_{1,1}:$ Time: 1 $\to$ 2)'), 
+            # TeX(r'($\hat{\zeta}_{1,3}:$ Time: 2 $\to$ 1)'), 
+            TeX(r'($\hat{\zeta}_{1,4}:$ Time: 2 $\to$ 3)'), 
+            TeX(r'($\hat{\zeta}_{1,5}:$ Time: 3 $\to$ 1)'), 
+            TeX(r'($\hat{\zeta}_{1,6}:$ Time: 3 $\to$ 2)'),
             TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'), TeX(r'(P(obs. S1 | true S2))'),
             TeX(r'(P(obs. S3 | true S2))'), TeX(r'(P(obs. S1 | true S3))'), TeX(r'(P(obs. S2 | true S3))'),
-            TeX(r'($\tilde{\mu}_1$)'), TeX(r'($\tilde{\mu}_2$)'), TeX(r'($\tilde{\mu}_3$)'),
+            TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
             TeX(r'($\tau^2$)'), 
             TeX(r'($\Upsilon_{1,1}$)'), TeX(r'($\Upsilon_{2,1}$)'), TeX(r'($\Upsilon_{3,1}$)'), 
             TeX(r'($\Upsilon_{1,2}$)'), TeX(r'($\Upsilon_{2,2}$)'), TeX(r'($\Upsilon_{3,2}$)'),
@@ -79,10 +83,17 @@ par_mean = par_median = upper = lower = rep( NA, length(labels))
 
 labels_sub <- 1:length(labels)
 
+load('Data/Simulation/true_par.rda')
+
 for(r in 1:length(labels_sub)){
 
-    plot( NULL, xlab=NA, ylab=NA, main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
-            ylim=range(stacked_chains[,r]) )
+    if (simulation == 1) {
+        plot( NULL, xlab=paste0("true val: ", round(true_par[r], 3)), ylab=NA, main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
+              ylim=range(stacked_chains[,r]) )
+    } else {
+        plot( NULL, xlab=NA, ylab=NA, main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
+              ylim=range(stacked_chains[,r]) )
+    }
 
     for(seed in 1:length(chain_list)) lines( chain_list[[seed]][,r], type='l', col=seed)
 
@@ -97,12 +108,16 @@ for(r in 1:length(labels_sub)){
                                 ' Median = ',toString(par_median[r])))
     abline( v=upper[r], col='red', lwd=2, lty=2)
     abline( v=lower[r], col='purple', lwd=2, lty=2)
+    
+    if(simulation == 1) {
+        abline( v=true_par[r], col='green', lwd=2, lty=2)
+    }
 
 }
 
 dev.off()
 
-print("beta")
+print("zeta")
 print(matrix(par_mean[par_index$zeta],ncol=2))
 
 print("misclass mean")
@@ -122,8 +137,8 @@ print(par_mean[par_index$tau2])
 # print('upsilon')
 # print(matrix(par_mean[par_index$upsilon], ncol = 3))
 
-# print("beta mean")
-# print(matrix( par_mean[par_index$beta], ncol=2))
+# print("zeta mean")
+# print(matrix( par_mean[par_index$zeta], ncol=2))
 
 # print("a mean")
 # print(exp(par_mean[par_index$log_a_vec]))
