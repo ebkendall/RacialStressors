@@ -26,7 +26,7 @@ par_index = list( zeta=1:10, misclass=11:16,
 # par_index = list( zeta=1:8, misclass=9:14,
 #                   delta = 15:17, tau2 = 18, upsilon = 19:27,
 #                   delta_i = 28:300)
-index_seeds = c(1:5)
+index_seeds = c(1)
 
 labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'),  
             TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 

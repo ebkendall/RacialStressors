@@ -15,11 +15,11 @@ trial_num = 30
 
 
 # Simulation
-load('Data/Simulation/sim_data_1_b.rda')
+load('Data/Simulation/sim_data_1_c.rda')
 load('Data/Simulation/true_par_b.rda')
 data_format = sim_data
 
-n_sub = length(unique(data_format[,'id']))
+n_sub = length(unique(data_format[,'ID..']))
 
 
 init_par = c(c(matrix(c(-4,0,
@@ -71,10 +71,10 @@ prior_par[[1]] = prior_mean
 prior_par[[2]] = prior_sd
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL
-id = as.numeric(temp_data[,"id"])
-y_1 = as.numeric(temp_data[,"state"])
-y_2 = as.numeric(temp_data[,"rsa"])
-t = as.numeric(temp_data[,"time"])
+id = as.numeric(temp_data[,"ID.."])
+y_1 = as.numeric(temp_data[,"State"])
+y_2 = as.numeric(temp_data[,"RSA"])
+t = as.numeric(temp_data[,"Time"])
 
 steps = 20000
 burnin = 5000

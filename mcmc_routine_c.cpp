@@ -134,7 +134,7 @@ arma::mat Omega_fun_cpp_new(const int k, const int n_i, const arma::vec &b_i) {
 double log_f_i_cpp(const int i, const int ii, const arma::vec &pars, 
                    const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
                    const arma::vec &y_1, arma::vec t_pts, const arma::vec &id, 
-                   const arma::vec &B, const arma::vec &y_2, arma::mat &V_i) {
+                   const arma::vec &B, const arma::vec &y_2, arma::mat &V_i, const int n_sub) {
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
@@ -161,7 +161,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     // Subsetting the data to relate only to this participant
     arma::mat b_i = B;
     arma::vec y_1_sub = y_1.elem(sub_ind);
-    arma::vec y_2_sub = y_2.elem(sub_ind);
+    arma::mat y_2_sub = y_2.elem(sub_ind);
 
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     int n_i = sub_ind.max() - sub_ind.min() + 1;
@@ -198,8 +198,9 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     }
     
     // Likelihood from the RSA response
+    
     arma::vec delta_i_vec = pars.elem(par_index(5) - 1);
-    arma::mat delta_i_big = arma::reshape(delta_i_vec, n_i, 3);
+    arma::mat delta_i_big = arma::reshape(delta_i_vec, n_sub, 3);
     arma::vec delta_i = delta_i_big.row(ii).t();
 
     arma::vec mean_vec_y_2 = V_i * delta_i;
@@ -209,6 +210,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     cov_y_2 = tau2 * cov_y_2;
 
     double log_dens = arma::as_scalar(dmvnorm(y_2_sub.t(), mean_vec_y_2, cov_y_2, true));
+
     in_value = in_value + log_dens;
 
     return in_value;
@@ -230,8 +232,8 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
 
-        arma::vec t_pts = {-1}; 
-        in_vals(ii) = log_f_i_cpp(i, ii, pars, prior_par, par_index, y_1, t_pts, id, B(ii), y_2, V_i(ii));
+        arma::vec t_pts = {-1};
+        in_vals(ii) = log_f_i_cpp(i, ii, pars, prior_par, par_index, y_1, t_pts, id, B(ii), y_2, V_i(ii), EIDs.n_elem);
     }
     
     double in_value = arma::accu(in_vals);
@@ -287,7 +289,7 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
 
             // Sample and update the two neighboring states
             arma::mat Omega_set = Omega_fun_cpp_new(k + 1, n_i, B_temp);
-
+            
             int sampled_index = arma::randi(arma::distr_param(1, Omega_set.n_rows));
 
             pr_B.rows(k, k+1) = Omega_set.row(sampled_index-1).t();
@@ -298,20 +300,20 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
             if(valid_prop) {
                 double log_target_prev = log_f_i_cpp(i, ii, pars, prior_par,
                                                      par_index, y_1, t_pts, id,
-                                                     B_temp, y_2, V_temp);
-
-                double log_target = log_f_i_cpp(i, ii, pars, prior_par,
-                                                par_index, y_1, t_pts, id,
-                                                pr_B, y_2, V_temp);
+                                                     B_temp, y_2, V_temp, EIDs.n_elem);
 
                 arma::vec col1(pr_B.n_elem, arma::fill::ones);
                 arma::vec col2(pr_B.n_elem, arma::fill::zeros);
-                col2.elem(arma::find(pr_B == 2)).ones(); 
+                col2.elem(arma::find(pr_B == 2)).ones();
                 arma::vec col3(pr_B.n_elem, arma::fill::zeros);
-                col3.elem(arma::find(pr_B == 3)).ones(); 
-                
+                col3.elem(arma::find(pr_B == 3)).ones();
+
                 pr_V = arma::join_horiz(col1, arma::join_horiz(col2, col3));
                 
+                double log_target = log_f_i_cpp(i, ii, pars, prior_par,
+                                                par_index, y_1, t_pts, id,
+                                                pr_B, y_2, pr_V, EIDs.n_elem);
+
                 // Note that the proposal probs cancel in the MH ratio
                 double diff_check = log_target - log_target_prev;
                 double min_log = log(arma::randu(arma::distr_param(0,1)));
