@@ -6,21 +6,21 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 28
+trial_num = 30
 
 # Real data analysis
 # load('Data/data_format.rda')
-load('Data/data_format_5.rda')
-data_format = as.matrix(data_format_5)
+# load('Data/data_format_5.rda')
+# data_format = as.matrix(data_format_5)
 
 
 # Simulation
-# load('Data/Simulation/sim_data_1_c.rda')
+load('Data/Simulation/sim_data_1_b.rda')
+load('Data/Simulation/true_par_b.rda')
+data_format = sim_data
 
 n_sub = length(unique(data_format[,'id']))
 
-# load('Data/new_delta_est.rda')
-# load('Data/Simulation/true_par_b.rda')
 
 init_par = c(c(matrix(c(-4,0,
                         -4,0,
@@ -35,7 +35,7 @@ init_par = c(c(matrix(c(-4,0,
 
 par_index = list( zeta=1:10, misclass=11:16,
                   delta = 17:19, tau2 = 20, upsilon = 21:29,
-                  delta_i = 30:413)
+                  delta_i = 30:302)
 # par_index = list( zeta=1:5, misclass=6:11,
 #                   delta = 12:14, tau2 = 15, upsilon = 16:24,
 #                   delta_i = 25:297)
@@ -46,8 +46,7 @@ par_index = list( zeta=1:10, misclass=11:16,
 # Initializing using the most recent MCMC -------------------------------------
 # load('Model_out/mcmc_out_1_26.rda')
 # init_par[par_index$delta_i] = c(mcmc_out$big_delta_i[[20]])
-# # init_par[-par_index$delta_i] = colMeans(mcmc_out$chain)
-# init_par[-par_index$delta_i] = true_par
+init_par[-par_index$delta_i] = true_par
 # rm(mcmc_out)
 # -----------------------------------------------------------------------------
 

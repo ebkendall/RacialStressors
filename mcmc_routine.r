@@ -157,12 +157,12 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     chain[ttt, par_index$tau2] = pars[par_index$tau2]
     
     # S_chain: Metropolis-within-Gibbs update
-    B_V = update_b_i_cpp(8, EIDs, pars, prior_par, par_index, y_1, id, B, V_i)
+    B_V = update_b_i_cpp(8, EIDs, pars, prior_par, par_index, y_1, id, B, V_i,y_2)
     B = B_V[[1]]
     V_i = B_V[[2]]
 
     # Evaluate the log_post of the initial parameters
-    log_post_prev = log_f_i_cpp_total(EIDs, pars, prior_par, par_index, y_1, id, B)
+    log_post_prev = log_f_i_cpp_total(EIDs, pars, prior_par, par_index, y_1, id, B, y_2, V_i)
       
     for(j in 1:n_group){
 
@@ -176,7 +176,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       }
 
       # Compute the log density for the proposal
-      log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, id, B)
+      log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, id, B, y_2, V_i)
       
 
       # Only propose valid parameters during the burnin period
@@ -190,7 +190,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
               proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],sd=sqrt(pcov[[j]]*pscale[j]))
           }
           
-          log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, id, B)
+          log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, id, B, y_2, V_i)
         }
       }
 

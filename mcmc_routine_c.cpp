@@ -134,7 +134,7 @@ arma::mat Omega_fun_cpp_new(const int k, const int n_i, const arma::vec &b_i) {
 double log_f_i_cpp(const int i, const int ii, const arma::vec &pars, 
                    const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
                    const arma::vec &y_1, arma::vec t_pts, const arma::vec &id, 
-                   const arma::vec &B) {
+                   const arma::vec &B, const arma::vec &y_2, arma::mat &V_i) {
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
@@ -161,7 +161,8 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     // Subsetting the data to relate only to this participant
     arma::mat b_i = B;
     arma::vec y_1_sub = y_1.elem(sub_ind);
-    
+    arma::vec y_2_sub = y_2.elem(sub_ind);
+
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     int n_i = sub_ind.max() - sub_ind.min() + 1;
     if (any(t_pts == -1)) { t_pts = arma::linspace(1, n_i - 1, n_i - 1);}
@@ -169,7 +170,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     for(int w=0; w < t_pts.n_elem; ++w){
         int k = t_pts(w);
-        double k_scale = k / 100;         // scaling time by 10
+        double k_scale = k / 10;         // scaling time by 10
 
         arma::colvec z_i = {1, k_scale}; // using the current time point
         double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
@@ -196,23 +197,28 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(M(b_k - 1, y_1_k-1));
     }
     
-    // Likelihood components from the other parts
-    arma::vec p_mean = prior_par(0);
-    arma::mat p_sd = arma::diagmat(prior_par(1));
+    // Likelihood from the RSA response
+    arma::vec delta_i_vec = pars.elem(par_index(5) - 1);
+    arma::mat delta_i_big = arma::reshape(delta_i_vec, n_i, 3);
+    arma::vec delta_i = delta_i_big.row(ii).t();
 
-    arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
-    // arma::mat x = vec_zeta_content;
-    double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
+    arma::vec mean_vec_y_2 = V_i * delta_i;
+    arma::mat cov_y_2 = arma::eye(n_i, n_i);
+    arma::vec vec_tau2 = pars.elem(par_index(3) - 1);
+    double tau2 = vec_tau2(0);
+    cov_y_2 = tau2 * cov_y_2;
 
-    in_value = in_value + log_prior_dens;
-    
+    double log_dens = arma::as_scalar(dmvnorm(y_2_sub.t(), mean_vec_y_2, cov_y_2, true));
+    in_value = in_value + log_dens;
+
     return in_value;
 }
 
 // [[Rcpp::export]]
 double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,  
                          const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
-                         const arma::vec &y_1, const arma::vec &id, const arma::field <arma::vec> &B) {
+                         const arma::vec &y_1, const arma::vec &id, const arma::field <arma::vec> &B,
+                         const arma::vec &y_2, arma::field <arma::mat> &V_i) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
     // "i" is the numeric EID number
@@ -225,11 +231,22 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
         int i = EIDs(ii);
 
         arma::vec t_pts = {-1}; 
-        in_vals(ii) = log_f_i_cpp(i, ii, pars, prior_par, par_index, y_1, t_pts, id, B(ii));
+        in_vals(ii) = log_f_i_cpp(i, ii, pars, prior_par, par_index, y_1, t_pts, id, B(ii), y_2, V_i(ii));
     }
     
     double in_value = arma::accu(in_vals);
-    
+
+    // Likelihood components from the Metropolis priors
+    arma::vec p_mean = prior_par(0);
+    arma::mat p_sd = arma::diagmat(prior_par(1));
+
+    arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
+    arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
+    arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
+    double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
+
+    in_value = in_value + log_prior_dens;
+
     return in_value;
 }
 
@@ -237,7 +254,8 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
 Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &pars,
                           const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
                           const arma::vec &y_1, const arma::vec &id,
-                          arma::field <arma::vec> &B, arma::field <arma::mat> &V_i) {
+                          arma::field <arma::vec> &B, arma::field <arma::mat> &V_i,
+                          const arma::vec &y_2) {
 
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
     // "i" is the numeric EID number
@@ -278,14 +296,14 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
             bool valid_prop = true;
 
             if(valid_prop) {
-                double log_target_prev = log_f_i_cpp(i, ii, pars, prior_par, 
+                double log_target_prev = log_f_i_cpp(i, ii, pars, prior_par,
                                                      par_index, y_1, t_pts, id,
-                                                     B_temp);
+                                                     B_temp, y_2, V_temp);
 
-                double log_target = log_f_i_cpp(i, ii, pars, prior_par, 
+                double log_target = log_f_i_cpp(i, ii, pars, prior_par,
                                                 par_index, y_1, t_pts, id,
-                                                pr_B);
-                
+                                                pr_B, y_2, V_temp);
+
                 arma::vec col1(pr_B.n_elem, arma::fill::ones);
                 arma::vec col2(pr_B.n_elem, arma::fill::zeros);
                 col2.elem(arma::find(pr_B == 2)).ones(); 
