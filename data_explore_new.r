@@ -64,14 +64,31 @@ print(paste0("30s --> S1: ", round(mean(data_format_30[data_format_30[,'state'] 
                     ", S2: ", round(mean(data_format_30[data_format_30[,'state'] == 'Stress', 'rsa']), 3),
                     ", S3: ", round(mean(data_format_30[data_format_30[,'state'] == 'Recovery', 'rsa']), 3)))
 
-print(paste0("5s ---> S1: ", round(mean(data_format_5[data_format_5[,'state'] == "Baseline", 'rsa']), 3),
-             ", S2: ", round(mean(data_format_5[data_format_5[,'state'] == 'Stress', 'rsa']), 3),
-             ", S3: ", round(mean(data_format_5[data_format_5[,'state'] == 'Recovery', 'rsa']), 3)))
+print(paste0("5s ---> S1: ", round(mean(data_format_5[data_format_5[,'state'] == 1, 'rsa']), 3),
+             ", S2: ", round(mean(data_format_5[data_format_5[,'state'] == 2, 'rsa']), 3),
+             ", S3: ", round(mean(data_format_5[data_format_5[,'state'] == 3, 'rsa']), 3)))
 
 print(paste0("1s ---> S1: ", round(mean(data_format_1[data_format_1[,'state'] == "Baseline", 'rsa']), 3),
              ", S2: ", round(mean(data_format_1[data_format_1[,'state'] == 'Stress', 'rsa']), 3),
              ", S3: ", round(mean(data_format_1[data_format_1[,'state'] == 'Recovery', 'rsa']), 3)))
 
+# Chaning the state labels
+data_format_5[data_format_5[,"state"] == "Baseline", "state"] = 1
+data_format_5[data_format_5[,"state"] == "Stress", "state"] = 2
+data_format_5[data_format_5[,"state"] == "Recovery", "state"] = 3
+data_format_5 = cbind(data_format_5, 0)
+colnames(data_format_5)[4] = "time"
+for(i in unique(data_format_5[,"id"])) {
+    sub_data = data_format_5[data_format_5[,'id'] == i, ]
+    sub_data[,"time"] = 1:nrow(sub_data)
+    
+    data_format_5[data_format_5[,'id'] == i, ] = sub_data
+}
+
 save(data_format_30, file = 'Data/data_format_30.rda')
 save(data_format_5 , file = 'Data/data_format_5.rda')
 save(data_format_1 , file = 'Data/data_format_1.rda')
+
+plot(data_format_1[data_format_1[,'id'] == 25897, 'rsa'])
+plot(data_format_5[data_format_5[,'id'] == 25897, 'rsa'])
+plot(data_format_30[data_format_30[,'id'] == 25897, 'rsa'])

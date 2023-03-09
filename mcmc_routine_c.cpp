@@ -7,7 +7,7 @@
 using namespace Rcpp;
 
 // Defining the Omega_List as a global variable when pre-compiling ----------
-const arma::mat adj_mat = {{1, 1, 0},
+const arma::mat adj_mat = {{1, 1, 1},
                            {0, 1, 1},
                            {1, 1, 1}};
 
@@ -148,7 +148,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
     
     // Manually populate the matrix
-    arma::mat zeta = arma::reshape(vec_zeta_content, 4, 2);
+    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 2);
     arma::mat M = {{1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
                    {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
                    {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
@@ -169,7 +169,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     for(int w=0; w < t_pts.n_elem; ++w){
         int k = t_pts(w);
-        double k_scale = k / 10;         // scaling time by 10
+        double k_scale = k / 100;         // scaling time by 10
 
         arma::colvec z_i = {1, k_scale}; // using the current time point
         double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
@@ -180,12 +180,12 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         double q3 = exp(q3_sub);
         double q4_sub = arma::as_scalar(zeta.row(3) * z_i);
         double q4 = exp(q4_sub);
-        // double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
-        // double q5 = exp(q5_sub);
+        double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
+        double q5 = exp(q5_sub);
         
-        arma::mat Q = { {  1,  q1,   0},
-                        {  0,   1,  q2},
-                        { q3,  q4,   1}};
+        arma::mat Q = { {  1,  q1,  q2},
+                        {  0,   1,  q3},
+                        { q4,  q5,   1}};
         
         arma::vec q_row_sums = arma::sum(Q, 1);
         arma::mat P_i = Q.each_col() / q_row_sums;
@@ -365,26 +365,38 @@ arma::mat update_delta_i_cpp(const arma::vec &y_2, const arma::vec &pars,
 void test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_par, 
                     const arma::field<arma::uvec> &par_index) {
 
-    int N = 3;
-    Rcpp::Rcout << "Case (c) Full" << std::endl;
-    for(int w=0; w < N; w++) {
-      Rcpp::Rcout << "() -> () -> " << w+1 << std::endl;
-      Rcpp::Rcout << Omega_List_GLOBAL(0)(w) << std::endl;
-    }
+    // int N = 3;
+    // Rcpp::Rcout << "Case (c) Full" << std::endl;
+    // for(int w=0; w < N; w++) {
+    //   Rcpp::Rcout << "() -> () -> " << w+1 << std::endl;
+    //   Rcpp::Rcout << Omega_List_GLOBAL(0)(w) << std::endl;
+    // }
     
-    Rcpp::Rcout << "Case (b) Full" << std::endl;
-    for(int i = 0; i < N; i++) {
-      for(int j = 0; j < N; j++) {
-        Rcpp::Rcout << i+1 << "-->" << j+1 << std::endl;
-        Rcpp::Rcout << Omega_List_GLOBAL(1)(i, j) << std::endl;
-      }
-    }
+    // Rcpp::Rcout << "Case (b) Full" << std::endl;
+    // for(int i = 0; i < N; i++) {
+    //   for(int j = 0; j < N; j++) {
+    //     Rcpp::Rcout << i+1 << "-->" << j+1 << std::endl;
+    //     Rcpp::Rcout << Omega_List_GLOBAL(1)(i, j) << std::endl;
+    //   }
+    // }
     
-    Rcpp::Rcout << "Case (a) Full" << std::endl;
-    for(int w=0; w < N; w++) {
-      Rcpp::Rcout << w + 1 << " -> () -> ()" << std::endl;
-      Rcpp::Rcout << Omega_List_GLOBAL(2)(w) << std::endl;
-    }
+    // Rcpp::Rcout << "Case (a) Full" << std::endl;
+    // for(int w=0; w < N; w++) {
+    //   Rcpp::Rcout << w + 1 << " -> () -> ()" << std::endl;
+    //   Rcpp::Rcout << Omega_List_GLOBAL(2)(w) << std::endl;
+    // }
+
+    arma::mat M = {{1,0,0},
+                   {0,2,0},
+                   {0,0,3}};
+    arma::mat W = arma::expmat(M);
+    Rcpp::Rcout << W << std::endl;
+
+    arma::mat temp = 1.3 * M;
+    Rcpp::Rcout << temp << std::endl;
+
+    W = arma::expmat(temp);
+    Rcpp::Rcout << W << std::endl;
 
     // arma::vec temp = {1,2};
     // Rcpp::Rcout << temp + 1 << std::endl;
@@ -394,19 +406,19 @@ void test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_p
     //   Rcpp::Rcout << sampled_index << std::endl;
     // }
 
-    arma::vec t_pts = {1,2};
-    if(any(t_pts == -1)) {
-        Rcpp::Rcout << "wrong" << std::endl;
-    } else{
-        Rcpp::Rcout << "correct" << std::endl;
-    }
+    // arma::vec t_pts = {1,2};
+    // if(any(t_pts == -1)) {
+    //     Rcpp::Rcout << "wrong" << std::endl;
+    // } else{
+    //     Rcpp::Rcout << "correct" << std::endl;
+    // }
     
-    t_pts = {-1};
-    if(any(t_pts == -1)) {
-        Rcpp::Rcout << "correct" << std::endl;
-    } else{
-        Rcpp::Rcout << "wrong" << std::endl;
-    }
+    // t_pts = {-1};
+    // if(any(t_pts == -1)) {
+    //     Rcpp::Rcout << "correct" << std::endl;
+    // } else{
+    //     Rcpp::Rcout << "wrong" << std::endl;
+    // }
     // Multivariate Normal Check
     // arma::uvec vec_zeta_ind = par_index(0);
     // arma::uvec vec_misclass_ind = par_index(1);

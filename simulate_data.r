@@ -6,18 +6,19 @@ N = length(unique(data_format$ID..))
 n_sim = 1
 
 # True parameter values -------------------------------------------------------
-par_index = list( zeta=1:8, misclass=9:14,
-                  delta = 15:17, tau2 = 18, upsilon = 19:27,
-                  delta_i = 28:300)
-# par_index = list( zeta=1:4, misclass=5:10,
-#                   delta = 11:13, tau2 = 14, upsilon = 15:23,
-#                   delta_i = 24:296)
+# par_index = list( zeta=1:8, misclass=9:14,
+#                   delta = 15:17, tau2 = 18, upsilon = 19:27,
+#                   delta_i = 28:300)
+par_index = list( zeta=1:10, misclass=11:16,
+                  delta = 17:19, tau2 = 20, upsilon = 21:29,
+                  delta_i = 30:302)
 
 # Baseline only transition matrix
 # Logit transition probability parameters
-# 1->2, 2->3, 3->1, 3->2
-zeta = matrix(c(   -3,  2.1,
-                   -4,  2.1,
+# 1->2, 1->3, 2->3, 3->1, 3->2
+zeta = matrix(c(   -4,  2.1,
+                   -8, -1.7,
+                   -4,  1.8,
                    -6, -1.7,
                    -6, -1.7), ncol = 2, byrow = T)
 
@@ -41,7 +42,7 @@ tau2 = 0.1
 upsilon = diag(c(1, 0.1^2, 0.1^2))
 
 true_par = c(c(zeta), misclass, delta, tau2, c(upsilon))
-save(true_par, file = 'Data/Simulation/true_par.rda')
+save(true_par, file = 'Data/Simulation/true_par_b.rda')
 
 # Simulate the data -----------------------------------------------------------
 
@@ -69,11 +70,12 @@ for(ind in 1:n_sim) {
 				q2   = exp(z_i %*% t(zeta[2, , drop=F]))
 				q3   = exp(z_i %*% t(zeta[3, , drop=F]))
 				q4   = exp(z_i %*% t(zeta[4, , drop=F]))
+                        q5   = exp(z_i %*% t(zeta[5, , drop=F]))
 
-	                  # transitions: 1->2, 2->3, 3->1, 3->2
-				Q = matrix(c(  1,  q1,  0,
-				               0,   1, q2,
-				              q3,  q4,  1), ncol=3, byrow=T)
+	                  # transitions: 1->2, 1->3, 2->3, 3->1, 3->2
+				Q = matrix(c(  1,  q1, q2,
+				               0,   1, q3,
+				              q4,  q5,  1), ncol=3, byrow=T)
 				P_i = Q / rowSums(Q)
 
 				# Sample the latent state sequence
@@ -101,7 +103,7 @@ for(ind in 1:n_sim) {
       }
 
       colnames(sim_data) = c("ID..", "Time", "State", "RSA", "True_state")
-      save(sim_data, file = paste0("Data/Simulation/sim_data_", ind, ".rda"))
+      save(sim_data, file = paste0("Data/Simulation/sim_data_", ind, "_b.rda"))
 
       cat('\n','Proption of occurances in each state:','\n')
 	print(table(sim_data[,'True_state'])/dim(sim_data)[1])
@@ -112,4 +114,22 @@ for(ind in 1:n_sim) {
 }
 
 
+# Forcing some mislabels
+load('Data/Simulation/sim_data_1_b.rda')
+id = unique(sim_data[,"ID.."])
+sim_data = cbind(sim_data, 0)
+colnames(sim_data)[6] = "changed"
 
+for(i in id) {
+    sub_dat = sim_data[sim_data[,"ID.."] == i, ]
+    
+    if(sum(sub_dat[,"State"]==3) > 8) {
+        sub_dat[,"changed"] = 1
+        start_ind = max(which(diff(sub_dat[,"State"]) == 1)) + 1
+        sub_dat[start_ind:(start_ind + 3), "State"] = 2
+    }
+    
+    sim_data[sim_data[,"ID.."] == i, ] = sub_dat
+}
+
+save(sim_data, file = 'Data/Simulation/sim_data_1_c.rda')

@@ -6,7 +6,7 @@ set.seed(args[1])
 
 simulation = args[2]
 
-trialNum = 23 # CHANGE EVERY TIME ******************
+trialNum = 27 # CHANGE EVERY TIME ******************
 
 Dir = 'Model_out/'
 
@@ -14,7 +14,7 @@ Dir = 'Model_out/'
 load(paste0(Dir,'mcmc_out_',toString(args[1]),'_', trialNum,'.rda'))
 
 if(simulation) {
-    load('Data/Simulation/sim_data_1.rda')
+    load('Data/Simulation/sim_data_1_c.rda')
     data_format = sim_data
 } else {
     load('Data/data_format.rda')
@@ -47,7 +47,7 @@ for(i in EIDs){
 	color_choice = c('blue', 'red', 'green')
 
 	plot(t_grid, data_format[indices_i, "RSA"], xlab='time', ylab = 'RSA', 
-		col.main='green', main = paste0('Participant: ', i))
+		col.main='green', main = paste0('Participant: ', i, " ", mean(data_format[indices_i, 'changed'])))
 	axis( side=1, at=t_grid, col.axis='green', labels=t_grid / 4)
 	axis( side=2, at=seq(min(data_format[indices_i, "RSA"]), max(data_format[indices_i, "RSA"])), col.axis='green')
 	
