@@ -21,11 +21,11 @@ update_delta = function(pars, par_index, n_sub) {
     # big_sigma = matrix(c( 1.09719994, -0.08249012, 0.03732079,
     #                      -0.08249012,  0.40009306, 0.42303634,
     #                       0.03732079,  0.42303634, 0.40009306), ncol = 3, byrow = T)
-    big_sigma = diag(c(3,0.4,0.4))
+    big_sigma = diag(c(2,0.3,0.1))
     
     big_sigma_inv = solve(big_sigma)
     # big_sigma_inv = diag(c(0.01, 0.2, 0.2))
-    delta_0 = c(6.41196731,  -2, -0.5)
+    delta_0 = c(6.41196731,  -1, -0.5)
     
     # variance for delta^(i)
     upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
@@ -50,8 +50,8 @@ update_upsilon = function(pars, par_index, n_sub) {
     }
     
     # Prior for Upsilon
-    # psi = diag(c(3,0.4,0.4))
-    psi = diag(3)
+    psi = diag(c(2,0.3,0.1))
+    # psi = diag(3)
     nu = 3 + 2
     
     # Gibbs update
@@ -124,8 +124,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # Initializing the state space list B
   B = list()
   for(i in 1:length(EIDs)) {
-    # state_sub = rep(1, length(y_1[id == EIDs[i]]))
-    state_sub = y_1[id == EIDs[i]]
+    state_sub = rep(1, length(y_1[id == EIDs[i]]))
+    # state_sub = y_1[id == EIDs[i]]
     b_temp = matrix(state_sub, ncol = 1)
     B[[i]] = b_temp
   }

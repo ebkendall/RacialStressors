@@ -13,31 +13,31 @@ n_post = 5000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 20000
+steps = 10000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-par_index = list( zeta=1:10, misclass=11:16,
-                  delta = 17:19, tau2 = 20, upsilon = 21:29,
-                  delta_i = 30:302)
-# par_index = list( zeta=1:5, misclass=6:11,
-#                   delta = 12:14, tau2 = 15, upsilon = 16:24,
-#                   delta_i = 25:297)
+# par_index = list( zeta=1:10, misclass=11:16,
+#                   delta = 17:19, tau2 = 20, upsilon = 21:29,
+#                   delta_i = 30:413)
+par_index = list( zeta=1:5, misclass=6:11,
+                  delta = 12:14, tau2 = 15, upsilon = 16:24,
+                  delta_i = 25:297)
 # par_index = list( zeta=1:8, misclass=9:14,
 #                   delta = 15:17, tau2 = 18, upsilon = 19:27,
 #                   delta_i = 28:300)
-index_seeds = c(1)
+index_seeds = c(1:3)
 
 labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'),  
             TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
             TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'), 
             TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
             TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 2)'),
-            TeX(r'($\hat{\zeta}_{1,1}:$ Time: 1 $\to$ 2)'), 
-            TeX(r'($\hat{\zeta}_{1,2}:$ Time: 2 $\to$ 1)'), 
-            TeX(r'($\hat{\zeta}_{1,3}:$ Time: 2 $\to$ 3)'), 
-            TeX(r'($\hat{\zeta}_{1,4}:$ Time: 3 $\to$ 1)'), 
-            TeX(r'($\hat{\zeta}_{1,5}:$ Time: 3 $\to$ 2)'),
+            # TeX(r'($\hat{\zeta}_{1,1}:$ Time: 1 $\to$ 2)'), 
+            # TeX(r'($\hat{\zeta}_{1,2}:$ Time: 2 $\to$ 1)'), 
+            # TeX(r'($\hat{\zeta}_{1,3}:$ Time: 2 $\to$ 3)'), 
+            # TeX(r'($\hat{\zeta}_{1,4}:$ Time: 3 $\to$ 1)'), 
+            # TeX(r'($\hat{\zeta}_{1,5}:$ Time: 3 $\to$ 2)'),
             TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'), TeX(r'(P(obs. S1 | true S2))'),
             TeX(r'(P(obs. S3 | true S2))'), TeX(r'(P(obs. S1 | true S3))'), TeX(r'(P(obs. S2 | true S3))'),
             TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),

@@ -148,7 +148,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     arma::vec vec_misclass_content = pars.elem(vec_misclass_ind - 1);
     
     // Manually populate the matrix
-    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 2);
+    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 1); // NO TIME COMPONENT
     arma::mat M = {{1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
                    {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
                    {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
@@ -165,36 +165,44 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
 
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     int n_i = sub_ind.max() - sub_ind.min() + 1;
-    if (any(t_pts == -1)) { t_pts = arma::linspace(1, n_i - 1, n_i - 1);}
+    if (any(t_pts == -1)) { t_pts = arma::linspace(0, n_i - 1, n_i - 1);}
     
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     for(int w=0; w < t_pts.n_elem; ++w){
+        
         int k = t_pts(w);
-        double k_scale = k / 10;         // scaling time by 10
-
-        arma::colvec z_i = {1, k_scale}; // using the current time point
-        double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
-        double q1 = exp(q1_sub);
-        double q2_sub = arma::as_scalar(zeta.row(1) * z_i);
-        double q2 = exp(q2_sub);
-        double q3_sub = arma::as_scalar(zeta.row(2) * z_i);
-        double q3 = exp(q3_sub);
-        double q4_sub = arma::as_scalar(zeta.row(3) * z_i);
-        double q4 = exp(q4_sub);
-        double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
-        double q5 = exp(q5_sub);
-        
-        arma::mat Q = { {  1,  q1,  q2},
-                        {  0,   1,  q3},
-                        { q4,  q5,   1}};
-        
-        arma::vec q_row_sums = arma::sum(Q, 1);
-        arma::mat P_i = Q.each_col() / q_row_sums;
-        
-        int b_k_1 = b_i(k-1);
-        int b_k = b_i(k);
-        int y_1_k = y_1_sub(k);
-        in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(M(b_k - 1, y_1_k-1));
+        if(k==0){
+            int b_k = b_i(k);
+            int y_1_k = y_1_sub(k);
+            in_value = in_value + log(M(b_k - 1, y_1_k-1));
+        } else{
+            double k_scale = k / 100;         // scaling time by 10
+            
+            // arma::colvec z_i = {1, k_scale}; // using the current time point
+            arma::colvec z_i = {1};
+            double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
+            double q1 = exp(q1_sub);
+            double q2_sub = arma::as_scalar(zeta.row(1) * z_i);
+            double q2 = exp(q2_sub);
+            double q3_sub = arma::as_scalar(zeta.row(2) * z_i);
+            double q3 = exp(q3_sub);
+            double q4_sub = arma::as_scalar(zeta.row(3) * z_i);
+            double q4 = exp(q4_sub);
+            double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
+            double q5 = exp(q5_sub);
+            
+            arma::mat Q = { {  1,  q1,  q2},
+            {  0,   1,  q3},
+            { q4,  q5,   1}};
+            
+            arma::vec q_row_sums = arma::sum(Q, 1);
+            arma::mat P_i = Q.each_col() / q_row_sums;
+            
+            int b_k_1 = b_i(k-1);
+            int b_k = b_i(k);
+            int y_1_k = y_1_sub(k);
+            in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(M(b_k - 1, y_1_k-1));
+        }
     }
     
     // Likelihood from the RSA response
@@ -227,7 +235,7 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
     // "ii" is the index of the EID
     arma::vec in_vals(EIDs.n_elem, arma::fill::zeros);
     
-    omp_set_num_threads(16);
+    omp_set_num_threads(6);
     # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
@@ -251,6 +259,122 @@ double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,
 
     return in_value;
 }
+
+// [[Rcpp::export]]
+double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,  
+                              const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
+                              const arma::vec &y_1, const arma::vec &id, const arma::vec &y_2) {
+    
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
+    // "i" is the numeric EID number
+    // "ii" is the index of the EID
+    arma::vec in_vals(EIDs.n_elem, arma::fill::zeros);
+    
+    // Initial state probabilities
+    arma::vec init = {1, 0, 0};
+    
+    // Manually populate the misclassification probabilities
+    arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
+    arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+                    {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
+                    {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
+    arma::vec m_row_sums = arma::sum(M, 1);
+    M = M.each_col() / m_row_sums; 
+    
+    // Populate the Transition probability matrix (independent of time)
+    arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
+    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 1); 
+    // arma::colvec z_i = {1, k_scale}; // using the current time point
+    arma::colvec z_i = {1};
+    double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
+    double q1 = exp(q1_sub);
+    double q2_sub = arma::as_scalar(zeta.row(1) * z_i);
+    double q2 = exp(q2_sub);
+    double q3_sub = arma::as_scalar(zeta.row(2) * z_i);
+    double q3 = exp(q3_sub);
+    double q4_sub = arma::as_scalar(zeta.row(3) * z_i);
+    double q4 = exp(q4_sub);
+    double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
+    double q5 = exp(q5_sub);
+    arma::mat Q = { {  1,  q1,  q2},
+                    {  0,   1,  q3},
+                    { q4,  q5,   1}};
+    arma::vec q_row_sums = arma::sum(Q, 1);
+    arma::mat P = Q.each_col() / q_row_sums;
+    
+    // Defining key terms
+    arma::vec delta_i_vec = pars.elem(par_index(5) - 1);
+    arma::mat delta_i_big = arma::reshape(delta_i_vec, EIDs.n_elem, 3);
+    
+    double tau2 = arma::as_scalar(pars.elem(par_index(3) - 1));
+    double tau = sqrt(tau2);
+    
+    omp_set_num_threads(6);
+    # pragma omp parallel for
+    for (int ii = 0; ii < EIDs.n_elem; ii++) {
+        int i = EIDs(ii);
+        
+        // Subsetting the data
+        arma::uvec sub_ind = arma::find(id == i);
+        arma::vec y_1_i = y_1.elem(sub_ind);
+        arma::vec y_2_i = y_2.elem(sub_ind);
+        arma::vec delta_i = delta_i_big.row(ii).t();
+        
+        // Likelihood component from y_1
+        arma::vec misclass_fill = M.col(y_1_i(0) - 1);
+        arma::mat D_i_1 = arma::diagmat(misclass_fill);
+        
+        // Likelihood component from y_2
+        double mean_1 = delta_i(0);
+        double mean_2 = delta_i(0) + delta_i(1);
+        double mean_3 = delta_i(0) + delta_i(2);
+        
+        double d_1 = arma::normpdf(y_2_i(0), mean_1, tau);
+        double d_2 = arma::normpdf(y_2_i(0), mean_2, tau);
+        double d_3 = arma::normpdf(y_2_i(0), mean_3, tau);
+        
+        arma::vec d_fill = {d_1, d_2, d_3};
+        arma::mat D_i_2 = arma::diagmat(d_fill);
+        
+        arma::mat init_transpose = init.t();
+        
+        arma::mat f_i = init_transpose * D_i_1 * D_i_2;
+        
+        for(int k = 1; k < y_1_i.n_elem; k++) {
+            
+            // Likelihood component from y_1
+            arma::vec misclass_fill = M.col(y_1_i(k) - 1);
+            arma::mat D_i_1 = arma::diagmat(misclass_fill);
+            
+            // Likelihood component from y_2
+            double d_1 = arma::normpdf(y_2_i(k), mean_1, tau);
+            double d_2 = arma::normpdf(y_2_i(k), mean_2, tau);
+            double d_3 = arma::normpdf(y_2_i(k), mean_3, tau);
+            
+            arma::vec d_fill = {d_1, d_2, d_3};
+            arma::mat D_i_2 = arma::diagmat(d_fill);
+            
+            arma::mat temp = f_i * P * D_i_1 * D_i_2;
+            f_i = temp;
+        }
+        in_vals(ii) = log(arma::accu(f_i));
+    }
+    
+    double in_value = arma::accu(in_vals);
+    
+    // Likelihood components from the Metropolis priors
+    arma::vec p_mean = prior_par(0);
+    arma::mat p_sd = arma::diagmat(prior_par(1));
+
+    arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
+    double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
+    
+    in_value = in_value + log_prior_dens;
+    
+    return in_value;
+}
+
+
 
 // [[Rcpp::export]]
 Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &pars,
@@ -282,8 +406,14 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
 
         // The first state is always S1, therefore we start at 1 instead of 0
         for (int k = 1; k < n_i - 1; k++) {
-
-            arma::vec t_pts = {k, k+1};
+            
+            arma::vec t_pts;
+            if (k == n_i - 2) {
+                t_pts = arma::linspace(k, k+1, 2);
+            } else {
+                t_pts = arma::linspace(k, k+2, 3);
+            }
+            
             arma::vec pr_B = B_temp;
             arma::mat pr_V = V_temp;
 

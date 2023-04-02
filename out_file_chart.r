@@ -6,7 +6,7 @@ set.seed(args[1])
 
 simulation = args[2]
 
-trialNum = 30 # CHANGE EVERY TIME ******************
+trialNum = 4 # CHANGE EVERY TIME ******************
 
 Dir = 'Model_out/'
 
@@ -17,7 +17,8 @@ if(simulation) {
     load('Data/Simulation/sim_data_1_c.rda')
     data_format = sim_data
 } else {
-    load('Data/data_format.rda')
+    load('Data/data_format_5.rda')
+    data_format = data_format_5
 }
 
 EIDs = unique(data_format[,"ID.."])
@@ -44,11 +45,11 @@ for(i in EIDs){
 	
 	# bar_grid = seq( 0, n_i, by=5)[-1]
 
-	color_choice = c('blue', 'red', 'green')
+	color_choice = c('dodgerblue', 'firebrick1', 'yellow2')
 
 	plot(t_grid, data_format[indices_i, "RSA"], xlab='time', ylab = 'RSA', 
-		col.main='green', main = paste0('Participant: ', i, " ", mean(data_format[indices_i, 'changed'])))
-	axis( side=1, at=t_grid, col.axis='green', labels=t_grid / 4)
+		col.main='green', main = paste0('Participant: ', i)) #, " ", mean(data_format[indices_i, 'changed'])
+	axis( side=1, at=t_grid, col.axis='green', labels=t_grid)
 	axis( side=2, at=seq(min(data_format[indices_i, "RSA"]), max(data_format[indices_i, "RSA"])), col.axis='green')
 	
 	if(simulation){
@@ -57,15 +58,14 @@ for(i in EIDs){
 	    abline( v=t_grid[to_s3], col='yellow2', lwd=2)
 	    col_choice = c('dodgerblue', 'firebrick1', 'yellow2')
 	    abline( v= t_grid[1], col = col_choice[b_i[1]], lwd = 2)
+	} else {
+	    s = diff(as.numeric(data_format$State[indices_i]))
+	    abline(v = t_grid[1], col = color_choice[as.numeric(sub_dat$State[1])], lwd = 2)
+	    for(j in 1:sum(s)){
+	        t_switch = which(s==1)[j]+1
+	        abline(v = t_grid[t_switch], col = color_choice[as.numeric(sub_dat$State[t_switch])], lwd = 2)
+	    }
 	}
-# 	s = diff(data_format$State[indices_i])
-#     	abline(v = t_grid[1], col = color_choice[sub_dat$State[1]], lwd = 2)
-# 	for(j in 1:sum(s)){
-# 		t_switch = which(s==1)[j]+1
-# 		abline(v = t_grid[t_switch], 
-# 			col = color_choice[sub_dat$State[t_switch]],
-# 			lwd = 2)
-# 	}
 
 	barplot( rbind(   colMeans(mcmc_out$B_chain[, indices_i] == 1),
 				colMeans(mcmc_out$B_chain[, indices_i] == 2),
@@ -77,7 +77,7 @@ for(i in EIDs){
 	legend( 'topright', inset=c(0,-.28), xpd=T, horiz=T, bty='n', x.intersp=.75,
 			legend=c( 'Nominal', 'Stress', 'Recovery'), pch=15, pt.cex=1.5, 
 					col=c( 'dodgerblue', 'firebrick1', 'yellow2'))
-	# axis( side=1, at=bar_grid, col.axis='green', labels=t_grid)
+	axis( side=1, at=t_grid, col.axis='green', labels=t_grid)
 	axis( side=2, at=0:1, col.axis='green')
 	
 	# abline(v = t_grid[1], col = color_choice[sub_dat$State[1]], lwd = 2)

@@ -85,6 +85,19 @@ for(i in unique(data_format_5[,"id"])) {
     data_format_5[data_format_5[,'id'] == i, ] = sub_data
 }
 
+data_format_30[data_format_30[,"state"] == "Baseline", "state"] = 1
+data_format_30[data_format_30[,"state"] == "Stress", "state"] = 2
+data_format_30[data_format_30[,"state"] == "Recovery", "state"] = 3
+data_format_30 = cbind(data_format_30, 0)
+colnames(data_format_30)[4] = "time"
+for(i in unique(data_format_30[,"id"])) {
+    sub_data = data_format_30[data_format_30[,'id'] == i, ]
+    sub_data[,"time"] = 1:nrow(sub_data)
+    
+    data_format_30[data_format_30[,'id'] == i, ] = sub_data
+}
+colnames(data_format_5) = colnames(data_format_30) = c('ID..', 'State', 'RSA', 'Time')
+
 save(data_format_30, file = 'Data/data_format_30.rda')
 save(data_format_5 , file = 'Data/data_format_5.rda')
 save(data_format_1 , file = 'Data/data_format_1.rda')
@@ -92,3 +105,13 @@ save(data_format_1 , file = 'Data/data_format_1.rda')
 plot(data_format_1[data_format_1[,'id'] == 25897, 'rsa'])
 plot(data_format_5[data_format_5[,'id'] == 25897, 'rsa'])
 plot(data_format_30[data_format_30[,'id'] == 25897, 'rsa'])
+
+load('Data/data_format_1.rda')
+load('Data/data_format_30.rda')
+load('Data/data_format_5.rda')
+mean(data_format_1[data_format_1[,"state"] == "Baseline", "rsa"], na.rm = T)
+mean(data_format_1[data_format_1[,"state"] == "Stress", "rsa"])
+mean(data_format_1[data_format_1[,"state"] == "Recovery", "rsa"])
+
+# sd = 1.5
+# mean baseline = 6.5

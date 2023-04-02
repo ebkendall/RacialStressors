@@ -9,18 +9,21 @@ n_sim = 1
 # par_index = list( zeta=1:8, misclass=9:14,
 #                   delta = 15:17, tau2 = 18, upsilon = 19:27,
 #                   delta_i = 28:300)
-par_index = list( zeta=1:10, misclass=11:16,
-                  delta = 17:19, tau2 = 20, upsilon = 21:29,
-                  delta_i = 30:302)
+# par_index = list( zeta=1:10, misclass=11:16,
+#                   delta = 17:19, tau2 = 20, upsilon = 21:29,
+#                   delta_i = 30:302)
 
+par_index = list( zeta=1:5, misclass=6:11,
+                  delta = 12:14, tau2 = 15, upsilon = 16:24,
+                  delta_i = 25:length(init_par))
 # Baseline only transition matrix
 # Logit transition probability parameters
 # 1->2, 1->3, 2->3, 3->1, 3->2
-zeta = matrix(c(   -4,  2.1,
-                   -8, -1.7,
-                   -4,  1.8,
-                   -6, -1.7,
-                   -6, -1.7), ncol = 2, byrow = T)
+zeta = matrix(c(   -2,#  2.1,
+                   -5,# -1.7,
+                   -0.3795,#  1.8,
+                   -8.5,# -1.7,
+                   -8.6), ncol = 1, byrow = T)# -1.7
 
 # Logit misclassification probability parameters
 misclass = c(   -6-4, -5-5,
