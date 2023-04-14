@@ -1,4 +1,4 @@
-rsa_data = read.csv('Data/_FinalDataforRSASecondsStatesCovariates.csv', na.strings = "")
+rsa_data = read.csv('Data/Old_data/_FinalDataforRSASecondsStatesCovariates.csv', na.strings = "")
 
 data_format = rsa_data[, c("ID..", "Time", "State", "RSA")]
 

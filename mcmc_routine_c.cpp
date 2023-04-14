@@ -153,7 +153,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
                    {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
                    {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
     arma::vec m_row_sums = arma::sum(M, 1);
-    M = M.each_col() / m_row_sums; 
+    M = M.each_col() / m_row_sums;
     
     // The time-homogeneous probability transition matrix
     arma::uvec sub_ind = arma::find(eids == i);
@@ -174,7 +174,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         if(k==0){
             int b_k = b_i(k);
             int y_1_k = y_1_sub(k);
-            in_value = in_value + log(M(b_k - 1, y_1_k-1));
+            in_value = in_value; // + log(M(b_k - 1, y_1_k-1));
         } else{
             double k_scale = k / 100;         // scaling time by 10
             
@@ -225,42 +225,6 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
 }
 
 // [[Rcpp::export]]
-double log_f_i_cpp_total(const arma::vec &EIDs, const arma::vec &pars,  
-                         const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
-                         const arma::vec &y_1, const arma::vec &id, const arma::field <arma::vec> &B,
-                         const arma::vec &y_2, arma::field <arma::mat> &V_i) {
-    
-    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
-    // "i" is the numeric EID number
-    // "ii" is the index of the EID
-    arma::vec in_vals(EIDs.n_elem, arma::fill::zeros);
-    
-    omp_set_num_threads(6);
-    # pragma omp parallel for
-    for (int ii = 0; ii < EIDs.n_elem; ii++) {
-        int i = EIDs(ii);
-
-        arma::vec t_pts = {-1};
-        in_vals(ii) = log_f_i_cpp(i, ii, pars, prior_par, par_index, y_1, t_pts, id, B(ii), y_2, V_i(ii), EIDs.n_elem);
-    }
-    
-    double in_value = arma::accu(in_vals);
-
-    // Likelihood components from the Metropolis priors
-    arma::vec p_mean = prior_par(0);
-    arma::mat p_sd = arma::diagmat(prior_par(1));
-
-    arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
-    arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
-    double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
-
-    in_value = in_value + log_prior_dens;
-
-    return in_value;
-}
-
-// [[Rcpp::export]]
 double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,  
                               const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_1, const arma::vec &id, const arma::vec &y_2) {
@@ -279,7 +243,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
                     {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
                     {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
     arma::vec m_row_sums = arma::sum(M, 1);
-    M = M.each_col() / m_row_sums; 
+    M = M.each_col() / m_row_sums;
     
     // Populate the Transition probability matrix (independent of time)
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
@@ -339,6 +303,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         arma::mat init_transpose = init.t();
         
         arma::mat f_i = init_transpose * D_i_1 * D_i_2;
+        // arma::mat f_i = init_transpose * D_i_2;
         
         for(int k = 1; k < y_1_i.n_elem; k++) {
             
@@ -355,6 +320,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
             arma::mat D_i_2 = arma::diagmat(d_fill);
             
             arma::mat temp = f_i * P * D_i_1 * D_i_2;
+            // arma::mat temp = f_i * P * D_i_2;
             f_i = temp;
         }
         in_vals(ii) = log(arma::accu(f_i));
@@ -367,6 +333,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     arma::mat p_sd = arma::diagmat(prior_par(1));
 
     arma::mat x = arma::join_cols(vec_zeta_content, vec_misclass_content);
+    // arma::mat x = vec_zeta_content;
     double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
     
     in_value = in_value + log_prior_dens;
@@ -474,8 +441,6 @@ arma::mat update_delta_i_cpp(const arma::vec &y_2, const arma::vec &pars,
     
     arma::mat delta_i(EIDs.n_elem, 3);
     
-    // omp_set_num_threads(8);
-    // # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
         

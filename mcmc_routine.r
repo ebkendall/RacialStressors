@@ -18,13 +18,9 @@ update_delta = function(pars, par_index, n_sub) {
     delta_i = matrix(pars[par_index$delta_i], ncol = 3)
     
     # Prior mean and variance for delta
-    # big_sigma = matrix(c( 1.09719994, -0.08249012, 0.03732079,
-    #                      -0.08249012,  0.40009306, 0.42303634,
-    #                       0.03732079,  0.42303634, 0.40009306), ncol = 3, byrow = T)
     big_sigma = diag(c(2,0.3,0.1))
-    
     big_sigma_inv = solve(big_sigma)
-    # big_sigma_inv = diag(c(0.01, 0.2, 0.2))
+    
     delta_0 = c(6.41196731,  -1, -0.5)
     
     # variance for delta^(i)
@@ -64,7 +60,8 @@ update_upsilon = function(pars, par_index, n_sub) {
 # Gibbs update of the tau2
 update_tau2 = function(y_2, pars, par_index, V_i, n_sub, EIDs, id) {
     
-    a = b = 1
+    a = 100 
+    b = 1
     delta_i = matrix(pars[par_index$delta_i], ncol = 3)
     
     temp = 0
@@ -105,6 +102,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
   group = list(c(par_index$zeta), c(par_index$misclass))
+  # group = list(c(par_index$zeta))
   # group = as.list(c(par_index$zeta, par_index$misclass))
   names(group) = NULL
   n_group = length(group)
@@ -112,7 +110,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # proposal covariance and scale parameter for Metropolis step
   pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
   pscale = rep( 1, n_group)
-  # load('Model_out/mcmc_out_2_21.rda')
+  # load('Model_out/mcmc_out_3_7.rda')
   # pcov = mcmc_out$pcov
   # pscale = mcmc_out$pscale
   # rm(mcmc_out)
@@ -162,8 +160,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     V_i = B_V[[2]]
 
     # Evaluate the log_post of the initial parameters
-    log_post_prev = log_f_i_cpp_total(EIDs, pars, prior_par, par_index, y_1, id, B, y_2, V_i)
-      
+    log_post_prev = fn_log_post_continuous(EIDs,pars, prior_par, par_index,y_1, id, y_2)
+    
     for(j in 1:n_group){
 
       # Propose an update
@@ -176,7 +174,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       }
 
       # Compute the log density for the proposal
-      log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, id, B, y_2, V_i)
+      log_post = fn_log_post_continuous(EIDs,proposal, prior_par, par_index,y_1, id, y_2)
       
 
       # Only propose valid parameters during the burnin period
@@ -190,7 +188,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
               proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],sd=sqrt(pcov[[j]]*pscale[j]))
           }
           
-          log_post = log_f_i_cpp_total(EIDs, proposal, prior_par, par_index, y_1, id, B, y_2, V_i)
+          log_post = fn_log_post_continuous(EIDs,proposal, prior_par, par_index,y_1, id, y_2)
         }
       }
 

@@ -6,7 +6,7 @@ set.seed(args[1])
 
 simulation = args[2]
 
-trialNum = 4 # CHANGE EVERY TIME ******************
+trialNum = 9 # CHANGE EVERY TIME ******************
 
 Dir = 'Model_out/'
 
@@ -17,8 +17,10 @@ if(simulation) {
     load('Data/Simulation/sim_data_1_c.rda')
     data_format = sim_data
 } else {
-    load('Data/data_format_5.rda')
-    data_format = data_format_5
+    load('Data/data_format_15.rda')
+    data_format = data_format_15
+    # load('Data/data_format_30.rda')
+    # data_format = data_format_30
 }
 
 EIDs = unique(data_format[,"ID.."])

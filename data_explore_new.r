@@ -2,8 +2,7 @@
 formatting_data = function(data_time, t) {
     data_format = NULL
     colnums = NULL
-    if(t == 1)  colnums = 6:326
-    if(t == 5)  colnums = 6:69
+    if(t == 15)  colnums = 6:26
     if(t == 30) colnums = 6:15
     for(i in 1:nrow(data_time)) {
         split_id = strsplit(data_time$StudySubjectTask[i], split="_", fixed = T)
@@ -47,42 +46,37 @@ formatting_data = function(data_time, t) {
 }
 
 # three different time frames of data
-data_30 = read.csv('Data/Raw IBI files_HRV_summary_30secondepochs.csv')
+data_30 = read.csv('Data/Raw IBI files_HRV_summary_30secepocs_032323.csv')
+data_30 = data_30[-1,]
 colnames(data_30)
-data_5  = read.csv('Data/Raw IBI files_HRV_summary_5secondepochs.csv')
-colnames(data_5)
-data_1  = read.csv('Data/Raw IBI files_HRV_1secondepochs.csv')
-colnames(data_1)
+data_15  = read.csv('Data/Raw IBI files_HRV_summary_15secepochs_032323.csv')
+data_15 = data_15[-1,]
+colnames(data_15)
 
 
 data_format_30 = formatting_data(data_30, 30)
-data_format_5  = formatting_data(data_5, 5)
-data_format_1  = formatting_data(data_1, 1)
+data_format_15  = formatting_data(data_15, 15)
 
 # checking the mean rsa values 
 print(paste0("30s --> S1: ", round(mean(data_format_30[data_format_30[,'state'] == "Baseline", 'rsa']), 3),
                     ", S2: ", round(mean(data_format_30[data_format_30[,'state'] == 'Stress', 'rsa']), 3),
                     ", S3: ", round(mean(data_format_30[data_format_30[,'state'] == 'Recovery', 'rsa']), 3)))
+print(paste0("15s --> S1: ", round(mean(data_format_15[data_format_15[,'state'] == "Baseline", 'rsa']), 3),
+             ", S2: ", round(mean(data_format_15[data_format_15[,'state'] == 'Stress', 'rsa']), 3),
+             ", S3: ", round(mean(data_format_15[data_format_15[,'state'] == 'Recovery', 'rsa']), 3)))
 
-print(paste0("5s ---> S1: ", round(mean(data_format_5[data_format_5[,'state'] == 1, 'rsa']), 3),
-             ", S2: ", round(mean(data_format_5[data_format_5[,'state'] == 2, 'rsa']), 3),
-             ", S3: ", round(mean(data_format_5[data_format_5[,'state'] == 3, 'rsa']), 3)))
-
-print(paste0("1s ---> S1: ", round(mean(data_format_1[data_format_1[,'state'] == "Baseline", 'rsa']), 3),
-             ", S2: ", round(mean(data_format_1[data_format_1[,'state'] == 'Stress', 'rsa']), 3),
-             ", S3: ", round(mean(data_format_1[data_format_1[,'state'] == 'Recovery', 'rsa']), 3)))
 
 # Chaning the state labels
-data_format_5[data_format_5[,"state"] == "Baseline", "state"] = 1
-data_format_5[data_format_5[,"state"] == "Stress", "state"] = 2
-data_format_5[data_format_5[,"state"] == "Recovery", "state"] = 3
-data_format_5 = cbind(data_format_5, 0)
-colnames(data_format_5)[4] = "time"
-for(i in unique(data_format_5[,"id"])) {
-    sub_data = data_format_5[data_format_5[,'id'] == i, ]
+data_format_15[data_format_15[,"state"] == "Baseline", "state"] = 1
+data_format_15[data_format_15[,"state"] == "Stress", "state"] = 2
+data_format_15[data_format_15[,"state"] == "Recovery", "state"] = 3
+data_format_15 = cbind(data_format_15, 0)
+colnames(data_format_15)[4] = "time"
+for(i in unique(data_format_15[,"id"])) {
+    sub_data = data_format_15[data_format_15[,'id'] == i, ]
     sub_data[,"time"] = 1:nrow(sub_data)
     
-    data_format_5[data_format_5[,'id'] == i, ] = sub_data
+    data_format_15[data_format_15[,'id'] == i, ] = sub_data
 }
 
 data_format_30[data_format_30[,"state"] == "Baseline", "state"] = 1
@@ -96,22 +90,24 @@ for(i in unique(data_format_30[,"id"])) {
     
     data_format_30[data_format_30[,'id'] == i, ] = sub_data
 }
-colnames(data_format_5) = colnames(data_format_30) = c('ID..', 'State', 'RSA', 'Time')
+colnames(data_format_15) = colnames(data_format_30) = c('ID..', 'State', 'RSA', 'Time')
 
 save(data_format_30, file = 'Data/data_format_30.rda')
-save(data_format_5 , file = 'Data/data_format_5.rda')
-save(data_format_1 , file = 'Data/data_format_1.rda')
+save(data_format_15, file = 'Data/data_format_15.rda')
 
-plot(data_format_1[data_format_1[,'id'] == 25897, 'rsa'])
-plot(data_format_5[data_format_5[,'id'] == 25897, 'rsa'])
-plot(data_format_30[data_format_30[,'id'] == 25897, 'rsa'])
+# Adding Baseline covariates to the model
+rsa_covariates = read.csv('Data/Old_data/_FinalDataforRSASecondsStatesCovariates.csv', na.strings = "")
 
-load('Data/data_format_1.rda')
-load('Data/data_format_30.rda')
-load('Data/data_format_5.rda')
-mean(data_format_1[data_format_1[,"state"] == "Baseline", "rsa"], na.rm = T)
-mean(data_format_1[data_format_1[,"state"] == "Stress", "rsa"])
-mean(data_format_1[data_format_1[,"state"] == "Recovery", "rsa"])
+# plot(data_format_1[data_format_1[,'id'] == 25897, 'rsa'])
+# plot(data_format_5[data_format_5[,'id'] == 25897, 'rsa'])
+# plot(data_format_30[data_format_30[,'id'] == 25897, 'rsa'])
+# 
+# load('Data/data_format_1.rda')
+# load('Data/data_format_30.rda')
+# load('Data/data_format_5.rda')
+# mean(data_format_1[data_format_1[,"state"] == "Baseline", "rsa"], na.rm = T)
+# mean(data_format_1[data_format_1[,"state"] == "Stress", "rsa"])
+# mean(data_format_1[data_format_1[,"state"] == "Recovery", "rsa"])
 
 # sd = 1.5
 # mean baseline = 6.5

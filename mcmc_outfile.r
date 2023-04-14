@@ -13,7 +13,7 @@ n_post = 5000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 10000
+steps = 30000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
@@ -86,22 +86,22 @@ labels_sub <- 1:length(labels)
 load('Data/Simulation/true_par_b.rda')
 
 for(r in 1:length(labels_sub)){
+    
+    par_mean[r] = round( mean(stacked_chains[,r]), 4)
+    par_median[r] = round( median(stacked_chains[,r]), 4)
+    upper[r] = round( quantile( stacked_chains[,r], prob=.975), 4)
+    lower[r] = round( quantile( stacked_chains[,r], prob=.025), 4)
 
     if (simulation == 1) {
         plot( NULL, xlab=paste0("true val: ", round(true_par[r], 3)), ylab=NA, main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
               ylim=range(stacked_chains[,r]) )
     } else {
-        plot( NULL, xlab=NA, ylab=NA, main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
+        
+        plot( NULL, xlab=paste0("[", lower[r], ", ", upper[r], "]"), ylab=NA, main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
               ylim=range(stacked_chains[,r]) )
     }
 
     for(seed in 1:length(chain_list)) lines( chain_list[[seed]][,r], type='l', col=seed)
-
-    par_mean[r] = round( mean(stacked_chains[,r]), 4)
-    par_median[r] = round( median(stacked_chains[,r]), 4)
-    upper[r] = round( quantile( stacked_chains[,r], prob=.975), 4)
-    lower[r] = round( quantile( stacked_chains[,r], prob=.025), 4)
-    print(paste0(r, ". ", labels[r],": [", lower[r], ", ", upper[r], "]"))
 
     hist( stacked_chains[,r], breaks=sqrt(nrow(stacked_chains)), ylab=NA, main=NA,
             freq=F, xlab=paste0('Mean = ',toString(par_mean[r]),
