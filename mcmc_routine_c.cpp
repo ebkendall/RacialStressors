@@ -135,7 +135,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
                    const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
                    const arma::vec &y_1, arma::vec t_pts, const arma::vec &id, 
                    const arma::vec &B, const arma::vec &y_2, arma::mat &V_i, const int n_sub) {
-    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) delta_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     double in_value = 0;
@@ -174,7 +174,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         if(k==0){
             int b_k = b_i(k);
             int y_1_k = y_1_sub(k);
-            in_value = in_value; // + log(M(b_k - 1, y_1_k-1));
+            in_value = in_value + log(M(b_k - 1, y_1_k-1));
         } else{
             double k_scale = k / 100;         // scaling time by 10
             
@@ -229,7 +229,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
                               const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_1, const arma::vec &id, const arma::vec &y_2) {
     
-    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) delta_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     arma::vec in_vals(EIDs.n_elem, arma::fill::zeros);
@@ -271,7 +271,9 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     arma::mat delta_i_big = arma::reshape(delta_i_vec, EIDs.n_elem, 3);
     
     double tau2 = arma::as_scalar(pars.elem(par_index(3) - 1));
-    double tau = sqrt(tau2);
+    double sigma2 = arma::as_scalar(pars.elem(par_index(4) - 1));
+    
+    double tau_sigma = sqrt(tau2 + sigma2);
     
     omp_set_num_threads(6);
     # pragma omp parallel for
@@ -293,9 +295,9 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         double mean_2 = delta_i(0) + delta_i(1);
         double mean_3 = delta_i(0) + delta_i(2);
         
-        double d_1 = arma::normpdf(y_2_i(0), mean_1, tau);
-        double d_2 = arma::normpdf(y_2_i(0), mean_2, tau);
-        double d_3 = arma::normpdf(y_2_i(0), mean_3, tau);
+        double d_1 = arma::normpdf(y_2_i(0), mean_1, tau_sigma);
+        double d_2 = arma::normpdf(y_2_i(0), mean_2, tau_sigma);
+        double d_3 = arma::normpdf(y_2_i(0), mean_3, tau_sigma);
         
         arma::vec d_fill = {d_1, d_2, d_3};
         arma::mat D_i_2 = arma::diagmat(d_fill);
@@ -312,9 +314,9 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
             arma::mat D_i_1 = arma::diagmat(misclass_fill);
             
             // Likelihood component from y_2
-            double d_1 = arma::normpdf(y_2_i(k), mean_1, tau);
-            double d_2 = arma::normpdf(y_2_i(k), mean_2, tau);
-            double d_3 = arma::normpdf(y_2_i(k), mean_3, tau);
+            double d_1 = arma::normpdf(y_2_i(k), mean_1, tau_sigma);
+            double d_2 = arma::normpdf(y_2_i(k), mean_2, tau_sigma);
+            double d_3 = arma::normpdf(y_2_i(k), mean_3, tau_sigma);
             
             arma::vec d_fill = {d_1, d_2, d_3};
             arma::mat D_i_2 = arma::diagmat(d_fill);
@@ -350,7 +352,7 @@ Rcpp::List update_b_i_cpp(const int t, const arma::vec &EIDs, const arma::vec &p
                           arma::field <arma::vec> &B, arma::field <arma::mat> &V_i,
                           const arma::vec &y_2) {
 
-    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) delta_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     //  ALWAYS DOUBLE CHECK THESE INDICES. WE LOSE THE NAMES FEATURE
@@ -435,7 +437,7 @@ arma::mat update_delta_i_cpp(const arma::vec &y_2, const arma::vec &pars,
                           const arma::field<arma::uvec> &par_index,
                           const arma::field<arma::mat> &V_i,
                           const arma::vec &EIDs, const arma::vec &id) {
-    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) upsilon, (5) delta_i
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) delta_i
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     
@@ -446,11 +448,11 @@ arma::mat update_delta_i_cpp(const arma::vec &y_2, const arma::vec &pars,
         
         arma::mat V_small = V_i(ii);
         
-        arma::uvec vec_upsilon_ind = par_index(4);
-        arma::vec vec_upsilon_content = pars.elem(vec_upsilon_ind - 1);
-        arma::mat upsilon = arma::reshape(vec_upsilon_content, 3, 3);
+        arma::vec vec_sigma2 = pars.elem(par_index(4) - 1);
+        double sigma2 = vec_sigma2(0);
         
-        arma::mat up_solve = arma::inv_sympd(upsilon);
+        arma::vec inv_diag_upsilon = {1/sigma2, 1/sigma2, 1/sigma2};
+        arma::mat up_solve = arma::diagmat(inv_diag_upsilon);
         
         arma::uvec sub_ind = arma::find(id == i);
         arma::vec y_sub = y_2.elem(sub_ind); 

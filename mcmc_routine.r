@@ -18,13 +18,13 @@ update_delta = function(pars, par_index, n_sub) {
     delta_i = matrix(pars[par_index$delta_i], ncol = 3)
     
     # Prior mean and variance for delta
-    big_sigma = diag(c(2,0.3,0.1))
+    big_sigma = diag(c(2,0.1,0.1))
     big_sigma_inv = solve(big_sigma)
     
     delta_0 = c(6.41196731,  -1, -0.5)
     
     # variance for delta^(i)
-    upsilon = matrix(pars[par_index$upsilon], nrow = 3, ncol = 3)
+    upsilon = diag(rep(pars[par_index$sigma2],3))
     upsilon_inv = solve(upsilon)
     
     # variance of Gibbs update
@@ -36,31 +36,30 @@ update_delta = function(pars, par_index, n_sub) {
     return(rmvnorm(1, mean = M, sigma = V))
 }
 
-update_upsilon = function(pars, par_index, n_sub) {
+# Gibbs update of the sigma2
+update_sigma2 = function(y_2, pars, par_index, n_sub, EIDs, id) {
     
+    c = 1
+    d = 1
     delta_i = matrix(pars[par_index$delta_i], ncol = 3)
+    delta   = matrix(pars[par_index$delta], nrow = 3)
     
-    sum_delta_i = (delta_i[1, ] - pars[par_index$delta]) %*% t(delta_i[1, ] - pars[par_index$delta])
-    for(i in 2:n_sub) {
-        sum_delta_i = sum_delta_i + (delta_i[i, ] - pars[par_index$delta]) %*% t(delta_i[i, ] - pars[par_index$delta])
+    temp = 0
+    for(i in 1:n_sub) {
+        delta_temp = t(delta_i[i,,drop=F])
+        temp = temp + t(delta_temp - delta) %*% (delta_temp - delta)
     }
     
-    # Prior for Upsilon
-    psi = diag(c(2,0.3,0.1))
-    # psi = diag(3)
-    nu = 3 + 2
+    a_new = c + 0.5 * length(y_2)
+    b_new = d + 0.5 * temp
     
-    # Gibbs update
-    new_psi = psi + sum_delta_i
-    new_nu  = nu + n_sub
-    
-    return(c(rinvwishart(new_nu, new_psi)))
+    return(rinvgamma(n=1, shape = a_new, scale = b_new))
 }
 
 # Gibbs update of the tau2
 update_tau2 = function(y_2, pars, par_index, V_i, n_sub, EIDs, id) {
     
-    a = 100 
+    a = 1 
     b = 1
     delta_i = matrix(pars[par_index$delta_i], ncol = 3)
     
@@ -122,8 +121,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # Initializing the state space list B
   B = list()
   for(i in 1:length(EIDs)) {
-    state_sub = rep(1, length(y_1[id == EIDs[i]]))
-    # state_sub = y_1[id == EIDs[i]]
+    # state_sub = rep(1, length(y_1[id == EIDs[i]]))
+    state_sub = y_1[id == EIDs[i]]
     b_temp = matrix(state_sub, ncol = 1)
     B[[i]] = b_temp
   }
@@ -142,9 +141,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     pars[par_index$delta] = update_delta(pars, par_index, n_sub)
     chain[ttt, par_index$delta] = pars[par_index$delta]
     
-    # upsilon: Gibbs update
-    pars[par_index$upsilon] = update_upsilon(pars, par_index, n_sub)
-    chain[ttt, par_index$upsilon] = pars[par_index$upsilon]
+    # sigma2: Gibbs update
+    pars[par_index$sigma2] = update_sigma2(y_2, pars, par_index, n_sub, EIDs, id)
+    chain[ttt, par_index$sigma2] = pars[par_index$sigma2]
     
     # delta_i: Gibbs update
     pars[par_index$delta_i] = c(update_delta_i_cpp(y_2, pars, par_index, V_i, EIDs, id))
