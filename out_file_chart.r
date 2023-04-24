@@ -6,7 +6,7 @@ set.seed(args[1])
 
 simulation = args[2]
 
-trialNum = 3 # CHANGE EVERY TIME ******************
+trialNum = 6 # CHANGE EVERY TIME ******************
 
 Dir = 'Model_out/'
 

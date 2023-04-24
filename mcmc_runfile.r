@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 3
+trial_num = 12
 
 # Real data analysis
 # load('Data/data_format_30.rda')
@@ -27,14 +27,12 @@ init_par = c(c(matrix(c(-4,
                         -4,
                         -4,
                         -4), ncol=1, byrow = T)),
-            c(0, 0, 0, 0, 0, 0),
+            c(-4, -4, -4, -4, -4, -4),
             c(6.411967, 0, 0), 
-            1,  1,
-            c(rep(6.411967, n_sub), rep(0, n_sub), rep(0,n_sub)))
+            1,  1)
 
 par_index = list( zeta=1:5, misclass=6:11,
-                  delta = 12:14, tau2 = 15, sigma2 = 16,
-                  delta_i = 17:length(init_par))
+                  delta = 12:14, tau2 = 15, sigma2 = 16)
 
 # Initializing using the most recent MCMC -------------------------------------
 # load('Model_out/mcmc_out_3_7.rda')
@@ -57,8 +55,8 @@ par_index = list( zeta=1:5, misclass=6:11,
 #                         2), ncol=1, byrow = T)),
 #              c(5, 5, 5, 5, 5, 5))
 
-prior_mean = rep(0 ,11) # 5
-prior_sd   = rep(20,11) # 5
+prior_mean = rep(0 ,16) # 11
+prior_sd   = rep(20,16) # 11
 
 prior_par = list()
 prior_par[[1]] = prior_mean
@@ -70,7 +68,7 @@ y_1 = as.numeric(temp_data[,"State"])
 y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
 
-steps = 50000
+steps = 30000
 burnin = 5000
 n_cores = 20
 

@@ -18,7 +18,7 @@ update_delta = function(pars, par_index, n_sub) {
     delta_i = matrix(pars[par_index$delta_i], ncol = 3)
     
     # Prior mean and variance for delta
-    big_sigma = diag(c(2,0.1,0.1))
+    big_sigma = diag(c(2,0.01,0.01))
     big_sigma_inv = solve(big_sigma)
     
     delta_0 = c(6.41196731,  -1, -0.5)
@@ -100,7 +100,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain = matrix( 0, steps, n_par - length(par_index$delta_i))
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
-  group = list(c(par_index$zeta), c(par_index$misclass))
+  group = list(c(par_index$zeta), c(par_index$misclass),
+               c(par_index$delta), c(par_index$tau2, par_index$sigma2))
   # group = list(c(par_index$zeta))
   # group = as.list(c(par_index$zeta, par_index$misclass))
   names(group) = NULL
@@ -128,38 +129,39 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   }
 
   # Initializing the V_i matrix
-  V_i = update_V_i(B)
+  # V_i = update_V_i(B)
 
   # Vector to store the values of delta_i
-  big_delta_i = vector(mode = 'list', length = 10)
+  # big_delta_i = vector(mode = 'list', length = 10)
  
   # Begin the MCMC algorithm --------------------------------------------------
-  chain[1,] = pars[-par_index$delta_i]
+  # chain[1,] = pars[-par_index$delta_i]
+  chain[1,] = pars
   for(ttt in 2:steps){
       
-    # delta: Gibbs update
-    pars[par_index$delta] = update_delta(pars, par_index, n_sub)
-    chain[ttt, par_index$delta] = pars[par_index$delta]
-    
-    # sigma2: Gibbs update
-    pars[par_index$sigma2] = update_sigma2(y_2, pars, par_index, n_sub, EIDs, id)
-    chain[ttt, par_index$sigma2] = pars[par_index$sigma2]
-    
-    # delta_i: Gibbs update
-    pars[par_index$delta_i] = c(update_delta_i_cpp(y_2, pars, par_index, V_i, EIDs, id))
-    if(ttt %% 1000 == 0) big_delta_i[[ttt/1000]] = matrix(pars[par_index$delta_i], ncol=3)
-
-    # tau2: Gibbs update
-    pars[par_index$tau2] = update_tau2(y_2, pars, par_index, V_i, n_sub, EIDs, id)
-    chain[ttt, par_index$tau2] = pars[par_index$tau2]
-    
-    # S_chain: Metropolis-within-Gibbs update
-    B_V = update_b_i_cpp(8, EIDs, pars, prior_par, par_index, y_1, id, B, V_i,y_2)
-    B = B_V[[1]]
-    V_i = B_V[[2]]
+    # # delta: Gibbs update
+    # pars[par_index$delta] = update_delta(pars, par_index, n_sub)
+    # chain[ttt, par_index$delta] = pars[par_index$delta]
+    # 
+    # # sigma2: Gibbs update
+    # pars[par_index$sigma2] = update_sigma2(y_2, pars, par_index, n_sub, EIDs, id)
+    # chain[ttt, par_index$sigma2] = pars[par_index$sigma2]
+    # 
+    # # delta_i: Gibbs update
+    # pars[par_index$delta_i] = c(update_delta_i_cpp(y_2, pars, par_index, V_i, EIDs, id))
+    # if(ttt %% 1000 == 0) big_delta_i[[ttt/1000]] = matrix(pars[par_index$delta_i], ncol=3)
+    # 
+    # # tau2: Gibbs update
+    # pars[par_index$tau2] = update_tau2(y_2, pars, par_index, V_i, n_sub, EIDs, id)
+    # chain[ttt, par_index$tau2] = pars[par_index$tau2]
+    # 
+    # # S_chain: Metropolis-within-Gibbs update
+    # B_V = update_b_i_cpp(8, EIDs, pars, prior_par, par_index, y_1, id, B, V_i,y_2)
+    # B = B_V[[1]]
+    # V_i = B_V[[2]]
 
     # Evaluate the log_post of the initial parameters
-    log_post_prev = fn_log_post_continuous(EIDs,pars, prior_par, par_index,y_1, id, y_2)
+    log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, id, y_2)
     
     for(j in 1:n_group){
 
@@ -173,7 +175,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       }
 
       # Compute the log density for the proposal
-      log_post = fn_log_post_continuous(EIDs,proposal, prior_par, par_index,y_1, id, y_2)
+      log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2)
       
 
       # Only propose valid parameters during the burnin period
@@ -187,7 +189,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
               proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],sd=sqrt(pcov[[j]]*pscale[j]))
           }
           
-          log_post = fn_log_post_continuous(EIDs,proposal, prior_par, par_index,y_1, id, y_2)
+          log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2)
         }
       }
 
@@ -264,8 +266,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # stopCluster(cl)
   print(accept/(steps-burnin))
 
-  return(list( chain=chain[burnin:steps,], B_chain = B_chain,
+  return(list( chain=chain[burnin:steps,], # B_chain = B_chain,
                accept=accept/(steps-burnin),
-               pscale=pscale, pcov = pcov, big_delta_i = big_delta_i))
+               pscale=pscale, pcov = pcov))
 }
 # -----------------------------------------------------------------------------

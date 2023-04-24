@@ -13,7 +13,7 @@ n_post = 5000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 20000
+steps = 30000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
@@ -26,7 +26,7 @@ par_index = list( zeta=1:5, misclass=6:11,
 # par_index = list( zeta=1:8, misclass=9:14,
 #                   delta = 15:17, tau2 = 18, upsilon = 19:27,
 #                   delta_i = 28:300)
-index_seeds = c(1)
+index_seeds = c(2:5)
 
 labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'),  
             TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
@@ -69,6 +69,7 @@ for(seed in index_seeds){
         ind_keep = seq(1, nrow(main_chain), by=10)
 
       	chain_list[[ind]] = main_chain[ind_keep, ]
+      	chain_list[[ind]][,15:16] = (chain_list[[ind]][,15:16])^2
     	post_means[ind,] <- colMeans(main_chain[ind_keep, ])
     }
 }
@@ -117,22 +118,22 @@ for(r in 1:length(labels_sub)){
 
 dev.off()
 
-print("zeta")
-print(matrix(par_mean[par_index$zeta],ncol=2))
-
-print("misclass mean")
-resp_fnc = matrix(c(1, exp(par_mean[par_index$misclass][1]), exp(par_mean[par_index$misclass][2]),
-                      exp(par_mean[par_index$misclass][3]), 1, exp(par_mean[par_index$misclass][4]),
-                      exp(par_mean[par_index$misclass][5]), exp(par_mean[par_index$misclass][6]),1), 
-                      ncol=3, byrow=TRUE)
-resp_fnc = resp_fnc / rowSums(resp_fnc)
-print(resp_fnc)
-
-print("delta")
-print(par_mean[par_index$delta])
-
-print('tau2')
-print(par_mean[par_index$tau2])
+# print("zeta")
+# print(matrix(par_mean[par_index$zeta],ncol=2))
+# 
+# print("misclass mean")
+# resp_fnc = matrix(c(1, exp(par_mean[par_index$misclass][1]), exp(par_mean[par_index$misclass][2]),
+#                       exp(par_mean[par_index$misclass][3]), 1, exp(par_mean[par_index$misclass][4]),
+#                       exp(par_mean[par_index$misclass][5]), exp(par_mean[par_index$misclass][6]),1), 
+#                       ncol=3, byrow=TRUE)
+# resp_fnc = resp_fnc / rowSums(resp_fnc)
+# print(resp_fnc)
+# 
+# print("delta")
+# print(par_mean[par_index$delta])
+# 
+# print('tau2')
+# print(par_mean[par_index$tau2])
 
 # print('upsilon')
 # print(matrix(par_mean[par_index$upsilon], ncol = 3))
