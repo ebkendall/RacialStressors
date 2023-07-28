@@ -6,18 +6,22 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 12
+trial_num = 1
 
-# Real data analysis
-# load('Data/data_format_30.rda')
-# data_format = data_format_30
-load('Data/data_format_15.rda')
-data_format = data_format_15
+simulation = F
 
-# Simulation
-# load('Data/Simulation/sim_data_1_c.rda')
-# load('Data/Simulation/true_par_b.rda')
-# data_format = sim_data
+if(simulation) {
+    # Simulation
+    load('Data/Simulation/sim_data_1_c.rda')
+    load('Data/Simulation/true_par_b.rda')
+    data_format = sim_data
+} else {
+    # Real data analysis
+    # load('Data/data_format_30.rda')
+    # data_format = data_format_30
+    load('Data/data_format_15.rda')
+    data_format = data_format_15   
+}
 
 n_sub = length(unique(data_format[,'ID..']))
 
@@ -70,12 +74,11 @@ t = as.numeric(temp_data[,"Time"])
 
 steps = 30000
 burnin = 5000
-n_cores = 20
 
 s_time = Sys.time()
 
 mcmc_out = mcmc_routine(y_1, y_2, t, id, init_par, prior_par, par_index,
-             steps, burnin, n_cores, n_sub)
+             steps, burnin, n_sub)
 
 e_time = Sys.time() - s_time; print(e_time)
 

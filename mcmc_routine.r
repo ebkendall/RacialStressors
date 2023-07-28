@@ -92,7 +92,7 @@ update_V_i = function(B) {
 # The mcmc routine for samping the parameters
 # -----------------------------------------------------------------------------
 mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
-                         steps, burnin, n_cores, n_sub){
+                         steps, burnin, n_sub){
 
   pars = init_par
   n = length(y_1)
