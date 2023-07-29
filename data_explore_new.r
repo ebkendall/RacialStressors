@@ -33,7 +33,7 @@ formatting_data = function(data_time, t) {
         s1 = sub_dat[sub_dat[,'state'] == "Baseline", ,drop=F]
         s2 = sub_dat[sub_dat[,'state'] == "Stress", ,drop=F]
         s3 = sub_dat[sub_dat[,'state'] == "Recovery", ,drop=F]
-        print(nrow(sub_dat) == nrow(s1) + nrow(s2) + nrow(s3))
+        if(nrow(sub_dat) != nrow(s1) + nrow(s2) + nrow(s3)) print("error")
         
         reordered_dat = rbind(s1, s2, s3)
         
@@ -48,10 +48,10 @@ formatting_data = function(data_time, t) {
 # three different time frames of data
 data_30 = read.csv('Data/Raw IBI files_HRV_summary_30secepocs_032323.csv')
 data_30 = data_30[-1,]
-colnames(data_30)
+# colnames(data_30)
 data_15  = read.csv('Data/Raw IBI files_HRV_summary_15secepochs_032323.csv')
 data_15 = data_15[-1,]
-colnames(data_15)
+# colnames(data_15)
 
 
 data_format_30 = formatting_data(data_30, 30)
@@ -74,7 +74,7 @@ data_format_15 = cbind(data_format_15, 0)
 colnames(data_format_15)[4] = "time"
 for(i in unique(data_format_15[,"id"])) {
     sub_data = data_format_15[data_format_15[,'id'] == i, ]
-    sub_data[,"time"] = 1:nrow(sub_data)
+    sub_data[,"time"] = 0:(nrow(sub_data)-1)
     
     data_format_15[data_format_15[,'id'] == i, ] = sub_data
 }
@@ -86,7 +86,7 @@ data_format_30 = cbind(data_format_30, 0)
 colnames(data_format_30)[4] = "time"
 for(i in unique(data_format_30[,"id"])) {
     sub_data = data_format_30[data_format_30[,'id'] == i, ]
-    sub_data[,"time"] = 1:nrow(sub_data)
+    sub_data[,"time"] = 0:(nrow(sub_data)-1)
     
     data_format_30[data_format_30[,'id'] == i, ] = sub_data
 }
@@ -96,7 +96,7 @@ save(data_format_30, file = 'Data/data_format_30.rda')
 save(data_format_15, file = 'Data/data_format_15.rda')
 
 # Adding Baseline covariates to the model
-rsa_covariates = read.csv('Data/Old_data/_FinalDataforRSASecondsStatesCovariates.csv', na.strings = "")
+# rsa_covariates = read.csv('Data/Old_data/_FinalDataforRSASecondsStatesCovariates.csv', na.strings = "")
 
 # plot(data_format_1[data_format_1[,'id'] == 25897, 'rsa'])
 # plot(data_format_5[data_format_5[,'id'] == 25897, 'rsa'])
