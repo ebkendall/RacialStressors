@@ -1,17 +1,6 @@
 library(matrixStats)
 library(plotrix)
 
-# Rcpp packages
-library(Rcpp, quietly=T)
-library(RcppArmadillo, quietly = T)
-library(RcppDist, quietly = T)
-sourceCpp("mcmc_routine_c.cpp")
-
-# Needed for OpenMP C++ parallel
-Sys.setenv("PKG_CXXFLAGS" = "-fopenmp")
-Sys.setenv("PKG_LIBS" = "-fopenmp")
-
-
 args <- commandArgs(TRUE)
 set.seed(args[1])
 
