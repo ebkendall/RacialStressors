@@ -14,7 +14,7 @@ set.seed(2023)
 dir = 'Model_out/'
 
 trial_num = 1
-simulation = T
+simulation = F
 # -----------------------------------------------------------------------------
 
 
@@ -23,7 +23,7 @@ n_post = 5000; burnin = 5000; steps = 20000
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 par_chain = NULL
-index_seeds = c(1:3)
+index_seeds = c(1:5)
 
 for (seed in index_seeds) {
     file_name = NULL

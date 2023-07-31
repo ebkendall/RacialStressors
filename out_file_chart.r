@@ -1,32 +1,41 @@
 library(matrixStats)
 library(plotrix)
 
-args <- commandArgs(TRUE)
-set.seed(args[1])
+simulation = F
 
-simulation = args[2]
-
-trialNum = 6 # CHANGE EVERY TIME ******************
+trialNum = 1 # CHANGE EVERY TIME ******************
 
 Dir = 'Model_out/'
 
 # load(paste0( Dir, 'post_mcmc_out_dev',args[1],'_', trialNum, '.rda'))
-load(paste0(Dir,'mcmc_out_',toString(args[1]),'_', trialNum,'.rda'))
+if(simulation) {
+    load(paste0(Dir,'B_chain_', trialNum, '_sim.rda'))
+} else {
+    load(paste0(Dir,'B_chain_', trialNum, '.rda'))
+}
 
 if(simulation) {
-    load('Data/Simulation/sim_data_1_c.rda')
+    # Simulation
+    load('Data/sim_data_1_a.rda')
+    load('Data/true_par_a.rda')
     data_format = sim_data
 } else {
-    load('Data/data_format_15.rda')
-    data_format = data_format_15
+    # Real data analysis
     # load('Data/data_format_30.rda')
     # data_format = data_format_30
+    load('Data/data_format_15.rda')
+    data_format = data_format_15   
 }
 
 EIDs = unique(data_format[,"ID.."])
 
 # New patients ---------------------------------------------------------------
-pdf(paste0('Plots/chart_plot_', trialNum, '_seed',toString(args[1]), '.pdf'))
+if(simulation) {
+    pdf_title = paste0('Plots/chart_plot_', trialNum, '_sim.pdf')
+} else {
+    pdf_title = paste0('Plots/chart_plot_', trialNum, '.pdf')
+}
+pdf(pdf_title)
 
 panels = c(4, 1)
 par(mfrow=panels, mar=c(2,4,2,4), bg='black', fg='green')
@@ -39,13 +48,11 @@ for(i in EIDs){
 	t_grid = data_format[indices_i, "Time"]
 	
 	if(simulation){
-	    b_i = data_format[ indices_i,'True_state']
+	    b_i = as.numeric(data_format[ indices_i,"True_state"])
 	    to_s1 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==1]
 	    to_s2 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==2]
 	    to_s3 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==3]
 	}
-	
-	# bar_grid = seq( 0, n_i, by=5)[-1]
 
 	color_choice = c('dodgerblue', 'firebrick1', 'yellow2')
 
@@ -69,9 +76,9 @@ for(i in EIDs){
 	    }
 	}
 
-	barplot( rbind(   colMeans(mcmc_out$B_chain[, indices_i] == 1),
-				colMeans(mcmc_out$B_chain[, indices_i] == 2),
-				colMeans(mcmc_out$B_chain[, indices_i] == 3)), 
+	barplot( rbind(   colMeans(B_chain[, indices_i] == 1),
+				colMeans(B_chain[, indices_i] == 2),
+				colMeans(B_chain[, indices_i] == 3)), 
 				col=c( 'dodgerblue', 'firebrick1', 'yellow2'), 
 				xlab='time', xaxt='n', space=0, 
 				col.main='green', border=NA) 

@@ -8,7 +8,7 @@ print(ind)
 
 trial_num = 1
 
-simulation = T
+simulation = F
 init_par = NULL
 
 if(simulation) {
