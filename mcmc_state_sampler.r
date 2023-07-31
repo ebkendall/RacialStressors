@@ -10,11 +10,7 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 
 
 # Initialization --------------------------------------------------------------
-# Functions to run the mcmc state sampler
-source("routine_mcmc.r")
-args = commandArgs(TRUE)
-seed = as.integer(args[1])
-set.seed(seed)
+set.seed(2023)
 dir = 'Model_out/'
 
 trial_num = 1
@@ -29,7 +25,7 @@ index_post = (steps - burnin - n_post + 1):(steps - burnin)
 par_chain = NULL
 index_seeds = c(1:3)
 
-for (seed_i in index_seeds) {
+for (seed in index_seeds) {
     file_name = NULL
     if(simulation) {
         file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim.rda')
@@ -74,8 +70,8 @@ y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
 EIDs = unique(id)
 
-new_steps =  50000
-new_burnin = 20000
+new_steps =  20000
+new_burnin = 10000
 
 B_chain = state_space_sampler(new_steps, new_burnin, EIDs, colMeans(par_chain), 
                               par_index, y_1, y_2, id, t)

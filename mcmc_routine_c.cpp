@@ -371,13 +371,15 @@ arma::vec update_b_i_cpp(const arma::vec &EIDs, const arma::vec &pars,
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     
-    arma::vec B_return(y_1.n_elem);
+    arma::vec B_return(b_curr.n_elem, arma::fill::zeros);
     
-    // omp_set_num_threads(10);
-    // # pragma omp parallel for
+    omp_set_num_threads(10);
+    # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
         arma::uvec sub_ind = arma::find(id == i);
+        
+        arma::vec b_i = b_curr.elem(sub_ind);
         
         int n_i = sub_ind.n_elem; 
         
@@ -391,36 +393,31 @@ arma::vec update_b_i_cpp(const arma::vec &EIDs, const arma::vec &pars,
                 t_pts = arma::linspace(k, k+2, 3);
             }
             
-            arma::vec pr_B = b_curr;
+            arma::vec pr_B = b_i;
             
             // Sample and update the two neighboring states
-            arma::mat Omega_set = Omega_fun_cpp_new(k + 1, n_i, b_curr);
+            arma::mat Omega_set = Omega_fun_cpp_new(k + 1, n_i, b_i);
             
             int sampled_index = arma::randi(arma::distr_param(1, Omega_set.n_rows));
             
             pr_B.rows(k, k+1) = Omega_set.row(sampled_index-1).t();
             
-            // Adding clinical review
-            bool valid_prop = true;
+            double log_target_prev = log_f_i_cpp(i, ii, pars, par_index, y_1, 
+                                                 t_pts, id, b_i, y_2, 
+                                                 EIDs.n_elem);
             
-            if(valid_prop) {
-                double log_target_prev = log_f_i_cpp(i, ii, pars, par_index, y_1, 
-                                                     t_pts, id, b_curr, y_2, 
-                                                     EIDs.n_elem);
-                
-                double log_target = log_f_i_cpp(i, ii, pars, par_index, y_1, 
-                                                t_pts, id, pr_B, y_2, 
-                                                EIDs.n_elem);
-                
-                // Note that the proposal probs cancel in the MH ratio
-                double diff_check = log_target - log_target_prev;
-                double min_log = log(arma::randu(arma::distr_param(0,1)));
-                if(diff_check > min_log){
-                    b_curr = pr_B;
-                }
+            double log_target = log_f_i_cpp(i, ii, pars, par_index, y_1, 
+                                            t_pts, id, pr_B, y_2, 
+                                            EIDs.n_elem);
+            
+            // Note that the proposal probs cancel in the MH ratio
+            double diff_check = log_target - log_target_prev;
+            double min_log = log(arma::randu(arma::distr_param(0,1)));
+            if(diff_check > min_log){
+                b_i = pr_B;
             }
         }
-        B_return.elem(sub_ind) = b_curr;
+        B_return.elem(sub_ind) = b_i;
     }
     
     return B_return;
@@ -435,28 +432,17 @@ arma::mat state_space_sampler(const int steps, const int burnin,
     
     
     arma::mat B_master(steps - burnin, y_1.n_elem, arma::fill::zeros);
-    arma::vec curr_B = y_1;
-    arma::vec prev_B = curr_B;
+    arma::vec prev_B = y_1;
     
     for(int ttt = 0; ttt < steps; ttt++) {
         
-        // Sample parameters from their posterior distribution, externally computed
-        //     n_i = length(y_i)
-        //             
-        //     for (k in 1:(n_i-0)) {
-        //         
-        //         log_target_prev = log_fn_S(t_pts = k, S_i, par, par_index, y_i, x_i, z_i)
-        //         pr_S_i = S_i
-        //         pr_S_i[k] = sample(1:3, 1) 
-        //         log_target = log_fn_S(k, pr_S_i, par, par_index, y_i, x_i, z_i)
-        //         
-        //         if(log_target - log_target_prev > log(runif(1, 0, 1)))  S_i = pr_S_i
-        //     }
-        //     if(ttt > burnin)  S_chain[ttt - burnin, ] = S_i
-        //         
-        //     if(ttt%%1==0)  cat('--->',ttt,'\n')
+        Rcpp::Rcout << ttt << std::endl;
+        arma::vec curr_B = update_b_i_cpp(EIDs, pars, par_index, y_1, id, prev_B, y_2);
+        if(ttt >= burnin)  B_master.row(ttt - burnin) = curr_B.t();
+        prev_B = curr_B;
+        
     }
-    // return(data.table(S_chain))
+    return B_master;
 }
 
 
