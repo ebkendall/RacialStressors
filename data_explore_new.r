@@ -96,8 +96,23 @@ save(data_format_30, file = 'Data/data_format_30.rda')
 save(data_format_15, file = 'Data/data_format_15.rda')
 
 # Adding Baseline covariates to the model
-# rsa_covariates = read.csv('Data/Old_data/_FinalDataforRSASecondsStatesCovariates.csv', na.strings = "")
+rsa_covariates = read.csv('Data/_FinalDataforRSASecondsStatesCovariates.csv', na.strings = "")
+rsa_covariates = as.matrix(rsa_covariates)
+load('Data/data_format_15.rda'); print(length(unique(data_format_15$ID..)))
+load('Data/data_format_30.rda'); print(length(unique(data_format_30$ID..)))
+cov_names = colnames(rsa_covariates)[8:16]
 
+ids = unique(data_format_15$ID..)
+cov_df = matrix(nrow = length(ids), ncol = length(cov_names)+1)
+cov_df[,1] = ids
+colnames(cov_df) = c("ID", cov_names)
+
+for(i in 1:length(ids)) {
+    id_index = which(rsa_covariates[,"ID.."] == ids[i])[1]
+    temp = c(rsa_covariates[id_index, 8:16])
+    cov_df[i, 2:ncol(cov_df)] = temp
+}
+save(cov_df, file = "Data/cov_df.rda")
 # plot(data_format_1[data_format_1[,'id'] == 25897, 'rsa'])
 # plot(data_format_5[data_format_5[,'id'] == 25897, 'rsa'])
 # plot(data_format_30[data_format_30[,'id'] == 25897, 'rsa'])
@@ -111,3 +126,45 @@ save(data_format_15, file = 'Data/data_format_15.rda')
 
 # sd = 1.5
 # mean baseline = 6.5
+
+
+# Empirical estimates and information -----------------------------------------
+load('Data/data_format_15.rda')
+data_format = data_format_15
+# load('Data/data_format_30.rda')
+# data_format = data_format_30
+# load('Data/sim_data_1_a.rda')
+# data_format = sim_data
+# data_format = as.data.frame(data_format)
+
+unique_id = unique(data_format$ID..)
+
+info_criteria = matrix(ncol = 6, nrow = length(unique_id))
+colnames(info_criteria) = c("m_mu", "m_alpha", "m_beta", "sd_1", "sd_2", "sd_3")
+
+for(i in 1:length(unique_id)) {
+    sub_i = unique_id[i]
+    data_sub = data_format[data_format$ID.. == sub_i, ]
+    data_sub$State = as.numeric(data_sub$State)
+    data_sub$RSA = as.numeric(data_sub$RSA)
+    
+    mean_s1 = mean(data_sub$RSA[data_sub$State == 1])
+    mean_s2 = mean(data_sub$RSA[data_sub$State == 2])
+    mean_s3 = mean(data_sub$RSA[data_sub$State == 3])
+    
+    sd_s1 = sd(data_sub$RSA[data_sub$State == 1])
+    sd_s2 = sd(data_sub$RSA[data_sub$State == 2])
+    sd_s3 = sd(data_sub$RSA[data_sub$State == 3])
+    
+    info_criteria[i, ] = c(mean_s1, mean_s1 - mean_s2, mean_s1 - mean_s3,
+                           sd_s1, sd_s2, sd_s3)
+    
+}
+
+colMeans(info_criteria, na.rm = T)
+
+miss_info = unique_id[is.nan(info_criteria[,"m_alpha"])]
+
+
+
+

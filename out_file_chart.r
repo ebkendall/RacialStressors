@@ -2,6 +2,7 @@ library(matrixStats)
 library(plotrix)
 
 simulation = F
+thirty = T
 
 trialNum = 1 # CHANGE EVERY TIME ******************
 
@@ -11,7 +12,11 @@ Dir = 'Model_out/'
 if(simulation) {
     load(paste0(Dir,'B_chain_', trialNum, '_sim.rda'))
 } else {
-    load(paste0(Dir,'B_chain_', trialNum, '.rda'))
+	if (thirty) {
+	 	load(paste0(Dir,'B_chain_', trialNum, '_30.rda'))
+	} else {
+		load(paste0(Dir,'B_chain_', trialNum, '_15.rda'))
+	}
 }
 
 if(simulation) {
@@ -21,10 +26,13 @@ if(simulation) {
     data_format = sim_data
 } else {
     # Real data analysis
-    # load('Data/data_format_30.rda')
-    # data_format = data_format_30
-    load('Data/data_format_15.rda')
-    data_format = data_format_15   
+    if(thirty) {
+	load('Data/data_format_30.rda')
+    	data_format = data_format_30
+    } else {
+	load('Data/data_format_15.rda')
+    	data_format = data_format_15   
+    }
 }
 
 EIDs = unique(data_format[,"ID.."])
@@ -33,7 +41,11 @@ EIDs = unique(data_format[,"ID.."])
 if(simulation) {
     pdf_title = paste0('Plots/chart_plot_', trialNum, '_sim.pdf')
 } else {
-    pdf_title = paste0('Plots/chart_plot_', trialNum, '.pdf')
+	if(thirty) {
+		pdf_title = paste0('Plots/chart_plot_', trialNum, '_30.pdf')
+	} else {
+		pdf_title = paste0('Plots/chart_plot_', trialNum, '_15.pdf')
+	}
 }
 pdf(pdf_title)
 
@@ -70,8 +82,8 @@ for(i in EIDs){
 	} else {
 	    s = diff(as.numeric(data_format$State[indices_i]))
 	    abline(v = t_grid[1], col = color_choice[as.numeric(sub_dat$State[1])], lwd = 2)
-	    for(j in 1:sum(s)){
-	        t_switch = which(s==1)[j]+1
+	    for(j in 1:sum(s!=0)){
+	        t_switch = which(s!=0)[j]+1
 	        abline(v = t_grid[t_switch], col = color_choice[as.numeric(sub_dat$State[t_switch])], lwd = 2)
 	    }
 	}

@@ -8,6 +8,8 @@ args <- commandArgs(TRUE)
 trial_num = as.numeric(args[1])
 simulation = as.logical(args[2])
 
+thirty = T
+
 # Size of posterior sample from mcmc chains
 n_post = 5000
 # Step number at which the adaptive tuning scheme was frozen
@@ -20,7 +22,7 @@ index_post = (steps - burnin - n_post + 1):(steps - burnin)
 par_index = list( zeta=1:4, misclass=5:6,
                   delta = 7:9, tau2 = 10, sigma2 = 11)
 
-index_seeds = c(1:5)
+index_seeds = c(1:4)
 
 labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
             TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 3)'), 
@@ -53,7 +55,11 @@ for(seed in index_seeds){
     if(simulation) {
         file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim.rda')
     } else {
-        file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '.rda')   
+        if(thirty) {
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')   
+        } else {
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15.rda')   
+        }
     }
     
     if (file.exists(file_name)) {
@@ -76,7 +82,11 @@ pdf_title = NULL
 if(simulation) {
     pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim.pdf')
 } else {
-    pdf_title = paste0('Plots/mcmc_out_', trial_num, '.pdf')
+    if(thirty) {
+        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30.pdf')
+    } else {
+        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_15.pdf')
+    }
 }
 pdf(pdf_title)
 par(mfrow=c(4, 2))

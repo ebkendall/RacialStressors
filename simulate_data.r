@@ -1,9 +1,18 @@
 library(mvtnorm)
 
+thirty = T
+
 # Load the current data ------------------------------------------------------
-load('Data/data_format_30.rda')
-N = length(unique(data_format_30$ID..))
-data_format = data_format_30
+if(thirty) {
+  load('Data/data_format_30.rda')
+  N = length(unique(data_format_30$ID..))
+  data_format = data_format_30
+} else {
+  load('Data/data_format_15.rda')
+  N = length(unique(data_format_15$ID..))
+  data_format = data_format_15
+}
+
 n_sim = 1
 
 # True parameter values ------------------------------------------------------
@@ -60,18 +69,18 @@ for(ind in 1:n_sim) {
                 z_i = matrix(c(1), nrow=1)
     
                 q1   = exp(z_i %*% t(zeta[1, , drop=F])) 
-    			q2   = exp(z_i %*% t(zeta[2, , drop=F]))
-    			q3   = exp(z_i %*% t(zeta[3, , drop=F]))
-    			q4   = exp(z_i %*% t(zeta[4, , drop=F]))
-    
-                # transitions: 1->2, 2->3, 3->1, 3->2
-    			Q = matrix(c(  1,  q1,  0,
-    			               0,   1, q2,
-    			              q3,  q4,  1), ncol=3, byrow=T)
-    			P_i = Q / rowSums(Q)
-    
-    			# Sample the true, latent state sequence
-    			b_i = c( b_i, sample(1:3, size=1, prob=P_i[tail(b_i,1),]))
+                q2   = exp(z_i %*% t(zeta[2, , drop=F]))
+                q3   = exp(z_i %*% t(zeta[3, , drop=F]))
+                q4   = exp(z_i %*% t(zeta[4, , drop=F]))
+          
+                      # transitions: 1->2, 2->3, 3->1, 3->2
+                Q = matrix(c(  1,  q1,  0,
+                              0,   1, q2,
+                              q3,  q4,  1), ncol=3, byrow=T)
+                P_i = Q / rowSums(Q)
+          
+                # Sample the true, latent state sequence
+                b_i = c( b_i, sample(1:3, size=1, prob=P_i[tail(b_i,1),]))
     
                 # Sample the observed state w/ misclassification probability
                 s_i = c( s_i, sample(1:3, size=1, prob=M[tail(b_i,1),]))

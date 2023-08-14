@@ -6,9 +6,10 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 1
+trial_num = 2
 
 simulation = F
+thirty = T
 init_par = NULL
 
 if(simulation) {
@@ -20,10 +21,13 @@ if(simulation) {
     init_par = true_par
 } else {
     # Real data analysis
-    # load('Data/data_format_30.rda')
-    # data_format = data_format_30
-    load('Data/data_format_15.rda')
-    data_format = data_format_15   
+    if(thirty) {
+        load('Data/data_format_30.rda')
+        data_format = data_format_30
+    } else {
+        load('Data/data_format_15.rda')
+        data_format = data_format_15   
+    }
     
     init_par = c(c(matrix(c(-4,
                             -4,
@@ -31,7 +35,7 @@ if(simulation) {
                             -4), ncol=1, byrow = T)),
                  c(-4, -4),
                  c(6.411967, 0, 0), 
-                 0.1,  0.1)
+                 log(0.51^2),  log(0.8^2))
 }
 
 n_sub = length(unique(data_format[,'ID..']))
@@ -39,8 +43,14 @@ n_sub = length(unique(data_format[,'ID..']))
 par_index = list( zeta=1:4, misclass=5:6,
                   delta = 7:9, tau2 = 10, sigma2 = 11)
 
-prior_mean = rep(0 , length(init_par)) 
-prior_sd   = rep(20, length(init_par))
+prior_mean = c(-4, -4, -4, -4,
+               -4, -4,
+               6.5, -2, -0.5,
+               -1.386, -0.45) 
+prior_sd   = c(20, 20, 20, 20,
+               5, 5,
+               1, 0.5^2, 0.1^1,
+               0.1^2, 0.1^2)
 
 prior_par = list()
 prior_par[[1]] = prior_mean
@@ -65,5 +75,9 @@ e_time = Sys.time() - s_time; print(e_time)
 if(simulation) {
     save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim.rda"))    
 } else {
-    save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, ".rda"))
+    if(thirty) {
+        save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_30.rda"))
+    } else {
+        save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_15.rda"))
+    }
 }
