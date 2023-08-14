@@ -129,10 +129,10 @@ save(cov_df, file = "Data/cov_df.rda")
 
 
 # Empirical estimates and information -----------------------------------------
-load('Data/data_format_15.rda')
-data_format = data_format_15
-# load('Data/data_format_30.rda')
-# data_format = data_format_30
+# load('Data/data_format_15.rda')
+# data_format = data_format_15
+load('Data/data_format_30.rda')
+data_format = data_format_30
 # load('Data/sim_data_1_a.rda')
 # data_format = sim_data
 # data_format = as.data.frame(data_format)
@@ -163,8 +163,9 @@ for(i in 1:length(unique_id)) {
 
 colMeans(info_criteria, na.rm = T)
 
-miss_info = unique_id[is.nan(info_criteria[,"m_alpha"])]
-
+miss_info = NULL
+miss_info = c(miss_info, unique_id[is.nan(info_criteria[,"m_alpha"]) | is.nan(info_criteria[,"m_beta"])])
+miss_info = unique(miss_info)
 
 
 

@@ -63,7 +63,10 @@ if(simulation) {
     } else {
         load('Data/data_format_15.rda')
         data_format = data_format_15   
-    }   
+    } 
+    
+    miss_info = c(26296, 29698, 30625, 401, 423, 419, 457)
+    data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
 }
 
 n_sub = length(unique(data_format[,'ID..']))
