@@ -2,7 +2,7 @@ library(matrixStats)
 library(plotrix)
 
 simulation = F
-thirty = F
+thirty = T
 
 trialNum = 3 # CHANGE EVERY TIME ******************
 
@@ -91,7 +91,7 @@ for(i in EIDs){
 	    }
 	}
 
-	b_chain_ind = 20000:40000
+	b_chain_ind = 70000:90000
 	barplot( rbind(   colMeans(B_chain[b_chain_ind, indices_i] == 1),
 				colMeans(B_chain[b_chain_ind, indices_i] == 2),
 				colMeans(B_chain[b_chain_ind, indices_i] == 3)), 

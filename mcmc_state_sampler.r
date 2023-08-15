@@ -82,7 +82,7 @@ y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
 EIDs = unique(id)
 
-new_steps =  50000
+new_steps =  100000
 new_burnin = 10000
 
 B_chain = state_space_sampler(new_steps, new_burnin, EIDs, colMeans(par_chain), 
