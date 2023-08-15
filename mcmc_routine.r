@@ -25,7 +25,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
   group = list(c(par_index$zeta), c(par_index$misclass),
-               c(par_index$delta), c(par_index$tau2, par_index$sigma2))
+               c(par_index$delta), c(par_index$tau2, par_index$sigma2),
+               c(par_index$init))
 
   names(group) = NULL
   n_group = length(group)

@@ -2,9 +2,9 @@ library(matrixStats)
 library(plotrix)
 
 simulation = F
-thirty = T
+thirty = F
 
-trialNum = 1 # CHANGE EVERY TIME ******************
+trialNum = 3 # CHANGE EVERY TIME ******************
 
 Dir = 'Model_out/'
 
@@ -91,9 +91,10 @@ for(i in EIDs){
 	    }
 	}
 
-	barplot( rbind(   colMeans(B_chain[, indices_i] == 1),
-				colMeans(B_chain[, indices_i] == 2),
-				colMeans(B_chain[, indices_i] == 3)), 
+	b_chain_ind = 20000:40000
+	barplot( rbind(   colMeans(B_chain[b_chain_ind, indices_i] == 1),
+				colMeans(B_chain[b_chain_ind, indices_i] == 2),
+				colMeans(B_chain[b_chain_ind, indices_i] == 3)), 
 				col=c( 'dodgerblue', 'firebrick1', 'yellow2'), 
 				xlab='time', xaxt='n', space=0, 
 				col.main='green', border=NA) 

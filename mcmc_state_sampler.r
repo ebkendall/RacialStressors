@@ -13,7 +13,7 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 set.seed(2023)
 dir = 'Model_out/'
 
-trial_num = 2
+trial_num = 3
 simulation = F
 thirty = T
 # -----------------------------------------------------------------------------
@@ -71,8 +71,9 @@ if(simulation) {
 
 n_sub = length(unique(data_format[,'ID..']))
 
-par_index = list( zeta=1:4, misclass=5:6,
-                  delta = 7:9, tau2 = 10, sigma2 = 11)
+par_index = list( zeta=1:4, misclass=5:10,
+                  delta = 11:13, tau2 = 14, sigma2 = 15,
+                  init = 16:17)
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL
 id = as.numeric(temp_data[,"ID.."])
@@ -81,7 +82,7 @@ y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
 EIDs = unique(id)
 
-new_steps =  20000
+new_steps =  50000
 new_burnin = 10000
 
 B_chain = state_space_sampler(new_steps, new_burnin, EIDs, colMeans(par_chain), 

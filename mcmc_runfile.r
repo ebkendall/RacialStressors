@@ -6,7 +6,7 @@ ind = as.numeric(args[1])
 set.seed(ind)
 print(ind)
 
-trial_num = 2
+trial_num = 3
 
 simulation = F
 thirty = T
@@ -36,24 +36,28 @@ if(simulation) {
                             -4,
                             -4,
                             -4), ncol=1, byrow = T)),
-                 c(-4, -4),
+                 c(-4, -1, -1, -4, -4, -1),
                  c(6.411967, 0, 0), 
-                 log(0.51^2),  log(0.8^2))
+                 log(0.51^2),  log(0.8^2),
+                 -4, -4)
 }
 
 n_sub = length(unique(data_format[,'ID..']))
 
-par_index = list( zeta=1:4, misclass=5:6,
-                  delta = 7:9, tau2 = 10, sigma2 = 11)
+par_index = list( zeta=1:4, misclass=5:10,
+                  delta = 11:13, tau2 = 14, sigma2 = 15,
+                  init = 16:17)
 
 prior_mean = c(-4, -4, -4, -4,
-               -4, -4,
+                0,  0,  0,  0,  0,  0,
                6.5, -2, -0.5,
-               -1.386, -0.45) 
+               -1.386, -0.45,
+               -4, -4) 
 prior_sd   = c(20, 20, 20, 20,
-               5, 5,
+               1, .1, .1, 1, 1, .1,
                1, 0.5^2, 0.1^1,
-               0.1^2, 0.1^2)
+               0.1^2, 0.1^2,
+               5, 5)
 
 prior_par = list()
 prior_par[[1]] = prior_mean

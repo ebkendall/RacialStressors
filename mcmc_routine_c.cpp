@@ -48,19 +48,21 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
                               const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_1, const arma::vec &id, const arma::vec &y_2) {
     
-    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) delta_i
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) init
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     arma::vec in_vals(EIDs.n_elem, arma::fill::zeros);
     
     // Initial state probabilities
-    arma::vec init = {1, 0, 0};
+    arma::vec vec_init_content = pars.elem(par_index(5) - 1);
+    arma::vec init_logit = {1, exp(vec_init_content(0)), exp(vec_init_content(1))};
+    arma::vec init = init_logit / arma::accu(init_logit);
     
     // Manually populate the misclassification probabilities
     arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
-    arma::mat M = { {1, 0, 0},
-                    {0, 1, exp(vec_misclass_content(0))},
-                    {0, exp(vec_misclass_content(1)), 1}};
+    arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+                    {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
+                    {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
     arma::vec m_row_sums = arma::sum(M, 1);
     M = M.each_col() / m_row_sums;
     
@@ -292,7 +294,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
                    const arma::field<arma::uvec> &par_index,
                    const arma::vec &y_1, arma::vec t_pts, const arma::vec &id, 
                    const arma::vec &B, const arma::vec &y_2, const int n_sub) {
-    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) init
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     double in_value = 0;
@@ -309,10 +311,14 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
     arma::mat zeta = arma::reshape(vec_zeta_content, 4, 1); 
     
+    arma::vec vec_init_content = pars.elem(par_index(5) - 1);
+    arma::vec init_logit = {1, exp(vec_init_content(0)), exp(vec_init_content(1))};
+    arma::vec P_init = init_logit / arma::accu(init_logit);
+    
     arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
-    arma::mat M = { {1, 0, 0},
-                    {0, 1, exp(vec_misclass_content(0))},
-                    {0, exp(vec_misclass_content(1)), 1}};
+    arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+                    {exp(vec_misclass_content(2)), 1, exp(vec_misclass_content(3))},
+                    {exp(vec_misclass_content(4)), exp(vec_misclass_content(5)), 1}};
     arma::vec m_row_sums = arma::sum(M, 1);
     M = M.each_col() / m_row_sums;
     
@@ -330,7 +336,8 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         if(k==0){
             int b_k = b_i(k);
             int y_1_k = y_1_sub(k);
-            in_value = in_value + log(M(b_k - 1, y_1_k-1));
+            double d_0 = D_2_calc(b_k, y_2_sub(k), tau2, sigma2, delta);
+            in_value = in_value + log(P_init[b_k - 1]) + log(M(b_k - 1, y_1_k-1)) + log(d_0);
         } else{
             arma::colvec z_i = {1};
             
@@ -383,8 +390,7 @@ arma::vec update_b_i_cpp(const arma::vec &EIDs, const arma::vec &pars,
         
         int n_i = sub_ind.n_elem; 
         
-        // The first state is always S1, therefore we start at 1 instead of 0
-        for (int k = 1; k < n_i - 1; k++) {
+        for (int k = 0; k < n_i - 1; k++) {
             
             arma::vec t_pts;
             if (k == n_i - 2) {

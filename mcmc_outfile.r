@@ -19,8 +19,9 @@ steps = 20000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-par_index = list( zeta=1:4, misclass=5:6,
-                  delta = 7:9, tau2 = 10, sigma2 = 11)
+par_index = list( zeta=1:4, misclass=5:10,
+                  delta = 11:13, tau2 = 14, sigma2 = 15,
+                  init = 16:17)
 
 index_seeds = c(1:5)
 
@@ -28,17 +29,12 @@ labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'),
             TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 3)'), 
             TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 3 $\to$ 1)'),
             TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 2)'),
-            # TeX(r'($\hat{\zeta}_{1,1}:$ Time: 1 $\to$ 2)'), 
-            # TeX(r'($\hat{\zeta}_{1,2}:$ Time: 2 $\to$ 1)'), 
-            # TeX(r'($\hat{\zeta}_{1,3}:$ Time: 2 $\to$ 3)'), 
-            # TeX(r'($\hat{\zeta}_{1,4}:$ Time: 3 $\to$ 1)'), 
-            # TeX(r'($\hat{\zeta}_{1,5}:$ Time: 3 $\to$ 2)'),
-            TeX(r'(P(obs. S3 | true S2))'), TeX(r'(P(obs. S2 | true S3))'),
+            TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'),
+            TeX(r'(P(obs. S1 | true S2))'), TeX(r'(P(obs. S3 | true S2))'),
+            TeX(r'(P(obs. S1 | true S3))'), TeX(r'(P(obs. S2 | true S3))'),
             TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
-            TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
-            # TeX(r'($\Upsilon_{1,1}$)'), TeX(r'($\Upsilon_{2,1}$)'), TeX(r'($\Upsilon_{3,1}$)'), 
-            # TeX(r'($\Upsilon_{1,2}$)'), TeX(r'($\Upsilon_{2,2}$)'), TeX(r'($\Upsilon_{3,2}$)'),
-            # TeX(r'($\Upsilon_{1,3}$)'), TeX(r'($\Upsilon_{2,3}$)'), TeX(r'($\Upsilon_{3,3}$)'))
+            TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'), TeX(r'(logit init S1)'), TeX(r'(logit init S2)'))
+            
 
 # -----------------------------------------------------------------------------
 # Create mcmc trace plots and histograms
