@@ -8,7 +8,7 @@ args <- commandArgs(TRUE)
 trial_num = as.numeric(args[1])
 simulation = as.logical(args[2])
 
-thirty = T
+thirty = F
 
 # Size of posterior sample from mcmc chains
 n_post = 5000
@@ -22,7 +22,7 @@ index_post = (steps - burnin - n_post + 1):(steps - burnin)
 par_index = list( zeta=1:4, misclass=5:6,
                   delta = 7:9, tau2 = 10, sigma2 = 11)
 
-index_seeds = c(1:4)
+index_seeds = c(1:5)
 
 labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
             TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 3)'), 
