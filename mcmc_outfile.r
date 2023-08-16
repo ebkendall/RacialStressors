@@ -7,9 +7,9 @@ dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
-simulation = F
-thirty = T
-case_b = F
+simulation = T
+thirty = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
@@ -21,7 +21,7 @@ steps = 30000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-index_seeds = c(1,3:5)
+index_seeds = c(2:5)
 
 if(case_b) {
     
