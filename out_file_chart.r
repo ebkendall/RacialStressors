@@ -3,9 +3,9 @@ library(plotrix)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
-simulation = F
-thirty = F
-use_labels = F
+simulation = T
+thirty = T
+use_labels = T
 case_b = F
 # ------------------------------------------------------------------------------
 
@@ -62,16 +62,20 @@ load(file_name)
 
 if(simulation) {
     # Simulation
-    load('Data/sim_data_1_a.rda')
-    load('Data/true_par_a.rda')
-    data_format = sim_data
+    if(thirty) {
+        load('Data/sim_data_1_30.rda')
+        data_format = sim_data
+    } else {
+        load('Data/sim_data_1_15.rda')
+        data_format = sim_data  
+    } 
 } else {
     # Real data analysis
     if(thirty) {
-	load('Data/data_format_30.rda')
+	    load('Data/data_format_30.rda')
     	data_format = data_format_30
     } else {
-	load('Data/data_format_15.rda')
+	    load('Data/data_format_15.rda')
     	data_format = data_format_15   
     }
     

@@ -1,6 +1,6 @@
 library(mvtnorm)
 
-thirty = T
+thirty = F
 
 # Load the current data ------------------------------------------------------
 if(thirty) {
@@ -16,39 +16,38 @@ if(thirty) {
 n_sim = 1
 
 # True parameter values ------------------------------------------------------
-# Can only mis-classify states 2 and 3
-par_index = list( zeta=1:4, misclass=5:6,
-                  delta = 7:9, tau2 = 10, sigma2 = 11)
+par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14)
 
-# Baseline only transition matrix
-# Logit transition probability parameters
-# 1->2, 2->3, 3->1, 3->2
-zeta = matrix(c(   -2,#  2.1,
-                   -1,#  1.8,
-                   -8.5,# -1.7,
-                   -8.6), ncol = 1, byrow = T)# -1.7
+if(thirty) {
+    zeta = matrix(c(-1.98, -7, -0.37, -8.59, -8.72), ncol = 1)
+    misclass = c(-8.4, -8.65, -7.23, -8.37)
+    delta = c(6.49, -0.281, -0.114)
+    log_tau2 = 0.422
+    log_sigma2 = -4.8
+} else {
+    zeta = matrix(c(-2.78, -7.97, -1.484, -9.03, -9.16), ncol = 1)
+    misclass = c(-9.17, -9.25, -7.99, -9.07)
+    delta = c(6.43, -0.329, -0.115)
+    log_tau2 = 0.534
+    log_sigma2 = -4.89
+}
 
-# Logit misclassification probability parameters
-misclass = c(-4, -4)
-
-M = matrix(c(1,                0,                0,
-             0,                1, exp(misclass[1]),
-             0, exp(misclass[2]),                1), nrow = 3, byrow = T)
-M = M / rowSums(M)
-
-# Parent means for random effect
-delta = c(6.6, -2, -0.5)
-
-# Log of variance for parent parameters
-tau2 = 0.5
-
-# Covariance term for the random effect
-sigma2 = 0.01
-
-true_par = c(c(zeta), misclass, delta, log(tau2), log(sigma2))
-save(true_par, file = 'Data/true_par_a.rda')
+true_par = c(c(zeta), misclass, delta, log_tau2, log_sigma2)
+if(thirty) {
+    save(true_par, file = 'Data/true_par_30.rda')   
+} else {
+    save(true_par, file = 'Data/true_par_15.rda')
+}
 
 # Simulate the data -----------------------------------------------------------
+
+M = matrix(c(1, exp(misclass[1]), exp(misclass[2]),
+             0,                1, exp(misclass[3]),
+             0, exp(misclass[4]),                1), nrow = 3, byrow = T)
+M = M / rowSums(M)
+
+tau2 = exp(log_tau2)
+sigma2 = exp(log_sigma2)
 
 for(ind in 1:n_sim) {
     set.seed(ind)
@@ -72,11 +71,12 @@ for(ind in 1:n_sim) {
                 q2   = exp(z_i %*% t(zeta[2, , drop=F]))
                 q3   = exp(z_i %*% t(zeta[3, , drop=F]))
                 q4   = exp(z_i %*% t(zeta[4, , drop=F]))
+                q5   = exp(z_i %*% t(zeta[5, , drop=F]))
           
-                      # transitions: 1->2, 2->3, 3->1, 3->2
+                # transitions: 1->2, 2->1, 2->3, 3->1, 3->2
                 Q = matrix(c(  1,  q1,  0,
-                              0,   1, q2,
-                              q3,  q4,  1), ncol=3, byrow=T)
+                              q2,   1, q3,
+                              q4,  q5,  1), ncol=3, byrow=T)
                 P_i = Q / rowSums(Q)
           
                 # Sample the true, latent state sequence
@@ -105,7 +105,11 @@ for(ind in 1:n_sim) {
     }
 
     colnames(sim_data) = c("ID..", "Time", "State", "RSA", "True_state")
-    save(sim_data, file = paste0("Data/sim_data_", ind, "_a.rda"))
+    if(thirty) {
+        save(sim_data, file = paste0("Data/sim_data_", ind, "_30.rda"))
+    } else {
+        save(sim_data, file = paste0("Data/sim_data_", ind, "_15.rda"))   
+    }
     
     cat('\n','Proption of occurances in each state:','\n')
     print(table(sim_data[,'True_state'])/dim(sim_data)[1])

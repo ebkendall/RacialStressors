@@ -8,7 +8,7 @@ print(ind)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
-simulation = F
+simulation = T
 thirty = T
 case_b = F
 # ------------------------------------------------------------------------------
@@ -20,26 +20,26 @@ if(simulation) {
     # Simulation
     if(thirty) {
         # 30s epochs
-        load('Data/sim_data_1_a.rda')
+        load('Data/sim_data_1_30.rda')
+        load('Data/true_par_30.rda')
         data_format = sim_data
     } else {
         # 15s epochs
-        load('Data/sim_data_1_a.rda')
+        load('Data/sim_data_1_15.rda')
+        load('Data/true_par_15.rda')
         data_format = sim_data
     }
     
     # Initialize the chains at the true values
     if(case_b) {
         # No misclassification because NO y_1
-        load('Data/true_par_a.rda')
-        init_par = true_par   
+        init_par = c(true_par[1:5], true_par[10:14])
         
         # misclass is kept in par_index for book-keeping in C++
         par_index = list( zeta=1:5, misclass=0,
                           delta = 6:8, tau2 = 9, sigma2 = 10)
     } else {
         # Misclassification exists
-        load('Data/true_par_a.rda')
         init_par = true_par
         
         par_index = list( zeta=1:5, misclass=6:9,

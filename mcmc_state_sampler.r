@@ -15,7 +15,7 @@ index_seeds = c(1,3:5)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
-simulation = F
+simulation = T
 thirty = T
 use_labels = T
 case_b = F
@@ -75,9 +75,13 @@ for (seed in index_seeds) {
 # State space sampler ---------------------------------------------------------
 if(simulation) {
     # Simulation
-    load('Data/sim_data_1_a.rda')
-    load('Data/true_par_a.rda')
-    data_format = sim_data
+    if(thirty) {
+        load('Data/sim_data_1_30.rda')
+        data_format = sim_data
+    } else {
+        load('Data/sim_data_1_15.rda')
+        data_format = sim_data  
+    } 
 } else {
     # Real data analysis
     if(thirty) {

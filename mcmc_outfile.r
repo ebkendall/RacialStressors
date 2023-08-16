@@ -145,7 +145,13 @@ par(mfrow=c(4, 2))
 stacked_chains = do.call( rbind, chain_list)
 par_mean = par_median = upper = lower = rep( NA, length(labels))
 
-load('Data/true_par_a.rda')
+if(thirty) {
+    load('Data/true_par_30.rda')
+} else {
+    load('Data/true_par_15.rda')
+}
+
+if(case_b) {true_par = c(true_par[1:5], true_par[10:14])}
 
 for(r in 1:length(labels)){
     
