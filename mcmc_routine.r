@@ -16,7 +16,7 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 # The mcmc routine for samping the parameters
 # -----------------------------------------------------------------------------
 mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
-                         steps, burnin, n_sub){
+                         steps, burnin, n_sub, case_b){
 
   pars = init_par
   n = length(y_1)
@@ -24,8 +24,13 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain = matrix( 0, steps, n_par)
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
-  group = list(c(par_index$zeta), c(par_index$misclass),
-               c(par_index$delta), c(par_index$tau2, par_index$sigma2))
+  if(case_b) {
+      group = list(c(par_index$zeta), c(par_index$delta), 
+                   c(par_index$tau2, par_index$sigma2))
+  } else {
+      group = list(c(par_index$zeta), c(par_index$misclass),
+                   c(par_index$delta), c(par_index$tau2, par_index$sigma2))
+  }
 
   names(group) = NULL
   n_group = length(group)
@@ -38,7 +43,11 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   EIDs = unique(id)
  
   # Evaluate the log_post of the initial parameters
-  log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, id, y_2)
+  if(case_b) {
+      log_post_prev = fn_log_post_continuous_no_label(EIDs, pars, prior_par, par_index, id, y_2)
+  } else {
+      log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, id, y_2)
+  }
   
   if(!is.finite(log_post_prev)){
       print("Infinite log-posterior; choose better initial parameters")
@@ -60,7 +69,11 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       }
 
       # Compute the log density for the proposal
-      log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2)
+      if(case_b) {
+          log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2)
+      } else {
+          log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2)
+      }
 
       # Only propose valid parameters during the burnin period
       if(ttt < burnin){
@@ -73,7 +86,11 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
               proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],sd=sqrt(pcov[[j]]*pscale[j]))
           }
           
-          log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2)
+          if(case_b) {
+              log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2)
+          } else {
+              log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2)
+          }
         }
       }
 

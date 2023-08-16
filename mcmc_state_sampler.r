@@ -18,6 +18,7 @@ trial_num = 1
 simulation = F
 thirty = T
 use_labels = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 
@@ -29,17 +30,34 @@ par_chain = NULL
 
 for (seed in index_seeds) {
     file_name = NULL
+    
     if(simulation) {
         if(thirty) {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')   
+            if(case_b) {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30b.rda')   
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')      
+            }
         } else {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_15.rda')
+            if(case_b) {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_15b.rda')
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_15.rda')   
+            }
         }
     } else {
         if(thirty) {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')   
+            if(case_b) {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')      
+            }
         } else {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15.rda')   
+            if(case_b) {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15b.rda')   
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15.rda')      
+            }
         }
     }
     
@@ -76,8 +94,12 @@ if(simulation) {
 
 n_sub = length(unique(data_format[,'ID..']))
 
-par_index = list( zeta=1:5, misclass=6:9,
-                  delta = 10:12, tau2 = 13, sigma2 = 14)
+if(case_b) {
+    # misclass is kept in par_index for book-keeping in C++
+    par_index = list( zeta=1:5, misclass=0, delta = 6:8, tau2 = 9, sigma2 = 10)
+} else {
+    par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14)
+}
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL
 id = as.numeric(temp_data[,"ID.."])
@@ -89,17 +111,58 @@ EIDs = unique(id)
 new_steps =  50000
 new_burnin = 10000
 
-B_chain = state_space_sampler(new_steps, new_burnin, EIDs, colMeans(par_chain), 
-                              par_index, y_1, y_2, id, t)
+if(use_labels & !(case_b)) {
+    B_chain = state_space_sampler(new_steps, new_burnin, EIDs, colMeans(par_chain), 
+                                  par_index, y_1, y_2, id, t)
+} else {
+    B_chain = state_space_sampler_no_label(new_steps, new_burnin, EIDs, colMeans(par_chain), 
+                                           par_index, y_2, id, t)    
+}
 
 file_name = NULL
 if(simulation) {
-    file_name = paste0("Model_out/B_chain_", trial_num, "_sim.rda")
+    if(thirty) {
+        if(case_b) {
+            file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30b.rda")
+        } else {
+            if(use_labels) {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30.rda")
+            } else {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30_nl.rda")
+            }   
+        }
+    } else {
+        if(case_b) {
+            file_name = paste0("Model_out/B_chain_", trial_num, "_sim_15b.rda")
+        } else {
+            if(use_labels) {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_15.rda")
+            } else {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_15_nl.rda")   
+            }   
+        }
+    }
 } else {
     if(thirty) {
-        file_name = paste0("Model_out/B_chain_", trial_num, "_30.rda")
+        if(case_b) {
+            file_name = paste0("Model_out/B_chain_", trial_num, "_30b.rda")
+        } else {
+            if(use_labels) {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_30.rda")
+            } else {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_30_nl.rda")
+            }   
+        }
     } else {
-        file_name = paste0("Model_out/B_chain_", trial_num, "_15.rda")
+        if(case_b) {
+            file_name = paste0("Model_out/B_chain_", trial_num, "_15b.rda")
+        } else {
+            if(use_labels) {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_15.rda")
+            } else {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_15_nl.rda")   
+            }   
+        }
     }
 }
 save(B_chain, file = file_name)

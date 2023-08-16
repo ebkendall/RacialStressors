@@ -9,7 +9,7 @@ dir = 'Model_out/'
 trial_num = 1
 simulation = F
 thirty = T
-use_labels = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
@@ -23,9 +23,20 @@ index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 index_seeds = c(1,3:5)
 
-if(use_labels) {
-    par_index = list( zeta=1:5, misclass=6:9,
-                      delta = 10:12, tau2 = 13, sigma2 = 14)
+if(case_b) {
+    
+    # misclass is kept in par_index for book-keeping in C++
+    par_index = list( zeta=1:5, misclass=0, delta = 6:8, tau2 = 9, sigma2 = 10)
+    
+    labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
+                TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 2)'),
+                TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
+                TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
+} else {
+    par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14)
     
     labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
                 TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
@@ -35,16 +46,6 @@ if(use_labels) {
                 TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'),
                 TeX(r'(P(obs. S3 | true S2))'),
                 TeX(r'(P(obs. S2 | true S3))'),
-                TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
-                TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
-} else {
-    par_index = list( zeta=1:5, delta = 6:8, tau2 = 9, sigma2 = 10)
-    
-    labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
-                TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
-                TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
-                TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
-                TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 2)'),
                 TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
                 TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
 }
@@ -64,15 +65,31 @@ for(seed in index_seeds){
     
     if(simulation) {
         if(thirty) {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')   
+            if(case_b) {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30b.rda')   
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')      
+            }
         } else {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_15.rda')
+            if(case_b) {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_15b.rda')
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_15.rda')   
+            }
         }
     } else {
         if(thirty) {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')   
+            if(case_b) {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')      
+            }
         } else {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15.rda')   
+            if(case_b) {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15b.rda')   
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15.rda')      
+            }
         }
     }
     
@@ -95,15 +112,31 @@ for(seed in index_seeds){
 pdf_title = NULL
 if(simulation) {
     if(thirty) {
-        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30.pdf')
+        if(case_b) {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30b.pdf')
+        } else {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30.pdf')   
+        }
     } else {
-        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_15.pdf')   
+        if(case_b) {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_15b.pdf')
+        } else {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_15.pdf')   
+        }
     }
 } else {
     if(thirty) {
-        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30.pdf')
+        if(case_b) {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30b.pdf')
+        } else {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30.pdf')   
+        }
     } else {
-        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_15.pdf')
+        if(case_b) {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_15b.pdf')
+        } else {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_15.pdf')   
+        }
     }
 }
 pdf(pdf_title)

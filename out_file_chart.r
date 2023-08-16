@@ -4,22 +4,61 @@ library(plotrix)
 # Information defining which approach to take ----------------------------------
 trial_num = 1
 simulation = F
-thirty = T
-use_labels = T
+thirty = F
+use_labels = F
+case_b = F
 # ------------------------------------------------------------------------------
 
 Dir = 'Model_out/'
 
-# load(paste0( Dir, 'post_mcmc_out_dev',args[1],'_', trialNum, '.rda'))
+file_name = NULL
 if(simulation) {
-    load(paste0(Dir,'B_chain_', trialNum, '_sim.rda'))
+    if(thirty) {
+        if(case_b) {
+            file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30b.rda")
+        } else {
+            if(use_labels) {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30.rda")
+            } else {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30_nl.rda")
+            }   
+        }
+    } else {
+        if(case_b) {
+            file_name = paste0("Model_out/B_chain_", trial_num, "_sim_15b.rda")
+        } else {
+            if(use_labels) {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_15.rda")
+            } else {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_15_nl.rda")   
+            }   
+        }
+    }
 } else {
-	if (thirty) {
-	 	load(paste0(Dir,'B_chain_', trialNum, '_30.rda'))
-	} else {
-		load(paste0(Dir,'B_chain_', trialNum, '_15.rda'))
-	}
+    if(thirty) {
+        if(case_b) {
+            file_name = paste0("Model_out/B_chain_", trial_num, "_30b.rda")
+        } else {
+            if(use_labels) {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_30.rda")
+            } else {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_30_nl.rda")
+            }   
+        }
+    } else {
+        if(case_b) {
+            file_name = paste0("Model_out/B_chain_", trial_num, "_15b.rda")
+        } else {
+            if(use_labels) {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_15.rda")
+            } else {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_15_nl.rda")   
+            }   
+        }
+    }
 }
+
+load(file_name)
 
 if(simulation) {
     # Simulation
@@ -44,12 +83,48 @@ EIDs = unique(data_format[,"ID.."])
 
 # New patients ---------------------------------------------------------------
 if(simulation) {
-    pdf_title = paste0('Plots/chart_plot_', trialNum, '_sim.pdf')
+    if(thirty) {
+        if(case_b) {
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b.pdf')
+        } else {
+            if(use_labels) {
+                pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30.pdf')
+            } else {
+                pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30_nl.pdf')   
+            }   
+        }
+    } else {
+        if(case_b) {
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_15b.pdf')
+        } else {
+            if(use_labels) {
+                pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_15.pdf')
+            } else {
+                pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_15_nl.pdf')   
+            }
+        }
+    }
 } else {
 	if(thirty) {
-		pdf_title = paste0('Plots/chart_plot_', trialNum, '_30.pdf')
+	    if(case_b) {
+	        pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b.pdf')
+	    } else {
+	        if(use_labels) {
+	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30.pdf')
+	        } else {
+	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30_nl.pdf')   
+	        }
+	    }
 	} else {
-		pdf_title = paste0('Plots/chart_plot_', trialNum, '_15.pdf')
+	    if(case_b) {
+	        pdf_title = paste0('Plots/chart_plot_', trial_num, '_15b.pdf')
+	    } else {
+	        if(use_labels) {
+	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_15.pdf')
+	        } else {
+	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_15_nl.pdf')   
+	        }   
+	    }
 	}
 }
 pdf(pdf_title)
@@ -74,7 +149,7 @@ for(i in EIDs){
 	color_choice = c('dodgerblue', 'firebrick1', 'yellow2')
 
 	plot(t_grid, data_format[indices_i, "RSA"], xlab='time', ylab = 'RSA', 
-		col.main='green', main = paste0('Participant: ', i)) #, " ", mean(data_format[indices_i, 'changed'])
+		col.main='green', main = paste0('Participant: ', i))
 	axis( side=1, at=t_grid, col.axis='green', labels=t_grid)
 	axis( side=2, at=seq(min(data_format[indices_i, "RSA"]), max(data_format[indices_i, "RSA"])), col.axis='green')
 	
@@ -93,7 +168,7 @@ for(i in EIDs){
 	    }
 	}
 
-	b_chain_ind = 30000:50000
+	b_chain_ind = 20000:40000
 	barplot( rbind(   colMeans(B_chain[b_chain_ind, indices_i] == 1),
 				colMeans(B_chain[b_chain_ind, indices_i] == 2),
 				colMeans(B_chain[b_chain_ind, indices_i] == 3)), 

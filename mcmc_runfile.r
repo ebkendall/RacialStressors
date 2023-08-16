@@ -10,7 +10,7 @@ print(ind)
 trial_num = 1
 simulation = F
 thirty = T
-use_labels = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 
@@ -29,8 +29,22 @@ if(simulation) {
     }
     
     # Initialize the chains at the true values
-    load('Data/true_par_a.rda')
-    init_par = true_par
+    if(case_b) {
+        # No misclassification because NO y_1
+        load('Data/true_par_a.rda')
+        init_par = true_par   
+        
+        # misclass is kept in par_index for book-keeping in C++
+        par_index = list( zeta=1:5, misclass=0,
+                          delta = 6:8, tau2 = 9, sigma2 = 10)
+    } else {
+        # Misclassification exists
+        load('Data/true_par_a.rda')
+        init_par = true_par
+        
+        par_index = list( zeta=1:5, misclass=6:9,
+                          delta = 10:12, tau2 = 13, sigma2 = 14)
+    }
     
 } else {
     # Real data analysis
@@ -49,20 +63,36 @@ if(simulation) {
     data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
     
     # Initialize the chains are arbitrary starting values
-    init_par = c(c(matrix(c(-4,
-                            -4,
-                            -4,
-                            -4,
-                            -4), ncol=1, byrow = T)),
-                 c(-4, -4, -4, -4),
-                 c(6.411967, 0, 0), 
-                 log(0.51^2),  log(0.8^2))
+    if(case_b) {
+        # No misclassification because NO y_1
+        init_par = c(c(matrix(c(-4,
+                                -4,
+                                -4,
+                                -4,
+                                -4), ncol=1, byrow = T)),
+                     c(6.411967, 0, 0), 
+                     log(0.51^2),  log(0.8^2))
+        
+        # misclass is kept in par_index for book-keeping in C++
+        par_index = list( zeta=1:5, misclass=0,
+                          delta = 6:8, tau2 = 9, sigma2 = 10)
+    } else {
+        # Misclassification exists
+        init_par = c(c(matrix(c(-4,
+                                -4,
+                                -4,
+                                -4,
+                                -4), ncol=1, byrow = T)),
+                     c(-4, -4, -4, -4),
+                     c(6.411967, 0, 0), 
+                     log(0.51^2),  log(0.8^2))   
+        
+        par_index = list( zeta=1:5, misclass=6:9,
+                          delta = 10:12, tau2 = 13, sigma2 = 14)
+    }
 }
 
 n_sub = length(unique(data_format[,'ID..']))
-
-par_index = list( zeta=1:5, misclass=6:9,
-                  delta = 10:12, tau2 = 13, sigma2 = 14)
 
 # Uninformed priors
 prior_mean = rep(0, length(init_par))
@@ -84,20 +114,36 @@ burnin = 5000
 s_time = Sys.time()
 
 mcmc_out = mcmc_routine(y_1, y_2, t, id, init_par, prior_par, par_index,
-             steps, burnin, n_sub)
+             steps, burnin, n_sub, case_b)
 
 e_time = Sys.time() - s_time; print(e_time)
 
 if(simulation) {
     if(thirty) {
-        save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_30.rda"))  
+        if(case_b) {
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_30b.rda"))  
+        } else {
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_30.rda"))     
+        }
     } else {
-        save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_15.rda"))     
+        if(case_b) {
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_15b.rda"))     
+        } else {
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_15.rda"))        
+        }
     }
 } else {
     if(thirty) {
-        save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_30.rda"))
+        if(case_b) {
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_30b.rda"))
+        } else {
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_30.rda"))   
+        }
     } else {
-        save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_15.rda"))
+        if(case_b) {
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_15b.rda"))
+        } else {
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_15.rda"))   
+        }
     }
 }

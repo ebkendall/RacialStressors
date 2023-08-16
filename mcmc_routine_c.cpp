@@ -45,8 +45,10 @@ double D_2_calc(const int state, const double y_2_k, const double tau2,
 
 // [[Rcpp::export]]
 double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,  
-                              const arma::field<arma::vec> &prior_par, const arma::field<arma::uvec> &par_index,
-                              const arma::vec &y_1, const arma::vec &id, const arma::vec &y_2) {
+                              const arma::field<arma::vec> &prior_par, 
+                              const arma::field<arma::uvec> &par_index,
+                              const arma::vec &y_1, const arma::vec &id, 
+                              const arma::vec &y_2) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2
     // "i" is the numeric EID number
@@ -251,7 +253,6 @@ double fn_log_post_continuous_no_label( const arma::vec &EIDs, const arma::vec &
     return in_value;
 }
 
-// STATE SPACE SAMPLER: ------------------------------------------------------
 arma::field<arma::field<arma::mat>> Omega_set(const arma::mat &G) {
     int N = G.n_cols; // dimension of adj matrix
     
@@ -368,6 +369,7 @@ arma::mat Omega_fun_cpp_new(const int k, const int n_i, const arma::vec &b_i) {
     
 }
 
+// STATE SPACE SAMPLER: ------------------------------------------------------
 double log_f_i_cpp(const int i, const int ii, const arma::vec &pars, 
                    const arma::field<arma::uvec> &par_index,
                    const arma::vec &y_1, arma::vec t_pts, const arma::vec &id, 
@@ -524,6 +526,160 @@ arma::mat state_space_sampler(const int steps, const int burnin,
         
         Rcpp::Rcout << "---> " << ttt << std::endl;
         arma::vec curr_B = update_b_i_cpp(EIDs, pars, par_index, y_1, id, prev_B, y_2);
+        if(ttt >= burnin)  B_master.row(ttt - burnin) = curr_B.t();
+        prev_B = curr_B;
+        
+    }
+    return B_master;
+}
+
+// STATE SPACE SAMPLER (no labels): -------------------------------------------
+double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars, 
+                            const arma::field<arma::uvec> &par_index,
+                            arma::vec t_pts, const arma::vec &id, 
+                            const arma::vec &B, const arma::vec &y_2, 
+                            const int n_sub) {
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2
+    // "i" is the numeric EID number
+    // "ii" is the index of the EID
+    double in_value = 0;
+    
+    arma::vec eids = id;
+    arma::uvec sub_ind = arma::find(eids == i);
+    int n_i = sub_ind.max() - sub_ind.min() + 1;
+    
+    // Subsetting the data to relate only to this participant
+    arma::mat b_i = B;
+    arma::mat y_2_sub = y_2.elem(sub_ind);
+    
+    arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
+    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 1); 
+    
+    arma::vec P_init = {1, 0, 0};
+    
+    arma::vec delta = pars.elem(par_index(2) - 1);
+    
+    double log_tau2 = arma::as_scalar(pars.elem(par_index(3) - 1));
+    double tau2 = exp(log_tau2);
+    
+    double log_sigma2 = arma::as_scalar(pars.elem(par_index(4) - 1));
+    double sigma2 = exp(log_sigma2);
+    
+    // Full likelihood evaluation is not needed for updating pairs of b_i components
+    for(int w=0; w < t_pts.n_elem; ++w){
+        int k = t_pts(w);
+        if(k==0){
+            // Currently NEVER have k==0 because initial state is set to 1
+            int b_k = b_i(k);
+            double d_0 = D_2_calc(b_k, y_2_sub(k), tau2, sigma2, delta);
+            in_value = in_value + log(P_init[b_k - 1]) + log(d_0);
+        } else{
+            arma::colvec z_i = {1};
+            
+            double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
+            double q1 = exp(q1_sub);
+            double q2_sub = arma::as_scalar(zeta.row(1) * z_i);
+            double q2 = exp(q2_sub);
+            double q3_sub = arma::as_scalar(zeta.row(2) * z_i);
+            double q3 = exp(q3_sub);
+            double q4_sub = arma::as_scalar(zeta.row(3) * z_i);
+            double q4 = exp(q4_sub);
+            double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
+            double q5 = exp(q5_sub);
+            
+            arma::mat Q = { {  1,  q1,   0},
+                            { q2,   1,  q3},
+                            { q4,  q5,   1}};
+            arma::vec q_row_sums = arma::sum(Q, 1);
+            arma::mat P_i = Q.each_col() / q_row_sums;
+            
+            int b_k_1 = b_i(k-1);
+            int b_k = b_i(k);
+            
+            double d_k = D_2_calc(b_k, y_2_sub(k), tau2, sigma2, delta);
+            in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(d_k);
+        }
+    }
+    
+    return in_value;
+}
+
+arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
+                                   const arma::field<arma::uvec> &par_index,
+                                   const arma::vec &id, arma::vec &b_curr, 
+                                   const arma::vec &y_2) {
+    
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2
+    // "i" is the numeric EID number
+    // "ii" is the index of the EID
+    
+    arma::vec B_return(b_curr.n_elem, arma::fill::zeros);
+    
+    omp_set_num_threads(10);
+    # pragma omp parallel for
+    for (int ii = 0; ii < EIDs.n_elem; ii++) {
+        int i = EIDs(ii);
+        arma::uvec sub_ind = arma::find(id == i);
+        
+        arma::vec b_i = b_curr.elem(sub_ind);
+        
+        int n_i = sub_ind.n_elem; 
+        
+        // Initial state is always 1 (so start k == 1, not k == 0)
+        for (int k = 1; k < n_i - 1; k++) {
+            
+            arma::vec t_pts;
+            if (k == n_i - 2) {
+                t_pts = arma::linspace(k, k+1, 2);
+            } else {
+                t_pts = arma::linspace(k, k+2, 3);
+            }
+            
+            arma::vec pr_B = b_i;
+            
+            // Sample and update the two neighboring states
+            arma::mat Omega_set = Omega_fun_cpp_new(k + 1, n_i, b_i);
+            
+            int sampled_index = arma::randi(arma::distr_param(1, Omega_set.n_rows));
+            
+            pr_B.rows(k, k+1) = Omega_set.row(sampled_index-1).t();
+            
+            double log_target_prev = log_f_i_cpp_no_label(i, ii, pars, par_index, 
+                                                         t_pts, id, b_i, y_2, 
+                                                         EIDs.n_elem);
+            
+            double log_target = log_f_i_cpp_no_label(i, ii, pars, par_index, 
+                                                    t_pts, id, pr_B, y_2, 
+                                                    EIDs.n_elem);
+            
+            // Note that the proposal probs cancel in the MH ratio
+            double diff_check = log_target - log_target_prev;
+            double min_log = log(arma::randu(arma::distr_param(0,1)));
+            if(diff_check > min_log){
+                b_i = pr_B;
+            }
+        }
+        B_return.elem(sub_ind) = b_i;
+    }
+    
+    return B_return;
+}
+
+// [[Rcpp::export]]
+arma::mat state_space_sampler_no_label(const int steps, const int burnin, 
+                              const arma::vec &EIDs, const arma::vec &pars,  
+                              const arma::field<arma::uvec> &par_index,
+                              const arma::vec &y_2, const arma::vec &id, 
+                              const arma::vec &t) {
+    
+    
+    arma::mat B_master(steps - burnin, y_2.n_elem, arma::fill::zeros);
+    arma::vec prev_B(y_2.n_elem, arma::fill::ones);
+    
+    for(int ttt = 0; ttt < steps; ttt++) {
+        
+        Rcpp::Rcout << "---> " << ttt << std::endl;
+        arma::vec curr_B = update_b_i_cpp_no_label(EIDs, pars, par_index, id, prev_B, y_2);
         if(ttt >= burnin)  B_master.row(ttt - burnin) = curr_B.t();
         prev_B = curr_B;
         
