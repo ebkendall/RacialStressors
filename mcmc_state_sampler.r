@@ -8,28 +8,33 @@ sourceCpp("mcmc_routine_c.cpp")
 Sys.setenv("PKG_CXXFLAGS" = "-fopenmp")
 Sys.setenv("PKG_LIBS" = "-fopenmp")
 
-
 # Initialization --------------------------------------------------------------
 set.seed(2023)
 dir = 'Model_out/'
+index_seeds = c(1,3:5)
 
-trial_num = 3
+# Information defining which approach to take ----------------------------------
+trial_num = 1
 simulation = F
 thirty = T
-# -----------------------------------------------------------------------------
+use_labels = T
+# ------------------------------------------------------------------------------
 
 
 # Load the posterior samples of the HMM parameters ----------------------------
-n_post = 5000; burnin = 5000; steps = 20000
+n_post = 5000; burnin = 5000; steps = 30000
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 par_chain = NULL
-index_seeds = c(1:5)
 
 for (seed in index_seeds) {
     file_name = NULL
     if(simulation) {
-        file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim.rda')
+        if(thirty) {
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')   
+        } else {
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_15.rda')
+        }
     } else {
         if(thirty) {
             file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')   
@@ -71,9 +76,8 @@ if(simulation) {
 
 n_sub = length(unique(data_format[,'ID..']))
 
-par_index = list( zeta=1:4, misclass=5:10,
-                  delta = 11:13, tau2 = 14, sigma2 = 15,
-                  init = 16:17)
+par_index = list( zeta=1:5, misclass=6:9,
+                  delta = 10:12, tau2 = 13, sigma2 = 14)
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL
 id = as.numeric(temp_data[,"ID.."])
@@ -82,7 +86,7 @@ y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
 EIDs = unique(id)
 
-new_steps =  100000
+new_steps =  50000
 new_burnin = 10000
 
 B_chain = state_space_sampler(new_steps, new_burnin, EIDs, colMeans(par_chain), 

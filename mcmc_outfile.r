@@ -4,36 +4,50 @@ library(gridExtra)
 library(latex2exp)
 
 dir = 'Model_out/' 
-args <- commandArgs(TRUE)
-trial_num = as.numeric(args[1])
-simulation = as.logical(args[2])
 
-thirty = F
+# Information defining which approach to take ----------------------------------
+trial_num = 1
+simulation = F
+thirty = T
+use_labels = T
+# ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
 n_post = 5000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 20000
+steps = 30000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-par_index = list( zeta=1:4, misclass=5:10,
-                  delta = 11:13, tau2 = 14, sigma2 = 15,
-                  init = 16:17)
+index_seeds = c(1,3:5)
 
-index_seeds = c(1:5)
-
-labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
-            TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 3)'), 
-            TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 3 $\to$ 1)'),
-            TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 2)'),
-            TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'),
-            TeX(r'(P(obs. S1 | true S2))'), TeX(r'(P(obs. S3 | true S2))'),
-            TeX(r'(P(obs. S1 | true S3))'), TeX(r'(P(obs. S2 | true S3))'),
-            TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
-            TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'), TeX(r'(logit init S1)'), TeX(r'(logit init S2)'))
+if(use_labels) {
+    par_index = list( zeta=1:5, misclass=6:9,
+                      delta = 10:12, tau2 = 13, sigma2 = 14)
+    
+    labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
+                TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 2)'),
+                TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'),
+                TeX(r'(P(obs. S3 | true S2))'),
+                TeX(r'(P(obs. S2 | true S3))'),
+                TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
+                TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
+} else {
+    par_index = list( zeta=1:5, delta = 6:8, tau2 = 9, sigma2 = 10)
+    
+    labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
+                TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 2)'),
+                TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
+                TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
+}
             
 
 # -----------------------------------------------------------------------------
@@ -49,7 +63,11 @@ for(seed in index_seeds){
     file_name = NULL
     
     if(simulation) {
-        file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim.rda')
+        if(thirty) {
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')   
+        } else {
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_15.rda')
+        }
     } else {
         if(thirty) {
             file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')   
@@ -76,7 +94,11 @@ for(seed in index_seeds){
 # Plot and save the mcmc trace plots and histograms.
 pdf_title = NULL
 if(simulation) {
-    pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim.pdf')
+    if(thirty) {
+        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30.pdf')
+    } else {
+        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_15.pdf')   
+    }
 } else {
     if(thirty) {
         pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30.pdf')

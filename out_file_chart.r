@@ -1,10 +1,12 @@
 library(matrixStats)
 library(plotrix)
 
+# Information defining which approach to take ----------------------------------
+trial_num = 1
 simulation = F
 thirty = T
-
-trialNum = 3 # CHANGE EVERY TIME ******************
+use_labels = T
+# ------------------------------------------------------------------------------
 
 Dir = 'Model_out/'
 
@@ -91,7 +93,7 @@ for(i in EIDs){
 	    }
 	}
 
-	b_chain_ind = 70000:90000
+	b_chain_ind = 30000:50000
 	barplot( rbind(   colMeans(B_chain[b_chain_ind, indices_i] == 1),
 				colMeans(B_chain[b_chain_ind, indices_i] == 2),
 				colMeans(B_chain[b_chain_ind, indices_i] == 3)), 
@@ -104,13 +106,5 @@ for(i in EIDs){
 					col=c( 'dodgerblue', 'firebrick1', 'yellow2'))
 	axis( side=1, at=t_grid, col.axis='green', labels=t_grid)
 	axis( side=2, at=0:1, col.axis='green')
-	
-	# abline(v = t_grid[1], col = color_choice[sub_dat$State[1]], lwd = 2)
-	# for(j in 1:sum(s)){
-	# 	t_switch = which(s==1)[j]+1
-	# 	abline(v = t_grid[t_switch], 
-	# 		col = color_choice[sub_dat$State[t_switch]],
-	# 		lwd = 2)
-	# }
 }
 dev.off()
