@@ -7,6 +7,7 @@ simulation = F
 thirty = F
 use_labels = F
 case_b = T
+s1 = T
 # ------------------------------------------------------------------------------
 
 Dir = 'Model_out/'
@@ -37,22 +38,38 @@ if(simulation) {
 } else {
     if(thirty) {
         if(case_b) {
-            file_name = paste0("Model_out/B_chain_", trial_num, "_30b.rda")
+            if(s1) {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_30b_s1.rda")
+            } else {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_30b_old.rda")   
+            }
         } else {
             if(use_labels) {
                 file_name = paste0("Model_out/B_chain_", trial_num, "_30.rda")
             } else {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_30_nl.rda")
+                if(s1) {
+                    file_name = paste0("Model_out/B_chain_", trial_num, "_30_nl_s1.rda")
+                } else {
+                    file_name = paste0("Model_out/B_chain_", trial_num, "_30_nl.rda")   
+                }
             }   
         }
     } else {
         if(case_b) {
-            file_name = paste0("Model_out/B_chain_", trial_num, "_15b.rda")
+            if(s1) {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_15b_s1.rda")
+            } else {
+                file_name = paste0("Model_out/B_chain_", trial_num, "_15b_old.rda")   
+            }
         } else {
             if(use_labels) {
                 file_name = paste0("Model_out/B_chain_", trial_num, "_15.rda")
             } else {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_15_nl.rda")   
+                if(s1) {
+                    file_name = paste0("Model_out/B_chain_", trial_num, "_15_nl_s1.rda")   
+                } else {
+                    file_name = paste0("Model_out/B_chain_", trial_num, "_15_nl.rda")      
+                }
             }   
         }
     }
@@ -111,22 +128,38 @@ if(simulation) {
 } else {
 	if(thirty) {
 	    if(case_b) {
-	        pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b.pdf')
+	        if(s1) {
+	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1.pdf')
+	        } else {
+	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_old.pdf')   
+	        }
 	    } else {
 	        if(use_labels) {
 	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30.pdf')
 	        } else {
-	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30_nl.pdf')   
+	            if(s1) {
+	                pdf_title = paste0('Plots/chart_plot_', trial_num, '_30_nl_s1.pdf')   
+	            } else {
+	                pdf_title = paste0('Plots/chart_plot_', trial_num, '_30_nl.pdf')      
+	            }
 	        }
 	    }
 	} else {
 	    if(case_b) {
-	        pdf_title = paste0('Plots/chart_plot_', trial_num, '_15b.pdf')
+	        if(s1) {
+	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_15b_s1.pdf')
+	        } else {
+	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_15b_old.pdf')   
+	        }
 	    } else {
 	        if(use_labels) {
 	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_15.pdf')
 	        } else {
-	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_15_nl.pdf')   
+	            if(s1) {
+	                pdf_title = paste0('Plots/chart_plot_', trial_num, '_15_nl_s1.pdf')
+	            } else {
+	                pdf_title = paste0('Plots/chart_plot_', trial_num, '_15_nl.pdf')      
+	            }
 	        }   
 	    }
 	}

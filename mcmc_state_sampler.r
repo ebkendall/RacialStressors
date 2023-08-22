@@ -11,12 +11,12 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 # Initialization --------------------------------------------------------------
 set.seed(2023)
 dir = 'Model_out/'
-index_seeds = c(1:5)
+index_seeds = c(1:2)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
 simulation = F
-thirty = T
+thirty = F
 use_labels = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -48,13 +48,13 @@ for (seed in index_seeds) {
     } else {
         if(thirty) {
             if(case_b) {
-                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b_old.rda')   
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
             } else {
                 file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')      
             }
         } else {
             if(case_b) {
-                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15b_old.rda')   
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15b.rda')   
             } else {
                 file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15.rda')      
             }
@@ -120,7 +120,7 @@ if(use_labels & !(case_b)) {
                                   par_index, y_1, y_2, id, t)
 } else {
     B_chain = state_space_sampler_no_label(new_steps, new_burnin, EIDs, colMeans(par_chain), 
-                                           par_index, y_2, id, t)    
+                                           par_index, y_2, id, t, y_1)    
 }
 
 file_name = NULL
@@ -149,22 +149,22 @@ if(simulation) {
 } else {
     if(thirty) {
         if(case_b) {
-            file_name = paste0("Model_out/B_chain_", trial_num, "_30b_old.rda")
+            file_name = paste0("Model_out/B_chain_", trial_num, "_30b_s1.rda")
         } else {
             if(use_labels) {
                 file_name = paste0("Model_out/B_chain_", trial_num, "_30.rda")
             } else {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_30_nl.rda")
+                file_name = paste0("Model_out/B_chain_", trial_num, "_30_nl_s1.rda")
             }   
         }
     } else {
         if(case_b) {
-            file_name = paste0("Model_out/B_chain_", trial_num, "_15b_old.rda")
+            file_name = paste0("Model_out/B_chain_", trial_num, "_15b_s1.rda")
         } else {
             if(use_labels) {
                 file_name = paste0("Model_out/B_chain_", trial_num, "_15.rda")
             } else {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_15_nl.rda")   
+                file_name = paste0("Model_out/B_chain_", trial_num, "_15_nl_s1.rda")   
             }   
         }
     }

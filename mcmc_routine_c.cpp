@@ -259,12 +259,12 @@ double fn_log_post_continuous_no_label( const arma::vec &EIDs, const arma::vec &
             
             arma::vec d_fill_1;
             
-            // if(y_1_i(k) > 1) {
-            //     d_fill_1 = {1,1,1};
-            // } else{
-            //     d_fill_1 = {1,0,0};
-            // }
-            d_fill_1 = {1,1,1};
+            if(y_1_i(k) > 1) {
+                d_fill_1 = {1,1,1};
+            } else{
+                d_fill_1 = {1,0,0};
+            }
+            // d_fill_1 = {1,1,1};
             arma::mat D_i_1 = arma::diagmat(d_fill_1);
             
             val = f_i * P * D_i_1 * D_i_2;
@@ -658,7 +658,7 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
 arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
                                    const arma::field<arma::uvec> &par_index,
                                    const arma::vec &id, arma::vec &b_curr, 
-                                   const arma::vec &y_2) {
+                                   const arma::vec &y_2, const arma::vec &y_1) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2
     // "i" is the numeric EID number
@@ -675,39 +675,42 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
         arma::vec b_i = b_curr.elem(sub_ind);
         
         int n_i = sub_ind.n_elem; 
+        arma::vec y_1_sub = y_1.elem(sub_ind);
         
         // Initial state is always 1 (so start k == 1, not k == 0)
         for (int k = 1; k < n_i - 1; k++) {
-            
-            arma::vec t_pts;
-            if (k == n_i - 2) {
-                t_pts = arma::linspace(k, k+1, 2);
-            } else {
-                t_pts = arma::linspace(k, k+2, 3);
-            }
-            
-            arma::vec pr_B = b_i;
-            
-            // Sample and update the two neighboring states
-            arma::mat Omega_set = Omega_fun_cpp_new(k + 1, n_i, b_i);
-            
-            int sampled_index = arma::randi(arma::distr_param(1, Omega_set.n_rows));
-            
-            pr_B.rows(k, k+1) = Omega_set.row(sampled_index-1).t();
-            
-            double log_target_prev = log_f_i_cpp_no_label(i, ii, pars, par_index, 
-                                                         t_pts, id, b_i, y_2, 
+            // keeping state 1 fixed without error
+            if(y_1_sub(k) != 1) {
+                arma::vec t_pts;
+                if (k == n_i - 2) {
+                    t_pts = arma::linspace(k, k+1, 2);
+                } else {
+                    t_pts = arma::linspace(k, k+2, 3);
+                }
+                
+                arma::vec pr_B = b_i;
+                
+                // Sample and update the two neighboring states
+                arma::mat Omega_set = Omega_fun_cpp_new(k + 1, n_i, b_i);
+                
+                int sampled_index = arma::randi(arma::distr_param(1, Omega_set.n_rows));
+                
+                pr_B.rows(k, k+1) = Omega_set.row(sampled_index-1).t();
+                
+                double log_target_prev = log_f_i_cpp_no_label(i, ii, pars, par_index, 
+                                                              t_pts, id, b_i, y_2, 
+                                                              EIDs.n_elem);
+                
+                double log_target = log_f_i_cpp_no_label(i, ii, pars, par_index, 
+                                                         t_pts, id, pr_B, y_2, 
                                                          EIDs.n_elem);
-            
-            double log_target = log_f_i_cpp_no_label(i, ii, pars, par_index, 
-                                                    t_pts, id, pr_B, y_2, 
-                                                    EIDs.n_elem);
-            
-            // Note that the proposal probs cancel in the MH ratio
-            double diff_check = log_target - log_target_prev;
-            double min_log = log(arma::randu(arma::distr_param(0,1)));
-            if(diff_check > min_log){
-                b_i = pr_B;
+                
+                // Note that the proposal probs cancel in the MH ratio
+                double diff_check = log_target - log_target_prev;
+                double min_log = log(arma::randu(arma::distr_param(0,1)));
+                if(diff_check > min_log){
+                    b_i = pr_B;
+                }   
             }
         }
         B_return.elem(sub_ind) = b_i;
@@ -721,7 +724,7 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
                               const arma::vec &EIDs, const arma::vec &pars,  
                               const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_2, const arma::vec &id, 
-                              const arma::vec &t) {
+                              const arma::vec &t, const arma::vec &y_1) {
     
     
     arma::mat B_master(steps - burnin, y_2.n_elem, arma::fill::zeros);
@@ -730,7 +733,7 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
     for(int ttt = 0; ttt < steps; ttt++) {
         
         Rcpp::Rcout << "---> " << ttt << std::endl;
-        arma::vec curr_B = update_b_i_cpp_no_label(EIDs, pars, par_index, id, prev_B, y_2);
+        arma::vec curr_B = update_b_i_cpp_no_label(EIDs, pars, par_index, id, prev_B, y_2, y_1);
         if(ttt >= burnin)  B_master.row(ttt - burnin) = curr_B.t();
         prev_B = curr_B;
         

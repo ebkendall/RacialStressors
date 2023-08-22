@@ -8,7 +8,7 @@ dir = 'Model_out/'
 # Information defining which approach to take ----------------------------------
 trial_num = 1
 simulation = F
-thirty = T
+thirty = F 
 case_b = T
 # ------------------------------------------------------------------------------
 
@@ -80,13 +80,13 @@ for(seed in index_seeds){
     } else {
         if(thirty) {
             if(case_b) {
-                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b_old.rda')   
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
             } else {
                 file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')      
             }
         } else {
             if(case_b) {
-                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15b_old.rda')   
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15b.rda')   
             } else {
                 file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15.rda')      
             }
@@ -127,13 +127,13 @@ if(simulation) {
 } else {
     if(thirty) {
         if(case_b) {
-            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30b_old.pdf')
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30b.pdf')
         } else {
             pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30.pdf')   
         }
     } else {
         if(case_b) {
-            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_15b_old.pdf')
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_15b.pdf')
         } else {
             pdf_title = paste0('Plots/mcmc_out_', trial_num, '_15.pdf')   
         }
