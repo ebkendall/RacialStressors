@@ -44,7 +44,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
  
   # Evaluate the log_post of the initial parameters
   if(case_b) {
-      log_post_prev = fn_log_post_continuous_no_label(EIDs, pars, prior_par, par_index, id, y_2)
+      log_post_prev = fn_log_post_continuous_no_label(EIDs, pars, prior_par, par_index, id, y_2, y_1)
   } else {
       log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, id, y_2)
   }
@@ -70,7 +70,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
 
       # Compute the log density for the proposal
       if(case_b) {
-          log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2)
+          log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2, y_1)
       } else {
           log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2)
       }
@@ -87,11 +87,16 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
           }
           
           if(case_b) {
-              log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2)
+              log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2, y_1)
           } else {
               log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2)
           }
         }
+      }
+      
+      if(!is.finite(log_post) | is.nan(log_post)) {
+          # Ensuring that we do not have problems from C++
+          print(paste0("bad proposal post burnin: ", log_post))
       }
 
       # Evaluate the Metropolis-Hastings ratio

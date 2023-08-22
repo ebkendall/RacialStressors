@@ -8,9 +8,9 @@ print(ind)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
-simulation = T
-thirty = T
-case_b = F
+simulation = F
+thirty = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 
@@ -121,13 +121,13 @@ e_time = Sys.time() - s_time; print(e_time)
 if(simulation) {
     if(thirty) {
         if(case_b) {
-            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_30b.rda"))  
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_30b_old.rda"))  
         } else {
             save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_30.rda"))     
         }
     } else {
         if(case_b) {
-            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_15b.rda"))     
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_15b_old.rda"))     
         } else {
             save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_15.rda"))        
         }
@@ -135,13 +135,13 @@ if(simulation) {
 } else {
     if(thirty) {
         if(case_b) {
-            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_30b.rda"))
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_30b_old.rda"))
         } else {
             save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_30.rda"))   
         }
     } else {
         if(case_b) {
-            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_15b.rda"))
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_15b_old.rda"))
         } else {
             save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_15.rda"))   
         }

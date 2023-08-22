@@ -101,6 +101,9 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
         
+        arma::rowvec val;
+        double log_norm = 0;
+        
         // Subsetting the data
         arma::uvec sub_ind = arma::find(id == i);
         arma::vec y_1_i = y_1.elem(sub_ind);
@@ -136,11 +139,28 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
             arma::vec d_fill = {d_1, d_2, d_3};
             arma::mat D_i_2 = arma::diagmat(d_fill);
             
-            arma::mat temp = f_i * P * D_i_1 * D_i_2;
-            f_i = temp;
+            val = f_i * P * D_i_1 * D_i_2;
+            
+            arma::mat diag_val = arma::diagmat(val);
+            arma::rowvec val_2 = val * diag_val;
+            double norm_val = sqrt(arma::accu(val_2));
+            
+            f_i = val / norm_val;
+            log_norm = log_norm + log(norm_val);
+            
         }
-        
-        in_vals(ii) = log(arma::accu(f_i));
+        in_vals(ii) = log(arma::accu(f_i)) + log_norm;
+    }
+    
+    if(in_vals.has_inf()) { 
+        Rcpp::Rcout << "in_vals has Inf" << std::endl;
+        double inf_return = -1 * arma::datum::inf;
+        return inf_return;
+    }
+    if(in_vals.has_nan()) { 
+        Rcpp::Rcout << "in_vals has NaN" << std::endl;
+        double inf_return = -1 * arma::datum::inf;
+        return inf_return;
     }
     
     double in_value = arma::accu(in_vals);
@@ -161,7 +181,8 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
 double fn_log_post_continuous_no_label( const arma::vec &EIDs, const arma::vec &pars,  
                                         const arma::field<arma::vec> &prior_par, 
                                         const arma::field<arma::uvec> &par_index,
-                                        const arma::vec &id, const arma::vec &y_2) {
+                                        const arma::vec &id, const arma::vec &y_2,
+                                        const arma::vec &y_1) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2
     // "i" is the numeric EID number
@@ -206,8 +227,12 @@ double fn_log_post_continuous_no_label( const arma::vec &EIDs, const arma::vec &
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
         
+        arma::rowvec val;
+        double log_norm = 0;
+        
         // Subsetting the data
         arma::uvec sub_ind = arma::find(id == i);
+        arma::vec y_1_i = y_1.elem(sub_ind);
         arma::vec y_2_i = y_2.elem(sub_ind);
         
         // Likelihood component from y_2
@@ -225,18 +250,45 @@ double fn_log_post_continuous_no_label( const arma::vec &EIDs, const arma::vec &
         for(int k = 1; k < y_2_i.n_elem; k++) {
             
             // Likelihood component from y_2
-            double d_1 = D_2_calc(1, y_2_i(k), tau2, sigma2, delta);
-            double d_2 = D_2_calc(2, y_2_i(k), tau2, sigma2, delta);
-            double d_3 = D_2_calc(3, y_2_i(k), tau2, sigma2, delta);
+            d_1 = D_2_calc(1, y_2_i(k), tau2, sigma2, delta);
+            d_2 = D_2_calc(2, y_2_i(k), tau2, sigma2, delta);
+            d_3 = D_2_calc(3, y_2_i(k), tau2, sigma2, delta);
             
-            arma::vec d_fill = {d_1, d_2, d_3};
-            arma::mat D_i_2 = arma::diagmat(d_fill);
+            d_fill = {d_1, d_2, d_3};
+            D_i_2 = arma::diagmat(d_fill);
             
-            arma::mat temp = f_i * P * D_i_2;
-            f_i = temp;
+            arma::vec d_fill_1;
+            
+            // if(y_1_i(k) > 1) {
+            //     d_fill_1 = {1,1,1};
+            // } else{
+            //     d_fill_1 = {1,0,0};
+            // }
+            d_fill_1 = {1,1,1};
+            arma::mat D_i_1 = arma::diagmat(d_fill_1);
+            
+            val = f_i * P * D_i_1 * D_i_2;
+            
+            arma::mat diag_val = arma::diagmat(val);
+            arma::rowvec val_2 = val * diag_val;
+            double norm_val = sqrt(arma::accu(val_2));
+                        
+            f_i = val / norm_val;
+            log_norm = log_norm + log(norm_val);
         }
         
-        in_vals(ii) = log(arma::accu(f_i));
+        in_vals(ii) = log(arma::accu(f_i)) + log_norm;
+    }
+    
+    if(in_vals.has_inf()) { 
+        Rcpp::Rcout << "in_vals has Inf" << std::endl;
+        double inf_return = -1 * arma::datum::inf;
+        return inf_return;
+    }
+    if(in_vals.has_nan()) { 
+        Rcpp::Rcout << "in_vals has NaN" << std::endl;
+        double inf_return = -1 * arma::datum::inf;
+        return inf_return;
     }
     
     double in_value = arma::accu(in_vals);
@@ -247,7 +299,6 @@ double fn_log_post_continuous_no_label( const arma::vec &EIDs, const arma::vec &
     
     arma::mat x = pars;
     double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
-    
     in_value = in_value + log_prior_dens;
     
     return in_value;
@@ -689,7 +740,7 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
 
 
 // [[Rcpp::export]]
-void test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_par, 
+double test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_par, 
                     const arma::field<arma::uvec> &par_index) {
     
     arma::vec delta = {1,2,3};
@@ -697,11 +748,57 @@ void test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_p
     double temp2 = D_2_calc(2, 1, 1, 1, delta);
     double temp3 = D_2_calc(3, 1, 1, 1, delta);
     
-    arma::field <arma::vec> temp(3);
-    temp(0) = {1,2,3};
-    temp(1) = {4,5};
-    temp(2) = {6,7,8,9};
     
+    
+    arma::rowvec val;
+    double log_norm = 0;
+    arma::vec init = {0.8, 0.1, 0.1};
+    
+    arma::mat init_transpose = init.t();
+    
+    arma::vec d_fill = {temp1, temp2, temp3};
+    arma::mat D_i_2 = arma::diagmat(d_fill);
+    
+    arma::vec d1_fill = {0.5, 0.3, 0.4};
+    arma::mat D_i_1 = arma::diagmat(d1_fill);
+    
+    Rcpp::Rcout << D_i_2 << std::endl;
+    
+    arma::mat f_i = init_transpose * D_i_1 * D_i_2;
+    Rcpp::Rcout << "f_i" << std::endl;
+    Rcpp::Rcout << f_i << std::endl;
+
+    arma::mat P = { {0.4, 0.2, 0.4},
+                    {0.25, 0.5, 0.25},
+                    {0.3, 0.1, 0.6}};    
+    
+    val = f_i * P * D_i_1 * D_i_2;
+    
+    Rcpp::Rcout << "val" << std::endl;
+    Rcpp::Rcout << val << std::endl;
+    
+    arma::mat diag_val = arma::diagmat(val);
+    arma::rowvec val_2 = val * diag_val;
+    Rcpp::Rcout << "val2" << std::endl;
+    Rcpp::Rcout << val_2 << std::endl;
+    
+    double norm_val = sqrt(arma::accu(val_2));
+    Rcpp::Rcout << "norm_val" << std::endl;
+    Rcpp::Rcout << norm_val << std::endl;
+    
+    f_i = val / norm_val;
+    Rcpp::Rcout << "val / norm_val" << std::endl;
+    Rcpp::Rcout << f_i << std::endl;
+    
+    log_norm = log_norm + log(norm_val);
+    Rcpp::Rcout << "log norm" << std::endl;
+    Rcpp::Rcout << log_norm << std::endl;
+    
+    Rcpp::Rcout << "getting -Inf" << std::endl;
+    double temp = -1 * arma::datum::inf;
+    Rcpp::Rcout << temp << std::endl;
+    
+    return temp;
 }
 
 

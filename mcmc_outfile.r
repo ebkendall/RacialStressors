@@ -7,8 +7,8 @@ dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
-simulation = T
-thirty = F
+simulation = F
+thirty = T
 case_b = T
 # ------------------------------------------------------------------------------
 
@@ -21,7 +21,7 @@ steps = 30000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-index_seeds = c(2:5)
+index_seeds = c(1:5)
 
 if(case_b) {
     
@@ -80,13 +80,13 @@ for(seed in index_seeds){
     } else {
         if(thirty) {
             if(case_b) {
-                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b_old.rda')   
             } else {
                 file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')      
             }
         } else {
             if(case_b) {
-                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15b.rda')   
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15b_old.rda')   
             } else {
                 file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15.rda')      
             }
@@ -127,18 +127,20 @@ if(simulation) {
 } else {
     if(thirty) {
         if(case_b) {
-            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30b.pdf')
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30b_old.pdf')
         } else {
             pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30.pdf')   
         }
     } else {
         if(case_b) {
-            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_15b.pdf')
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_15b_old.pdf')
         } else {
             pdf_title = paste0('Plots/mcmc_out_', trial_num, '_15.pdf')   
         }
     }
 }
+print(pdf_title)
+
 pdf(pdf_title)
 par(mfrow=c(4, 2))
 

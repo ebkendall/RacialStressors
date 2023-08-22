@@ -3,10 +3,10 @@ library(plotrix)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
-simulation = T
-thirty = T
-use_labels = T
-case_b = F
+simulation = F
+thirty = F
+use_labels = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 Dir = 'Model_out/'
@@ -131,6 +131,7 @@ if(simulation) {
 	    }
 	}
 }
+
 pdf(pdf_title)
 
 panels = c(4, 1)
@@ -150,7 +151,7 @@ for(i in EIDs){
 	    to_s3 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==3]
 	}
 
-	color_choice = c('dodgerblue', 'firebrick1', 'yellow2')
+	color_choice = c('deeppink', 'deeppink', 'deeppink')
 
 	plot(t_grid, data_format[indices_i, "RSA"], xlab='time', ylab = 'RSA', 
 		col.main='green', main = paste0('Participant: ', i))
@@ -158,10 +159,10 @@ for(i in EIDs){
 	axis( side=2, at=seq(min(data_format[indices_i, "RSA"]), max(data_format[indices_i, "RSA"])), col.axis='green')
 	
 	if(simulation){
-	    abline( v=t_grid[to_s1], col='dodgerblue', lwd=2)
-	    abline( v=t_grid[to_s2], col='firebrick1', lwd=2)
-	    abline( v=t_grid[to_s3], col='yellow2', lwd=2)
-	    col_choice = c('dodgerblue', 'firebrick1', 'yellow2')
+	    abline( v=t_grid[to_s1], col='deeppink', lwd=2)
+	    abline( v=t_grid[to_s2], col='deeppink', lwd=2)
+	    abline( v=t_grid[to_s3], col='deeppink', lwd=2)
+	    col_choice = c('deeppink', 'deeppink', 'deeppink')
 	    abline( v= t_grid[1], col = col_choice[b_i[1]], lwd = 2)
 	} else {
 	    s = diff(as.numeric(data_format$State[indices_i]))
@@ -187,3 +188,5 @@ for(i in EIDs){
 	axis( side=2, at=0:1, col.axis='green')
 }
 dev.off()
+
+print(pdf_title)

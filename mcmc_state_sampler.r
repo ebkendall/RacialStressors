@@ -11,14 +11,14 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 # Initialization --------------------------------------------------------------
 set.seed(2023)
 dir = 'Model_out/'
-index_seeds = c(1,3:5)
+index_seeds = c(1:5)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
-simulation = T
+simulation = F
 thirty = T
-use_labels = T
-case_b = F
+use_labels = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 
@@ -48,13 +48,13 @@ for (seed in index_seeds) {
     } else {
         if(thirty) {
             if(case_b) {
-                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b_old.rda')   
             } else {
                 file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')      
             }
         } else {
             if(case_b) {
-                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15b.rda')   
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15b_old.rda')   
             } else {
                 file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_15.rda')      
             }
@@ -149,7 +149,7 @@ if(simulation) {
 } else {
     if(thirty) {
         if(case_b) {
-            file_name = paste0("Model_out/B_chain_", trial_num, "_30b.rda")
+            file_name = paste0("Model_out/B_chain_", trial_num, "_30b_old.rda")
         } else {
             if(use_labels) {
                 file_name = paste0("Model_out/B_chain_", trial_num, "_30.rda")
@@ -159,7 +159,7 @@ if(simulation) {
         }
     } else {
         if(case_b) {
-            file_name = paste0("Model_out/B_chain_", trial_num, "_15b.rda")
+            file_name = paste0("Model_out/B_chain_", trial_num, "_15b_old.rda")
         } else {
             if(use_labels) {
                 file_name = paste0("Model_out/B_chain_", trial_num, "_15.rda")
