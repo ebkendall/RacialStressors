@@ -16,7 +16,7 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 # The mcmc routine for samping the parameters
 # -----------------------------------------------------------------------------
 mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
-                         steps, burnin, n_sub, case_b){
+                         steps, burnin, n_sub, case_b, cov_info){
 
   pars = init_par
   n = length(y_1)
@@ -28,7 +28,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       group = list(c(par_index$zeta), c(par_index$delta), 
                    c(par_index$tau2, par_index$sigma2))
   } else {
-      group = list(c(par_index$zeta), c(par_index$misclass),
+      group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
+                   c(par_index$zeta[11:20]), c(par_index$zeta[21:30]),
+                   c(par_index$zeta[31:35]), c(par_index$misclass),
                    c(par_index$delta), c(par_index$tau2, par_index$sigma2))
   }
 
@@ -46,7 +48,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   if(case_b) {
       log_post_prev = fn_log_post_continuous_no_label(EIDs, pars, prior_par, par_index, id, y_2, y_1)
   } else {
-      log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, id, y_2)
+      log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, id, y_2, cov_info)
   }
   
   if(!is.finite(log_post_prev)){
@@ -72,7 +74,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       if(case_b) {
           log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2, y_1)
       } else {
-          log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2)
+          log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2, cov_info)
       }
 
       # Only propose valid parameters during the burnin period
@@ -89,7 +91,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
           if(case_b) {
               log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2, y_1)
           } else {
-              log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2)
+              log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2, cov_info)
           }
         }
       }

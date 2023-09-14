@@ -48,7 +48,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
                               const arma::field<arma::vec> &prior_par, 
                               const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_1, const arma::vec &id, 
-                              const arma::vec &y_2) {
+                              const arma::vec &y_2, const arma::mat &cov_info) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2
     // "i" is the numeric EID number
@@ -68,25 +68,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     
     // Populate the transition probability matrix (independent of time)
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 1); 
-    arma::colvec z_i = {1};
-    
-    double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
-    double q1 = exp(q1_sub);
-    double q2_sub = arma::as_scalar(zeta.row(1) * z_i);
-    double q2 = exp(q2_sub);
-    double q3_sub = arma::as_scalar(zeta.row(2) * z_i);
-    double q3 = exp(q3_sub);
-    double q4_sub = arma::as_scalar(zeta.row(3) * z_i);
-    double q4 = exp(q4_sub);
-    double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
-    double q5 = exp(q5_sub);
-    
-    arma::mat Q = { {  1,  q1,   0},
-                    { q2,   1,  q3},
-                    { q4,  q5,   1}};
-    arma::vec q_row_sums = arma::sum(Q, 1);
-    arma::mat P = Q.each_col() / q_row_sums;
+    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 7); 
     
     arma::vec delta = pars.elem(par_index(2) - 1);
     
@@ -108,6 +90,28 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         arma::uvec sub_ind = arma::find(id == i);
         arma::vec y_1_i = y_1.elem(sub_ind);
         arma::vec y_2_i = y_2.elem(sub_ind);
+        
+        // Evaluating the probability transition matrix
+        arma::mat cov_info_i = cov_info.rows(sub_ind);
+        arma::colvec z_i = {1, cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2),
+                            cov_info_i(0,3), cov_info_i(0,4), cov_info_i(0,5)};
+        
+        double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
+        double q1 = exp(q1_sub);
+        double q2_sub = arma::as_scalar(zeta.row(1) * z_i);
+        double q2 = exp(q2_sub);
+        double q3_sub = arma::as_scalar(zeta.row(2) * z_i);
+        double q3 = exp(q3_sub);
+        double q4_sub = arma::as_scalar(zeta.row(3) * z_i);
+        double q4 = exp(q4_sub);
+        double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
+        double q5 = exp(q5_sub);
+        
+        arma::mat Q = { {  1,  q1,   0},
+                        { q2,   1,  q3},
+                        { q4,  q5,   1}};
+        arma::vec q_row_sums = arma::sum(Q, 1);
+        arma::mat P = Q.each_col() / q_row_sums;
         
         // Likelihood component from y_1
         arma::vec misclass_fill = M.col(y_1_i(0) - 1);

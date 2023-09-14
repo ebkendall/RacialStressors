@@ -8,7 +8,7 @@ print(ind)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 2
-simulation = T
+simulation = F
 thirty = T
 case_b = F
 # ------------------------------------------------------------------------------
@@ -77,17 +77,17 @@ if(simulation) {
                           delta = 6:8, tau2 = 9, sigma2 = 10)
     } else {
         # Misclassification exists
-        init_par = c(c(matrix(c(-4,
-                                -4,
-                                -4,
-                                -4,
-                                -4), ncol=1, byrow = T)),
+        init_par = c(c(matrix(c(-4, 0, 0, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0, 0, 0), ncol=7, byrow = T)),
                      c(-4, -4, -4, -4),
                      c(6.411967, 0, 0), 
                      log(0.51^2),  log(0.8^2))   
         
-        par_index = list( zeta=1:5, misclass=6:9,
-                          delta = 10:12, tau2 = 13, sigma2 = 14)
+        par_index = list( zeta=1:35, misclass=36:39,
+                          delta = 40:42, tau2 = 43, sigma2 = 44)
     }
 }
 
@@ -106,6 +106,7 @@ id = as.numeric(temp_data[,"ID.."])
 y_1 = as.numeric(temp_data[,"State"])
 y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
+cov_info = temp_data[,c("Age", "sex1", "sex2", "edu_yes", "edu_no", "sum_DLER"), drop=F]
 
 steps = 500000
 burnin = 5000
@@ -113,7 +114,7 @@ burnin = 5000
 s_time = Sys.time()
 
 mcmc_out = mcmc_routine(y_1, y_2, t, id, init_par, prior_par, par_index,
-             steps, burnin, n_sub, case_b)
+             steps, burnin, n_sub, case_b, cov_info)
 
 e_time = Sys.time() - s_time; print(e_time)
 
