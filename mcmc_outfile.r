@@ -7,21 +7,21 @@ dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
-simulation = F
+simulation = T
 thirty = F 
-case_b = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-n_post = 5000
+n_post = 490000
 # Step number at which the adaptive tuning scheme was frozen
-burnin = 5000
+burnin = 10000
 # Total number of steps the mcmc algorithm is computed for
-steps = 30000
+steps = 500000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-index_seeds = c(1:5)
+index_seeds = c(1:2,4:5)
 
 if(case_b) {
     
@@ -101,7 +101,7 @@ for(seed in index_seeds){
 
         # Thinning the chain
         main_chain = mcmc_out$chain[index_post,]
-        ind_keep = seq(1, nrow(main_chain), by=10)
+        ind_keep = seq(1, nrow(main_chain), by=100)
 
       	chain_list[[ind]] = main_chain[ind_keep, ]
     	post_means[ind,] <- colMeans(main_chain[ind_keep, ])

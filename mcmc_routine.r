@@ -100,6 +100,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       }
 
       # Evaluate the Metropolis-Hastings ratio
+      # print(paste0("log post: ", log_post))
+      # print(paste0("log post prev: ", log_post_prev))
+      
       if( log_post - log_post_prev > log(runif(1,0,1)) ){
         log_post_prev = log_post
         pars[ind_j] = proposal[ind_j]

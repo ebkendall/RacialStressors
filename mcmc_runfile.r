@@ -7,12 +7,11 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
-simulation = F
-thirty = F
-case_b = T
+trial_num = 2
+simulation = T
+thirty = T
+case_b = F
 # ------------------------------------------------------------------------------
-
 
 init_par = NULL
 
@@ -108,7 +107,7 @@ y_1 = as.numeric(temp_data[,"State"])
 y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
 
-steps = 30000
+steps = 500000
 burnin = 5000
 
 s_time = Sys.time()
@@ -121,13 +120,13 @@ e_time = Sys.time() - s_time; print(e_time)
 if(simulation) {
     if(thirty) {
         if(case_b) {
-            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_30b_old.rda"))  
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_30b.rda"))  
         } else {
             save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_30.rda"))     
         }
     } else {
         if(case_b) {
-            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_15b_old.rda"))     
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_15b.rda"))     
         } else {
             save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_sim_15.rda"))        
         }
@@ -135,13 +134,13 @@ if(simulation) {
 } else {
     if(thirty) {
         if(case_b) {
-            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_30b_old.rda"))
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_30b.rda"))
         } else {
             save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_30.rda"))   
         }
     } else {
         if(case_b) {
-            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_15b_old.rda"))
+            save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_15b.rda"))
         } else {
             save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", trial_num, "_15.rda"))   
         }

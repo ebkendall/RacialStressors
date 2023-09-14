@@ -1,11 +1,12 @@
 library(mvtnorm)
 
-thirty = F
+thirty = T
 
 # Load the current data ------------------------------------------------------
 if(thirty) {
   load('Data/data_format_30.rda')
-  N = length(unique(data_format_30$ID..))
+  N = 500
+  # N = length(unique(data_format_30$ID..))
   data_format = data_format_30
 } else {
   load('Data/data_format_15.rda')
@@ -54,11 +55,12 @@ for(ind in 1:n_sim) {
     sim_data = NULL
 
     for(i in 1:N) {
-        n_i = sum(data_format[,"ID.."] == unique(data_format[,"ID.."])[i])
-        id  = unique(data_format[,"ID.."])[i]
+        id  = i
+        id_info = sample(x = unique(data_format[,"ID.."]), size = 1, replace = T)
+        n_i = sum(data_format[,"ID.."] == id_info)
         b_i = NULL
         s_i = NULL
-        t_pts = time = data_format[data_format[,"ID.."] == id, "Time"]
+        t_pts = time = data_format[data_format[,"ID.."] == id_info, "Time"]
     
         for(k in 1:n_i) {
               if(k == 1) {

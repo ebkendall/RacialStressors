@@ -95,7 +95,8 @@ colnames(data_format_15) = colnames(data_format_30) = c('ID..', 'State', 'RSA', 
 save(data_format_30, file = 'Data/data_format_30.rda')
 save(data_format_15, file = 'Data/data_format_15.rda')
 
-# Adding Baseline covariates to the model
+# Adding Baseline covariates to the model -------------------------------------
+
 rsa_covariates = read.csv('Data/_FinalDataforRSASecondsStatesCovariates.csv', na.strings = "")
 rsa_covariates = as.matrix(rsa_covariates)
 load('Data/data_format_15.rda'); print(length(unique(data_format_15$ID..)))
