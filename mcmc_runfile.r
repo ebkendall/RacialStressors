@@ -7,7 +7,7 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 2
+trial_num = 3
 simulation = F
 thirty = T
 case_b = F
@@ -77,17 +77,17 @@ if(simulation) {
                           delta = 6:8, tau2 = 9, sigma2 = 10)
     } else {
         # Misclassification exists
-        init_par = c(c(matrix(c(-4, 0, 0, 0, 0, 0, 0,
-                                -4, 0, 0, 0, 0, 0, 0,
-                                -4, 0, 0, 0, 0, 0, 0,
-                                -4, 0, 0, 0, 0, 0, 0,
-                                -4, 0, 0, 0, 0, 0, 0), ncol=7, byrow = T)),
+        init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0), ncol=5, byrow = T)),
                      c(-4, -4, -4, -4),
                      c(6.411967, 0, 0), 
                      log(0.51^2),  log(0.8^2))   
         
-        par_index = list( zeta=1:35, misclass=36:39,
-                          delta = 40:42, tau2 = 43, sigma2 = 44)
+        par_index = list( zeta=1:25, misclass=26:29,
+                          delta = 30:32, tau2 = 33, sigma2 = 34)
     }
 }
 
@@ -106,7 +106,7 @@ id = as.numeric(temp_data[,"ID.."])
 y_1 = as.numeric(temp_data[,"State"])
 y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
-cov_info = temp_data[,c("Age", "sex1", "sex2", "edu_yes", "edu_no", "sum_DLER"), drop=F]
+cov_info = temp_data[,c("Age", "sex1", "edu_yes", "sum_DLER"), drop=F]
 
 steps = 500000
 burnin = 5000
