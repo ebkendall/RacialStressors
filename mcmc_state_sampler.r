@@ -11,7 +11,7 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 # Initialization --------------------------------------------------------------
 set.seed(2023)
 dir = 'Model_out/'
-index_seeds = c(1:2)
+index_seeds = c(1:5)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
@@ -111,16 +111,21 @@ y_1 = as.numeric(temp_data[,"State"])
 y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
 EIDs = unique(id)
+if(simulation) {
+    cov_info = matrix(0, nrow = nrow(temp_data), ncol = 4)
+} else {
+    cov_info = temp_data[,c("Age", "sex1", "edu_yes", "sum_DLER"), drop=F]
+}
 
 new_steps =  50000
 new_burnin = 10000
 
 if(use_labels & !(case_b)) {
     B_chain = state_space_sampler(new_steps, new_burnin, EIDs, colMeans(par_chain), 
-                                  par_index, y_1, y_2, id, t)
+                                  par_index, y_1, y_2, id, t, cov_info, simulation)
 } else {
     B_chain = state_space_sampler_no_label(new_steps, new_burnin, EIDs, colMeans(par_chain), 
-                                           par_index, y_2, id, t, y_1)    
+                                           par_index, y_2, id, t, y_1, cov_info, simulation)    
 }
 
 file_name = NULL

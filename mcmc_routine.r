@@ -16,7 +16,7 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 # The mcmc routine for samping the parameters
 # -----------------------------------------------------------------------------
 mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
-                         steps, burnin, n_sub, case_b, cov_info){
+                         steps, burnin, n_sub, case_b, cov_info, simulation){
 
   pars = init_par
   n = length(y_1)
@@ -28,10 +28,17 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       group = list(c(par_index$zeta), c(par_index$delta), 
                    c(par_index$tau2, par_index$sigma2))
   } else {
+    if(simulation) {
+      group = list(c(par_index$zeta), c(par_index$misclass),
+                    c(par_index$delta), c(par_index$tau2))#, par_index$sigma2))
+    } else {
       group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
                    c(par_index$zeta[21:25]), c(par_index$misclass),
-                   c(par_index$delta), c(par_index$tau2, par_index$sigma2))
+                   c(par_index$delta), 
+                   c(par_index$tau2, par_index$sigma2))
+    }
+      
   }
 
   names(group) = NULL
@@ -46,9 +53,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
  
   # Evaluate the log_post of the initial parameters
   if(case_b) {
-      log_post_prev = fn_log_post_continuous_no_label(EIDs, pars, prior_par, par_index, id, y_2, y_1)
+      log_post_prev = fn_log_post_continuous_no_label(EIDs, pars, prior_par, par_index, id, y_2, y_1, cov_info, simulation)
   } else {
-      log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, id, y_2, cov_info)
+      log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, id, y_2, cov_info, simulation)
   }
   
   if(!is.finite(log_post_prev)){
@@ -59,6 +66,12 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   # Begin the MCMC algorithm --------------------------------------------------
   chain[1,] = pars
   for(ttt in 2:steps){
+
+    if(ttt %% 200 == 0) {
+        print("pars")
+        print(chain[ttt - 1,])
+    }
+
     for(j in 1:n_group){
 
       # Propose an update
@@ -72,9 +85,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
 
       # Compute the log density for the proposal
       if(case_b) {
-          log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2, y_1)
+          log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2, y_1, cov_info, simulation)
       } else {
-          log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2, cov_info)
+          log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2, cov_info, simulation)
       }
 
       # Only propose valid parameters during the burnin period
@@ -89,9 +102,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
           }
           
           if(case_b) {
-              log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2, y_1)
+              log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2, y_1, cov_info, simulation)
           } else {
-              log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2, cov_info)
+              log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2, cov_info, simulation)
           }
         }
       }
@@ -119,11 +132,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
         # to capture the relationships within the parameters vectors for each
         # transition.  This helps with mixing.
         if(ttt == 100)  pscale[j] = 1
-        
-        if(ttt %% 150 == 0) {
-            print("accept ratio")
-            print(accept[j])
-        }
         
         if (length(ind_j) > 1) {
             if(100 <= ttt & ttt <= 2000){

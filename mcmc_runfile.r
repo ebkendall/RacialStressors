@@ -8,7 +8,7 @@ print(ind)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 3
-simulation = F
+simulation = T
 thirty = T
 case_b = F
 # ------------------------------------------------------------------------------
@@ -106,7 +106,11 @@ id = as.numeric(temp_data[,"ID.."])
 y_1 = as.numeric(temp_data[,"State"])
 y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
-cov_info = temp_data[,c("Age", "sex1", "edu_yes", "sum_DLER"), drop=F]
+if(simulation) {
+    cov_info = matrix(0, nrow = nrow(temp_data), ncol = 4)
+} else {
+    cov_info = temp_data[,c("Age", "sex1", "edu_yes", "sum_DLER"), drop=F]
+}
 
 steps = 500000
 burnin = 5000
@@ -114,7 +118,7 @@ burnin = 5000
 s_time = Sys.time()
 
 mcmc_out = mcmc_routine(y_1, y_2, t, id, init_par, prior_par, par_index,
-             steps, burnin, n_sub, case_b, cov_info)
+             steps, burnin, n_sub, case_b, cov_info, simulation)
 
 e_time = Sys.time() - s_time; print(e_time)
 
