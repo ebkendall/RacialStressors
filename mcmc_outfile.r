@@ -7,8 +7,8 @@ dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
 trial_num = 3
-simulation = F
-thirty = T
+simulation = T
+thirty = F
 case_b = F
 # ------------------------------------------------------------------------------
 
@@ -36,38 +36,52 @@ if(case_b) {
                 TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
                 TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
 } else {
-    par_index = list( zeta=1:25, misclass=26:29, delta = 30:32, tau2 = 33, sigma2 = 34)
+    if(simulation) {
+        par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14)
+        labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
+                    TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
+                    TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
+                    TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
+                    TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 2)'),
+                    TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'),
+                    TeX(r'(P(obs. S3 | true S2))'),
+                    TeX(r'(P(obs. S2 | true S3))'),
+                    TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
+                    TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
+    } else {
+        par_index = list( zeta=1:25, misclass=26:29, delta = 30:32, tau2 = 33, sigma2 = 34)
     
-    labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
-                TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
-                TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
-                TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
-                TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 2)'),
-                TeX(r'($\hat{\zeta}_{1,1}:$ age: 1 $\to$ 2)'), 
-                TeX(r'($\hat{\zeta}_{1,2}:$ age: 2 $\to$ 1)'), 
-                TeX(r'($\hat{\zeta}_{1,3}:$ age: 2 $\to$ 3)'),
-                TeX(r'($\hat{\zeta}_{1,4}:$ age: 3 $\to$ 1)'),
-                TeX(r'($\hat{\zeta}_{1,5}:$ age: 3 $\to$ 2)'),
-                TeX(r'($\hat{\zeta}_{2,1}:$ sex1: 1 $\to$ 2)'), 
-                TeX(r'($\hat{\zeta}_{2,2}:$ sex1: 2 $\to$ 1)'), 
-                TeX(r'($\hat{\zeta}_{2,3}:$ sex1: 2 $\to$ 3)'),
-                TeX(r'($\hat{\zeta}_{2,4}:$ sex1: 3 $\to$ 1)'),
-                TeX(r'($\hat{\zeta}_{2,5}:$ sex1: 3 $\to$ 2)'),
-                TeX(r'($\hat{\zeta}_{4,1}:$ yes edu: 1 $\to$ 2)'), 
-                TeX(r'($\hat{\zeta}_{4,2}:$ yes edu: 2 $\to$ 1)'), 
-                TeX(r'($\hat{\zeta}_{4,3}:$ yes edu: 2 $\to$ 3)'),
-                TeX(r'($\hat{\zeta}_{4,4}:$ yes edu: 3 $\to$ 1)'),
-                TeX(r'($\hat{\zeta}_{4,5}:$ yes edu: 3 $\to$ 2)'),
-                TeX(r'($\hat{\zeta}_{6,1}:$ DLER: 1 $\to$ 2)'), 
-                TeX(r'($\hat{\zeta}_{6,2}:$ DLER: 2 $\to$ 1)'), 
-                TeX(r'($\hat{\zeta}_{6,3}:$ DLER: 2 $\to$ 3)'),
-                TeX(r'($\hat{\zeta}_{6,4}:$ DLER: 3 $\to$ 1)'),
-                TeX(r'($\hat{\zeta}_{6,5}:$ DLER: 3 $\to$ 2)'),
-                TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'),
-                TeX(r'(P(obs. S3 | true S2))'),
-                TeX(r'(P(obs. S2 | true S3))'),
-                TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
-                TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
+        labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
+                    TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
+                    TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
+                    TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
+                    TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 2)'),
+                    TeX(r'($\hat{\zeta}_{1,1}:$ age: 1 $\to$ 2)'), 
+                    TeX(r'($\hat{\zeta}_{1,2}:$ age: 2 $\to$ 1)'), 
+                    TeX(r'($\hat{\zeta}_{1,3}:$ age: 2 $\to$ 3)'),
+                    TeX(r'($\hat{\zeta}_{1,4}:$ age: 3 $\to$ 1)'),
+                    TeX(r'($\hat{\zeta}_{1,5}:$ age: 3 $\to$ 2)'),
+                    TeX(r'($\hat{\zeta}_{2,1}:$ sex1: 1 $\to$ 2)'), 
+                    TeX(r'($\hat{\zeta}_{2,2}:$ sex1: 2 $\to$ 1)'), 
+                    TeX(r'($\hat{\zeta}_{2,3}:$ sex1: 2 $\to$ 3)'),
+                    TeX(r'($\hat{\zeta}_{2,4}:$ sex1: 3 $\to$ 1)'),
+                    TeX(r'($\hat{\zeta}_{2,5}:$ sex1: 3 $\to$ 2)'),
+                    TeX(r'($\hat{\zeta}_{4,1}:$ yes edu: 1 $\to$ 2)'), 
+                    TeX(r'($\hat{\zeta}_{4,2}:$ yes edu: 2 $\to$ 1)'), 
+                    TeX(r'($\hat{\zeta}_{4,3}:$ yes edu: 2 $\to$ 3)'),
+                    TeX(r'($\hat{\zeta}_{4,4}:$ yes edu: 3 $\to$ 1)'),
+                    TeX(r'($\hat{\zeta}_{4,5}:$ yes edu: 3 $\to$ 2)'),
+                    TeX(r'($\hat{\zeta}_{6,1}:$ DLER: 1 $\to$ 2)'), 
+                    TeX(r'($\hat{\zeta}_{6,2}:$ DLER: 2 $\to$ 1)'), 
+                    TeX(r'($\hat{\zeta}_{6,3}:$ DLER: 2 $\to$ 3)'),
+                    TeX(r'($\hat{\zeta}_{6,4}:$ DLER: 3 $\to$ 1)'),
+                    TeX(r'($\hat{\zeta}_{6,5}:$ DLER: 3 $\to$ 2)'),
+                    TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'),
+                    TeX(r'(P(obs. S3 | true S2))'),
+                    TeX(r'(P(obs. S2 | true S3))'),
+                    TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
+                    TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
+    }
 }
             
 

@@ -7,8 +7,8 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 3
-simulation = T
+trial_num = 10
+simulation = F
 thirty = T
 case_b = F
 # ------------------------------------------------------------------------------
@@ -64,17 +64,17 @@ if(simulation) {
     # Initialize the chains are arbitrary starting values
     if(case_b) {
         # No misclassification because NO y_1
-        init_par = c(c(matrix(c(-4,
-                                -4,
-                                -4,
-                                -4,
-                                -4), ncol=1, byrow = T)),
+        init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0,
+                                -4, 0, 0, 0, 0), ncol=5, byrow = T)),
                      c(6.411967, 0, 0), 
                      log(0.51^2),  log(0.8^2))
         
         # misclass is kept in par_index for book-keeping in C++
-        par_index = list( zeta=1:5, misclass=0,
-                          delta = 6:8, tau2 = 9, sigma2 = 10)
+        par_index = list( zeta=1:25, misclass=0,
+                          delta = 26:28, tau2 = 29, sigma2 = 30)
     } else {
         # Misclassification exists
         init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
