@@ -2,11 +2,11 @@ library(matrixStats)
 library(plotrix)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 10
 simulation = F
 thirty = F
 use_labels = F
-case_b = T
+case_b = F
 s1 = T
 # ------------------------------------------------------------------------------
 

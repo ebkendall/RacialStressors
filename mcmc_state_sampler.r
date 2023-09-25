@@ -11,19 +11,36 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 # Initialization --------------------------------------------------------------
 set.seed(2023)
 dir = 'Model_out/'
-index_seeds = c(1:5)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 10
 simulation = F
-thirty = F
-use_labels = F
-case_b = T
+thirty = T
+use_labels = T
+case_b = F
 # ------------------------------------------------------------------------------
+
+if(simulation) {
+    index_seeds = c(1:5)
+} else {
+    if(thirty) {
+        if(case_b) {
+            index_seeds = c(1:4)
+        } else {
+            index_seeds = c(1,4,5)
+        }
+    } else {
+        if(case_b) {
+            index_seeds = c(1:3)
+        } else {
+            index_seeds = c(1,2,4)
+        }
+    }
+}
 
 
 # Load the posterior samples of the HMM parameters ----------------------------
-n_post = 5000; burnin = 5000; steps = 30000
+n_post = 495000; burnin = 5000; steps = 500000
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 par_chain = NULL
@@ -100,9 +117,9 @@ n_sub = length(unique(data_format[,'ID..']))
 
 if(case_b) {
     # misclass is kept in par_index for book-keeping in C++
-    par_index = list( zeta=1:5, misclass=0, delta = 6:8, tau2 = 9, sigma2 = 10)
+    par_index = list( zeta=1:25, misclass=0, delta = 26:28, tau2 = 29, sigma2 = 30)
 } else {
-    par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14)
+    par_index = list( zeta=1:25, misclass=26:29, delta = 30:32, tau2 = 33, sigma2 = 34)
 }
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL
@@ -118,7 +135,7 @@ if(simulation) {
 }
 
 new_steps =  50000
-new_burnin = 10000
+new_burnin = 5000
 
 if(use_labels & !(case_b)) {
     B_chain = state_space_sampler(new_steps, new_burnin, EIDs, colMeans(par_chain), 
