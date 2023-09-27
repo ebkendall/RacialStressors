@@ -96,31 +96,29 @@ save(data_format_30, file = 'Data/data_format_30.rda')
 save(data_format_15, file = 'Data/data_format_15.rda')
 
 # Adding covariates to the data ------------------------------------------------
-rsa_covariates = read.csv('Data/SEEL_Covariates_091323.csv', na.strings = "")
+rsa_covariates = read.csv('Data/SEEL_Covariates_092623.csv', na.strings = "")
 rsa_covariates = as.matrix(rsa_covariates)
 
 load('Data/data_format_15.rda'); print(length(unique(data_format_15$ID..)))
 rsa_covariates_sub = rsa_covariates[rsa_covariates[,"ID"] %in% data_format_15[,"ID.."], ]
 rsa_covariates_sub = rsa_covariates_sub[which(apply(is.na(rsa_covariates_sub), 1, sum) == 0), ]
 
-final_rsa_cov = matrix(nrow = nrow(rsa_covariates_sub), ncol = 7)
-colnames(final_rsa_cov) = c("ID", "Age", "sex1", "sex2", "edu_yes", "edu_no", "sum_DLER")
-final_rsa_cov[,1] = rsa_covariates_sub[,"ID"]
-final_rsa_cov[,2] = as.numeric(rsa_covariates_sub[,"Age"])
-final_rsa_cov[,3] = as.numeric(rsa_covariates_sub[,"Sex"] == 1)
-final_rsa_cov[,4] = as.numeric(rsa_covariates_sub[,"Sex"] == 2)
-final_rsa_cov[,5] = as.numeric(rsa_covariates_sub[,"R_PEdu"] == 1)
-final_rsa_cov[,6] = as.numeric(rsa_covariates_sub[,"R_PEdu"] == 0)
-cumulative_DLER = apply(rsa_covariates_sub[,5:22], 1, sum)
-final_rsa_cov[,7] = as.numeric(cumulative_DLER)
+final_rsa_cov = matrix(0, nrow = nrow(rsa_covariates_sub), ncol = 6)
+colnames(final_rsa_cov) = c("ID", "Age", "sex1", "edu_yes", "DLER_avg", "DLER_dis")
+final_rsa_cov[,"ID"] = rsa_covariates_sub[,"ID"]
+final_rsa_cov[,"Age"] = as.numeric(rsa_covariates_sub[,"Age"])
+final_rsa_cov[,"sex1"] = as.numeric(rsa_covariates_sub[,"Sex"] == 1)
+final_rsa_cov[,"edu_yes"] = as.numeric(rsa_covariates_sub[,"R_PEdu"] == 1)
+final_rsa_cov[,"DLER_avg"] = as.numeric(rsa_covariates_sub[,"ODLERavg"])
+final_rsa_cov[,"DLER_dis"] = as.numeric(rsa_covariates_sub[,"DLER_Dis_NoDis"] == 1)
 
 data_format_15 = data_format_15[data_format_15[,"ID.."] %in% final_rsa_cov[,"ID"], ]
 print(length(unique(data_format_15$ID..)))
-data_format_add_on = matrix(nrow = nrow(data_format_15), ncol = 6)
-colnames(data_format_add_on) = c("Age", "sex1", "sex2", "edu_yes", "edu_no", "sum_DLER")
+data_format_add_on = matrix(nrow = nrow(data_format_15), ncol = 5)
+colnames(data_format_add_on) = c("Age", "sex1", "edu_yes", "DLER_avg", "DLER_dis")
 for(i in 1:nrow(data_format_15)) {
     dat_i = c(final_rsa_cov[final_rsa_cov[,"ID"] == data_format_15[i,"ID.."], ])
-    data_format_add_on[i,] = dat_i[2:7]
+    data_format_add_on[i,] = dat_i[2:6]
 }
 data_format_15 = cbind(data_format_15, data_format_add_on)
 data_format_15[,"ID.."] = as.numeric(data_format_15[,"ID.."])
@@ -130,11 +128,11 @@ save(data_format_15, file = 'Data/data_format_15.rda')
 load('Data/data_format_30.rda')
 data_format_30 = data_format_30[data_format_30[,"ID.."] %in% final_rsa_cov[,"ID"], ]
 print(length(unique(data_format_30$ID..)))
-data_format_add_on = matrix(nrow = nrow(data_format_30), ncol = 6)
-colnames(data_format_add_on) = c("Age", "sex1", "sex2", "edu_yes", "edu_no", "sum_DLER")
+data_format_add_on = matrix(nrow = nrow(data_format_30), ncol = 5)
+colnames(data_format_add_on) = c("Age", "sex1", "edu_yes", "DLER_avg", "DLER_dis")
 for(i in 1:nrow(data_format_30)) {
     dat_i = c(final_rsa_cov[final_rsa_cov[,"ID"] == data_format_30[i,"ID.."], ])
-    data_format_add_on[i,] = dat_i[2:7]
+    data_format_add_on[i,] = dat_i[2:6]
 }
 data_format_30 = cbind(data_format_30, data_format_add_on)
 data_format_30[,"ID.."] = as.numeric(data_format_30[,"ID.."])
