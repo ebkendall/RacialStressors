@@ -1,12 +1,12 @@
 library(mvtnorm)
 
-thirty = F
+thirty = T
 
 # Load the current data ------------------------------------------------------
 if(thirty) {
   load('Data/data_format_30.rda')
-  # N = 500
-  N = length(unique(data_format_30$ID..))
+  N = 500
+  # N = length(unique(data_format_30$ID..))
   data_format = data_format_30
 } else {
   load('Data/data_format_15.rda')
@@ -17,20 +17,20 @@ if(thirty) {
 n_sim = 1
 
 # True parameter values ------------------------------------------------------
-par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14)
+par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14:16)
 
 if(thirty) {
-    zeta = matrix(c(-1.98, -7, -0.37, -8.59, -8.72), ncol = 1)
+    zeta = matrix(c(-1.98, -7, -1.6, -8.59, -8.72), ncol = 1)
     misclass = c(-8.4, -8.65, -7.23, -8.37)
     delta = c(6.49, -0.281, -0.114)
-    log_tau2 = 0.422
-    log_sigma2 = -4.8
+    log_tau2 = -2
+    log_sigma2 = c(-3.8, -4.8, -4.8)
 } else {
     zeta = matrix(c(-2.78, -7.97, -1.484, -9.03, -9.16), ncol = 1)
     misclass = c(-9.17, -9.25, -7.99, -9.07)
     delta = c(6.43, -0.329, -0.115)
     log_tau2 = 0.534
-    log_sigma2 = -4.89
+    log_sigma2 = c(-3.8, -4.8, -4.8)
 }
 
 true_par = c(c(zeta), misclass, delta, log_tau2, log_sigma2)
@@ -48,7 +48,7 @@ M = matrix(c(1, exp(misclass[1]), exp(misclass[2]),
 M = M / rowSums(M)
 
 tau2 = exp(log_tau2)
-sigma2 = exp(log_sigma2)
+Sigma2 = diag(exp(log_sigma2))
 
 for(ind in 1:n_sim) {
     set.seed(ind)
@@ -86,7 +86,13 @@ for(ind in 1:n_sim) {
                 b_i = c( b_i, sample(1:3, size=1, prob=P_i[tail(b_i,1),]))
     
                 # Sample the observed state w/ misclassification probability
-                s_i = c( s_i, sample(1:3, size=1, prob=M[tail(b_i,1),]))
+                if(sum(b_i == 1) == length(b_i)) {
+                    # Mimic the fact that the initial state 1 sequence is observed
+                    # without error
+                    s_i = c( s_i, tail(b_i,1))
+                } else {
+                    s_i = c( s_i, sample(1:3, size=1, prob=M[tail(b_i,1),]))   
+                }
               }
         }
     
@@ -94,8 +100,7 @@ for(ind in 1:n_sim) {
         # I have sampled both the true state sequence as well as the 
         # observed labels. Now we simulate the RSA sequence
     
-        upsilon = diag(rep(sigma2, 3))
-        delta_i = rmvnorm( n=1, mean= delta, sigma=upsilon)
+        delta_i = rmvnorm( n=1, mean= delta, sigma=Sigma2)
     
         mean_Y_2 = V_i %*% matrix(delta_i, ncol = 1)
     
@@ -119,6 +124,13 @@ for(ind in 1:n_sim) {
     cat('\n')
     
     print(sum(sim_data[,'State'] != sim_data[,'True_state']))
+    diff_ind = which(sim_data[,'State'] != sim_data[,'True_state'])
+    if(length(diff_ind) > 0) {
+        diff_ind = c(diff_ind, diff_ind+1, diff_ind - 1)
+        diff_ind = sort(diff_ind)
+        print(diff_ind)
+        print(sim_data[diff_ind, c('State', 'True_state')])   
+    }
 
 }
 

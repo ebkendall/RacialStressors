@@ -7,8 +7,8 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 10
-simulation = F
+trial_num = 11
+simulation = T
 thirty = T
 case_b = F
 # ------------------------------------------------------------------------------
@@ -36,13 +36,13 @@ if(simulation) {
         
         # misclass is kept in par_index for book-keeping in C++
         par_index = list( zeta=1:5, misclass=0,
-                          delta = 6:8, tau2 = 9, sigma2 = 10)
+                          delta = 6:8, tau2 = 9, sigma2 = 10:12)
     } else {
         # Misclassification exists
         init_par = true_par
         
         par_index = list( zeta=1:5, misclass=6:9,
-                          delta = 10:12, tau2 = 13, sigma2 = 14)
+                          delta = 10:12, tau2 = 13, sigma2 = 14:16)
     }
     
 } else {
@@ -70,11 +70,14 @@ if(simulation) {
                                 -4, 0, 0, 0, 0,
                                 -4, 0, 0, 0, 0), ncol=5, byrow = T)),
                      c(6.411967, 0, 0), 
-                     log(0.51^2),  log(0.8^2))
+                     log(0.51^2),  
+                     c(log(0.8^2), log(0.3^2), log(0.3^2)),
+                     -4, 0, 0, 0, 0)
         
         # misclass is kept in par_index for book-keeping in C++
         par_index = list( zeta=1:25, misclass=0,
-                          delta = 26:28, tau2 = 29, sigma2 = 30)
+                          delta = 26:28, tau2 = 29, sigma2 = 30:32,
+                          beta = 33:37)
     } else {
         # Misclassification exists
         init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
@@ -84,10 +87,13 @@ if(simulation) {
                                 -4, 0, 0, 0, 0), ncol=5, byrow = T)),
                      c(-4, -4, -4, -4),
                      c(6.411967, 0, 0), 
-                     log(0.51^2),  log(0.8^2))   
+                     log(0.51^2), 
+                     c(log(0.8^2), log(0.3^2), log(0.3^2)),
+                     -4, 0, 0, 0, 0)   
         
         par_index = list( zeta=1:25, misclass=26:29,
-                          delta = 30:32, tau2 = 33, sigma2 = 34)
+                          delta = 30:32, tau2 = 33, sigma2 = 34:36,
+                          beta = 37:41)
     }
 }
 
@@ -112,11 +118,12 @@ if(simulation) {
     cov_info = temp_data[,c("Age", "sex1", "edu_yes", "sum_DLER"), drop=F]
 }
 
-steps = 500000
+steps = 50000
 burnin = 5000
 
 s_time = Sys.time()
 
+print(init_par)
 mcmc_out = mcmc_routine(y_1, y_2, t, id, init_par, prior_par, par_index,
              steps, burnin, n_sub, case_b, cov_info, simulation)
 

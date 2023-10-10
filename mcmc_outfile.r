@@ -7,21 +7,21 @@ dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
 trial_num = 10
-simulation = F
-thirty = F
-case_b = T
+simulation = T
+thirty = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-n_post = 495000
+n_post = 45000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 500000
+steps = 50000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-index_seeds = c(1:3)
+index_seeds = c(1:5)
 
 if(case_b) {
     
@@ -57,7 +57,7 @@ if(case_b) {
                     TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
 } else {
     if(simulation) {
-        par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14)
+        par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14:16)
         labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
                     TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
                     TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
@@ -67,7 +67,8 @@ if(case_b) {
                     TeX(r'(P(obs. S3 | true S2))'),
                     TeX(r'(P(obs. S2 | true S3))'),
                     TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
-                    TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
+                    TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma_1^2)$)'),
+                    TeX(r'($\log(\sigma_2^2)$)'), TeX(r'($\log(\sigma_3^2)$)'))
     } else {
         par_index = list( zeta=1:25, misclass=26:29, delta = 30:32, tau2 = 33, sigma2 = 34)
     
