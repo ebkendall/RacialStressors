@@ -6,7 +6,7 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 10
+trial_num = 11
 simulation = T
 thirty = T
 case_b = F

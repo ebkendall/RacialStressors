@@ -8,7 +8,7 @@ print(ind)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 11
-simulation = T
+simulation = F
 thirty = T
 case_b = F
 # ------------------------------------------------------------------------------
@@ -115,10 +115,10 @@ t = as.numeric(temp_data[,"Time"])
 if(simulation) {
     cov_info = matrix(0, nrow = nrow(temp_data), ncol = 4)
 } else {
-    cov_info = temp_data[,c("Age", "sex1", "edu_yes", "sum_DLER"), drop=F]
+    cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
 }
 
-steps = 50000
+steps = 500000
 burnin = 5000
 
 s_time = Sys.time()

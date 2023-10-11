@@ -100,7 +100,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         beta = pars.elem(par_index(5) - 1);
     }
     
-    omp_set_num_threads(6);
+    omp_set_num_threads(16);
     # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
