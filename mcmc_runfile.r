@@ -7,7 +7,7 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 11
+trial_num = 12
 simulation = F
 thirty = T
 case_b = F
@@ -72,12 +72,12 @@ if(simulation) {
                      c(6.411967, 0, 0), 
                      log(0.51^2),  
                      c(log(0.8^2), log(0.3^2), log(0.3^2)),
-                     -4, 0, 0, 0, 0)
+                     0, 0, 0, 0)
         
         # misclass is kept in par_index for book-keeping in C++
         par_index = list( zeta=1:25, misclass=0,
                           delta = 26:28, tau2 = 29, sigma2 = 30:32,
-                          beta = 33:37)
+                          beta = 33:36)
     } else {
         # Misclassification exists
         init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
@@ -89,11 +89,11 @@ if(simulation) {
                      c(6.411967, 0, 0), 
                      log(0.51^2), 
                      c(log(0.8^2), log(0.3^2), log(0.3^2)),
-                     -4, 0, 0, 0, 0)   
+                     0, 0, 0, 0)   
         
         par_index = list( zeta=1:25, misclass=26:29,
                           delta = 30:32, tau2 = 33, sigma2 = 34:36,
-                          beta = 37:41)
+                          beta = 37:40)
     }
 }
 

@@ -7,21 +7,21 @@ dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
 trial_num = 11
-simulation = T
+simulation = F
 thirty = T
 case_b = F
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-n_post = 45000
+n_post = 495000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 50000
+steps = 500000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-index_seeds = c(1:5)
+index_seeds = c(1:2)
 
 if(case_b) {
     
@@ -70,8 +70,9 @@ if(case_b) {
                     TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma_1^2)$)'),
                     TeX(r'($\log(\sigma_2^2)$)'), TeX(r'($\log(\sigma_3^2)$)'))
     } else {
-        par_index = list( zeta=1:25, misclass=26:29, delta = 30:32, tau2 = 33, sigma2 = 34)
-    
+        par_index = list( zeta=1:25, misclass=26:29,
+                          delta = 30:32, tau2 = 33, sigma2 = 34:36,
+                          beta = 37:41)    
         labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
                     TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
                     TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
@@ -101,7 +102,10 @@ if(case_b) {
                     TeX(r'(P(obs. S3 | true S2))'),
                     TeX(r'(P(obs. S2 | true S3))'),
                     TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
-                    TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
+                    TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma_1^2)$)'), TeX(r'($\log(\sigma_2^2)$)'), TeX(r'($\log(\sigma_3^2)$)'),
+                    TeX(r'($\hat{\beta}_0:$ baseline)'), TeX(r'($\hat{\beta}_1:$ age)'),
+                    TeX(r'($\hat{\beta}_2:$ sex1)'), TeX(r'($\hat{\beta}_3:$ yes edu)'),
+                    TeX(r'($\hat{\beta}_4:$ DLER)'))
     }
 }
             

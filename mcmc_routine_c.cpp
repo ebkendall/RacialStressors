@@ -95,7 +95,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), exp(log_sigma2(2))};
     // double sigma2 = exp(log_sigma2);
     
-    arma::vec beta(5, arma::fill::zeros);
+    arma::vec beta(4, arma::fill::zeros);
     if(!simulation) {
         beta = pars.elem(par_index(5) - 1);
     }
@@ -144,10 +144,11 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         arma::mat D_i_1 = arma::diagmat(misclass_fill);
         
         // Likelihood component from y_2
-        double d_1 = D_2_calc(1, y_2_i(0), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-        double d_2 = D_2_calc(2, y_2_i(0), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-        double d_3 = D_2_calc(3, y_2_i(0), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-        
+        arma::vec x_i = {cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2), cov_info_i(0,3)};
+        double d_1 = D_2_calc(1, y_2_i(0), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+        double d_2 = D_2_calc(2, y_2_i(0), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+        double d_3 = D_2_calc(3, y_2_i(0), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+
         arma::vec d_fill = {d_1, d_2, d_3};
         arma::mat D_i_2 = arma::diagmat(d_fill);
         
@@ -162,10 +163,10 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
             arma::mat D_i_1 = arma::diagmat(misclass_fill);
             
             // Likelihood component from y_2
-            double d_1 = D_2_calc(1, y_2_i(k), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-            double d_2 = D_2_calc(2, y_2_i(k), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-            double d_3 = D_2_calc(3, y_2_i(k), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-            
+            double d_1 = D_2_calc(1, y_2_i(k), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+            double d_2 = D_2_calc(2, y_2_i(k), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+            double d_3 = D_2_calc(3, y_2_i(k), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+
             arma::vec d_fill = {d_1, d_2, d_3};
             arma::mat D_i_2 = arma::diagmat(d_fill);
             
@@ -284,10 +285,11 @@ double fn_log_post_continuous_no_label( const arma::vec &EIDs, const arma::vec &
         arma::mat P = Q.each_col() / q_row_sums;
         
         // Likelihood component from y_2
-        double d_1 = D_2_calc(1, y_2_i(0), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-        double d_2 = D_2_calc(2, y_2_i(0), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-        double d_3 = D_2_calc(3, y_2_i(0), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-        
+        arma::vec x_i = {cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2), cov_info_i(0,3)};
+        double d_1 = D_2_calc(1, y_2_i(0), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+        double d_2 = D_2_calc(2, y_2_i(0), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+        double d_3 = D_2_calc(3, y_2_i(0), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+
         arma::vec d_fill = {d_1, d_2, d_3};
         arma::mat D_i_2 = arma::diagmat(d_fill);
         
@@ -298,10 +300,10 @@ double fn_log_post_continuous_no_label( const arma::vec &EIDs, const arma::vec &
         for(int k = 1; k < y_2_i.n_elem; k++) {
             
             // Likelihood component from y_2
-            d_1 = D_2_calc(1, y_2_i(k), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-            d_2 = D_2_calc(2, y_2_i(k), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-            d_3 = D_2_calc(3, y_2_i(k), tau2, sigma_2_vec, delta, z_i, beta, simulation);
-            
+            d_1 = D_2_calc(1, y_2_i(k), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+            d_2 = D_2_calc(2, y_2_i(k), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+            d_3 = D_2_calc(3, y_2_i(k), tau2, sigma_2_vec, delta, x_i, beta, simulation);
+
             d_fill = {d_1, d_2, d_3};
             D_i_2 = arma::diagmat(d_fill);
             
@@ -500,7 +502,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
         zeta = arma::reshape(vec_zeta_content, 5, 5);
         z_i = {1, cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
     }
-    
+    arma::vec x_i = {cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
     arma::vec P_init = {1, 0, 0};
     
     arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
@@ -529,7 +531,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
             // Currently NEVER have k==0 because initial state is set to 1
             int b_k = b_i(k);
             int y_1_k = y_1_sub(k);
-            double d_0 = D_2_calc(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, z_i, beta, simulation);
+            double d_0 = D_2_calc(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, beta, simulation);
             in_value = in_value + log(P_init[b_k - 1]) + log(M(b_k - 1, y_1_k-1)) + log(d_0);
         } else{
             // Evaluating the probability transition matrix          
@@ -553,8 +555,8 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
             int b_k_1 = b_i(k-1);
             int b_k = b_i(k);
             int y_1_k = y_1_sub(k);
-            
-            double d_k = D_2_calc(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, z_i, beta, simulation);
+
+            double d_k = D_2_calc(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, beta, simulation);
             in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) 
                         + log(M(b_k - 1, y_1_k-1)) + log(d_k);
         }
@@ -680,7 +682,7 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
         zeta = arma::reshape(vec_zeta_content, 5, 5);
         z_i = {1, cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
     }
-    
+    arma::vec x_i = {cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
     arma::vec P_init = {1, 0, 0};
     
     arma::vec delta = pars.elem(par_index(2) - 1);
@@ -701,7 +703,7 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
         if(k==0){
             // Currently NEVER have k==0 because initial state is set to 1
             int b_k = b_i(k);
-            double d_0 = D_2_calc(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, z_i, beta, simulation);
+            double d_0 = D_2_calc(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, beta, simulation);
             in_value = in_value + log(P_init[b_k - 1]) + log(d_0);
         } else{
             // Evaluating the probability transition matrix
@@ -724,8 +726,8 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
             
             int b_k_1 = b_i(k-1);
             int b_k = b_i(k);
-            
-            double d_k = D_2_calc(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, z_i, beta, simulation);
+
+            double d_k = D_2_calc(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, beta, simulation);
             in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(d_k);
         }
     }
