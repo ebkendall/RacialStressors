@@ -96,7 +96,7 @@ save(data_format_30, file = 'Data/data_format_30.rda')
 save(data_format_15, file = 'Data/data_format_15.rda')
 
 # Adding covariates to the data ------------------------------------------------
-rsa_covariates = read.csv('Data/SEEL_Covariates_092623.csv', na.strings = "")
+rsa_covariates = read.csv('Data/SEEL_Covariates_updated.csv', na.strings = "")
 rsa_covariates = as.matrix(rsa_covariates)
 
 load('Data/data_format_15.rda'); print(length(unique(data_format_15$ID..)))

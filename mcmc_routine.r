@@ -1,5 +1,4 @@
 library(mvtnorm, quietly=T)
-library(deSolve, quietly=T)
 library(LaplacesDemon, quietly=T)
 
 # Rcpp packages
@@ -9,8 +8,8 @@ library(RcppDist, quietly = T)
 sourceCpp("mcmc_routine_c.cpp")
 
 # Needed for OpenMP C++ parallel
-Sys.setenv("PKG_CXXFLAGS" = "-fopenmp")
-Sys.setenv("PKG_LIBS" = "-fopenmp")
+# Sys.setenv("PKG_CXXFLAGS" = "-fopenmp")
+# Sys.setenv("PKG_LIBS" = "-fopenmp")
 
 # -----------------------------------------------------------------------------
 # The mcmc routine for samping the parameters

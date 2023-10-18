@@ -10,7 +10,7 @@ print(ind)
 trial_num = 12
 simulation = F
 thirty = T
-case_b = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 init_par = NULL
@@ -118,7 +118,7 @@ if(simulation) {
     cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
 }
 
-steps = 500000
+steps = 50000
 burnin = 5000
 
 s_time = Sys.time()

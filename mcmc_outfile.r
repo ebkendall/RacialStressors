@@ -1,27 +1,25 @@
 # This script file produces trace plots and histograms of the mcmc output files
-library(tidyverse)
-library(gridExtra)
 library(latex2exp)
 
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 11
+trial_num = 12
 simulation = F
 thirty = T
 case_b = F
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-n_post = 495000
+n_post = 45000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 500000
+steps = 50000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-index_seeds = c(1:2)
+index_seeds = c(1:5)
 
 if(case_b) {
     
@@ -103,9 +101,8 @@ if(case_b) {
                     TeX(r'(P(obs. S2 | true S3))'),
                     TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
                     TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma_1^2)$)'), TeX(r'($\log(\sigma_2^2)$)'), TeX(r'($\log(\sigma_3^2)$)'),
-                    TeX(r'($\hat{\beta}_0:$ baseline)'), TeX(r'($\hat{\beta}_1:$ age)'),
-                    TeX(r'($\hat{\beta}_2:$ sex1)'), TeX(r'($\hat{\beta}_3:$ yes edu)'),
-                    TeX(r'($\hat{\beta}_4:$ DLER)'))
+                    TeX(r'($\hat{\beta}_1:$ age)'), TeX(r'($\hat{\beta}_2:$ sex1)'), 
+                    TeX(r'($\hat{\beta}_3:$ yes edu)'), TeX(r'($\hat{\beta}_4:$ DLER)'))
     }
 }
             

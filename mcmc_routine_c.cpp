@@ -239,13 +239,15 @@ double fn_log_post_continuous_no_label( const arma::vec &EIDs, const arma::vec &
     double tau2 = exp(log_tau2);
     
     arma::vec log_sigma2 = pars.elem(par_index(4) - 1);
-    arma::vec sigma_2_vec = exp(log_sigma2);
-    // double log_sigma2 = arma::as_scalar(pars.elem(par_index(4) - 1));
+    arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), exp(log_sigma2(2))};
     // double sigma2 = exp(log_sigma2);
     
-    arma::vec beta = pars.elem(par_index(5) - 1);
+    arma::vec beta(4, arma::fill::zeros);
+    if(!simulation) {
+        beta = pars.elem(par_index(5) - 1);
+    }
     
-    omp_set_num_threads(6);
+    omp_set_num_threads(16);
     # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
@@ -577,7 +579,7 @@ arma::vec update_b_i_cpp(const arma::vec &EIDs, const arma::vec &pars,
     
     arma::vec B_return(b_curr.n_elem, arma::fill::zeros);
     
-    omp_set_num_threads(10);
+    omp_set_num_threads(16);
     # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
@@ -747,7 +749,7 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
     
     arma::vec B_return(b_curr.n_elem, arma::fill::zeros);
     
-    omp_set_num_threads(10);
+    omp_set_num_threads(16);
     # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
