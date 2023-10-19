@@ -7,10 +7,10 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 12
+trial_num = 1
 simulation = F
 thirty = T
-case_b = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 init_par = NULL

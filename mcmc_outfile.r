@@ -7,7 +7,7 @@ dir = 'Model_out/'
 trial_num = 12
 simulation = F
 thirty = T
-case_b = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
@@ -24,7 +24,8 @@ index_seeds = c(1:5)
 if(case_b) {
     
     # misclass is kept in par_index for book-keeping in C++
-    par_index = list( zeta=1:25, misclass=0, delta = 26:28, tau2 = 29, sigma2 = 30)
+    par_index = list( zeta=1:25, misclass=0, delta = 26:28, tau2 = 29, 
+                      sigma2 = 30:32, beta = 33:36)
     
     labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
                     TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
@@ -52,7 +53,9 @@ if(case_b) {
                     TeX(r'($\hat{\zeta}_{6,4}:$ DLER: 3 $\to$ 1)'),
                     TeX(r'($\hat{\zeta}_{6,5}:$ DLER: 3 $\to$ 2)'),
                     TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
-                    TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma^2)$)'))
+                    TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma_1^2)$)'), TeX(r'($\log(\sigma_2^2)$)'), TeX(r'($\log(\sigma_3^2)$)'),
+                    TeX(r'($\hat{\beta}_1:$ age)'), TeX(r'($\hat{\beta}_2:$ sex1)'), 
+                    TeX(r'($\hat{\beta}_3:$ yes edu)'), TeX(r'($\hat{\beta}_4:$ DLER)'))
 } else {
     if(simulation) {
         par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14:16)
