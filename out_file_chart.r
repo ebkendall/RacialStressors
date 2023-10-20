@@ -1,12 +1,12 @@
-library(matrixStats)
+# library(matrixStats)
 library(plotrix)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 10
+trial_num = 1
 simulation = F
-thirty = F
+thirty = T
 use_labels = F
-case_b = F
+case_b = T
 s1 = T
 # ------------------------------------------------------------------------------
 
@@ -206,7 +206,7 @@ for(i in EIDs){
 	    }
 	}
 
-	b_chain_ind = 20000:40000
+	b_chain_ind = 1:95000
 	barplot( rbind(   colMeans(B_chain[b_chain_ind, indices_i] == 1),
 				colMeans(B_chain[b_chain_ind, indices_i] == 2),
 				colMeans(B_chain[b_chain_ind, indices_i] == 3)), 

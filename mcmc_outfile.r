@@ -4,22 +4,22 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 12
+trial_num = 1
 simulation = F
 thirty = T
-case_b = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-n_post = 45000
+n_post = 495000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 50000
+steps = 500000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-index_seeds = c(1:5)
+index_seeds = c(1,4:5)
 
 if(case_b) {
     

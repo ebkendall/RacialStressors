@@ -691,9 +691,9 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
     
     double log_tau2 = arma::as_scalar(pars.elem(par_index(3) - 1));
     double tau2 = exp(log_tau2);
-    
+
     arma::vec log_sigma2 = pars.elem(par_index(4) - 1);
-    arma::vec sigma_2_vec = exp(log_sigma2);
+    arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), exp(log_sigma2(2))};
     // double log_sigma2 = arma::as_scalar(pars.elem(par_index(4) - 1));
     // double sigma2 = exp(log_sigma2);
     

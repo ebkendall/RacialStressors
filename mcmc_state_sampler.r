@@ -13,11 +13,11 @@ set.seed(2023)
 dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
-trial_num = 10
+trial_num = 1
 simulation = F
 thirty = T
-use_labels = T
-case_b = F
+use_labels = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 if(simulation) {
@@ -25,7 +25,7 @@ if(simulation) {
 } else {
     if(thirty) {
         if(case_b) {
-            index_seeds = c(1:4)
+            index_seeds = c(2,4,5)
         } else {
             index_seeds = c(1,4,5)
         }
@@ -117,7 +117,8 @@ n_sub = length(unique(data_format[,'ID..']))
 
 if(case_b) {
     # misclass is kept in par_index for book-keeping in C++
-    par_index = list( zeta=1:25, misclass=0, delta = 26:28, tau2 = 29, sigma2 = 30)
+    par_index = list( zeta=1:25, misclass=0, delta = 26:28, tau2 = 29, 
+                      sigma2 = 30:32, beta = 33:36)
 } else {
     par_index = list( zeta=1:25, misclass=26:29, delta = 30:32, tau2 = 33, sigma2 = 34)
 }
@@ -131,10 +132,10 @@ EIDs = unique(id)
 if(simulation) {
     cov_info = matrix(0, nrow = nrow(temp_data), ncol = 4)
 } else {
-    cov_info = temp_data[,c("Age", "sex1", "edu_yes", "sum_DLER"), drop=F]
+    cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
 }
 
-new_steps =  50000
+new_steps =  100000
 new_burnin = 5000
 
 if(use_labels & !(case_b)) {
