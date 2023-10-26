@@ -27,7 +27,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
                    c(par_index$zeta[21:25]), c(par_index$delta), 
-                   c(par_index$tau2, par_index$sigma2),
+                   c(par_index$tau2, par_index$sigma2[2:3]),
                    c(par_index$beta))
   } else {
     if(simulation) {
@@ -37,7 +37,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
                    c(par_index$zeta[21:25]), c(par_index$misclass),
-                   c(par_index$delta), c(par_index$tau2, par_index$sigma2),
+                   c(par_index$delta), c(par_index$tau2, par_index$sigma2[2:3]),
                    c(par_index$beta))
     }
       
@@ -69,6 +69,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain[1,] = pars
   for(ttt in 2:steps){
 
+    chain[ttt,] = pars
     if(ttt %% 200 == 0) {
         print("pars")
         print(chain[ttt - 1,])

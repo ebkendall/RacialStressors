@@ -16,8 +16,8 @@ dir = 'Model_out/'
 trial_num = 1
 simulation = F
 thirty = T
-use_labels = F
-case_b = T
+use_labels = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 if(simulation) {
@@ -31,16 +31,16 @@ if(simulation) {
         }
     } else {
         if(case_b) {
-            index_seeds = c(1:3)
+            index_seeds = c(2:5)
         } else {
-            index_seeds = c(1,2,4)
+            index_seeds = c(2:5)
         }
     }
 }
 
 
 # Load the posterior samples of the HMM parameters ----------------------------
-n_post = 495000; burnin = 5000; steps = 500000
+n_post = 10000; burnin = 5000; steps = 500000
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 par_chain = NULL
@@ -117,10 +117,11 @@ n_sub = length(unique(data_format[,'ID..']))
 
 if(case_b) {
     # misclass is kept in par_index for book-keeping in C++
-    par_index = list( zeta=1:25, misclass=0, delta = 26:28, tau2 = 29, 
-                      sigma2 = 30:32, beta = 33:36)
+    par_index = list(zeta=1:25, misclass=0, delta = 26:28, tau2 = 29, 
+                     sigma2 = 30:32, beta = 33:36)
 } else {
-    par_index = list( zeta=1:25, misclass=26:29, delta = 30:32, tau2 = 33, sigma2 = 34)
+    par_index = list(zeta=1:25, misclass=26:29, delta = 30:32, tau2 = 33, 
+                     sigma2 = 34:36, beta = 37:40)
 }
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL

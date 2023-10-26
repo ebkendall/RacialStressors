@@ -7,7 +7,7 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 2
 simulation = F
 thirty = T
 case_b = F
@@ -117,6 +117,34 @@ if(simulation) {
 } else {
     cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
 }
+
+# Initializing the variance and mean terms
+s1_group = data_format[data_format$State == 1, ]
+y_bar = mean(s1_group$RSA)
+tau2_hat = 0
+tau_sigma_hat = 0
+for(i in unique(s1_group$ID..)) {
+    
+    sub_i = s1_group[s1_group$ID.. == i, ]
+    y_bar_i = mean(sub_i$RSA)
+    for(j in 1:nrow(sub_i)) {
+        tau2_hat = tau2_hat + (sub_i$RSA[j] - y_bar_i)^2
+    }
+    
+    tau_sigma_hat = tau_sigma_hat + nrow(sub_i) * (y_bar_i - y_bar)^2
+}
+big_N = nrow(s1_group)
+little_t = length(unique(s1_group$ID..))
+n_i_vec = c(table(s1_group$ID..))
+names(n_i_vec) = NULL
+n_0 = (1/(little_t - 1)) * (big_N - sum(n_i_vec^2) / big_N)
+
+tau2_hat = (1 / (big_N - little_t)) * tau2_hat
+sigma2_hat = (1 / n_0) * ((1/(little_t - 1)) * tau_sigma_hat - tau2_hat)
+
+init_par[par_index$tau2] = log(tau2_hat)
+init_par[par_index$sigma2[1]] = log(sigma2_hat)
+init_par[par_index$delta[1]] = y_bar
 
 steps = 50000
 burnin = 5000
