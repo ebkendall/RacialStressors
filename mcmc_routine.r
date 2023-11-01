@@ -8,8 +8,8 @@ library(RcppDist, quietly = T)
 sourceCpp("mcmc_routine_c.cpp")
 
 # Needed for OpenMP C++ parallel
-# Sys.setenv("PKG_CXXFLAGS" = "-fopenmp")
-# Sys.setenv("PKG_LIBS" = "-fopenmp")
+Sys.setenv("PKG_CXXFLAGS" = "-fopenmp")
+Sys.setenv("PKG_LIBS" = "-fopenmp")
 
 # -----------------------------------------------------------------------------
 # The mcmc routine for samping the parameters
@@ -28,6 +28,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
                    c(par_index$zeta[21:25]), c(par_index$delta), 
                    c(par_index$tau2, par_index$sigma2[2:3]),
+                   # c(par_index$sigma2),
+                   # c(par_index$sigma2[2:3]),
                    c(par_index$beta))
   } else {
     if(simulation) {
@@ -37,7 +39,10 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
                    c(par_index$zeta[21:25]), c(par_index$misclass),
-                   c(par_index$delta), c(par_index$tau2, par_index$sigma2[2:3]),
+                   c(par_index$delta), 
+                   c(par_index$tau2, par_index$sigma2[2:3]),
+                   # c(par_index$sigma2),
+                   # c(par_index$sigma2[2:3]),
                    c(par_index$beta))
     }
       
@@ -116,10 +121,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
           # Ensuring that we do not have problems from C++
           print(paste0("bad proposal post burnin: ", log_post))
       }
-
-      # Evaluate the Metropolis-Hastings ratio
-      # print(paste0("log post: ", log_post))
-      # print(paste0("log post prev: ", log_post_prev))
       
       if( log_post - log_post_prev > log(runif(1,0,1)) ){
         log_post_prev = log_post

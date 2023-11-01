@@ -93,7 +93,6 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
 
     arma::vec log_sigma2 = pars.elem(par_index(4) - 1);
     arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), exp(log_sigma2(2))};
-    // double sigma2 = exp(log_sigma2);
     
     arma::vec beta(4, arma::fill::zeros);
     if(!simulation) {
@@ -200,7 +199,8 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     arma::vec p_mean = prior_par(0);
     arma::mat p_sd = arma::diagmat(prior_par(1));
 
-    arma::mat x = pars;
+    // arma::mat x = pars;
+    arma::mat x = arma::join_cols(pars.subvec(0, 32), pars.subvec(34, 39));
     double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
     
     in_value = in_value + log_prior_dens;
@@ -349,7 +349,8 @@ double fn_log_post_continuous_no_label( const arma::vec &EIDs, const arma::vec &
     arma::vec p_mean = prior_par(0);
     arma::mat p_sd = arma::diagmat(prior_par(1));
     
-    arma::mat x = pars;
+    // arma::mat x = pars;
+    arma::mat x = arma::join_cols(pars.subvec(0, 28), pars.subvec(30, 35));
     double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
     in_value = in_value + log_prior_dens;
     
@@ -830,6 +831,19 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
 // [[Rcpp::export]]
 double test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_par, 
                     const arma::field<arma::uvec> &par_index) {
+    
+    arma::mat x = {pars(0), pars(1), pars(2), pars(3), pars(4), pars(5),
+                   pars(6), pars(7), pars(8), pars(9), pars(10), pars(11),
+                   pars(12), pars(13), pars(14), pars(15), pars(16), pars(17),
+                   pars(18), pars(19), pars(20), pars(21), pars(22), pars(23),
+                   pars(24), pars(25), pars(26), pars(27), pars(28), pars(29),
+                   pars(30), pars(31), pars(34), pars(35),
+                   pars(36), pars(37), pars(38), pars(39)};
+    arma::mat x2 = arma::join_cols(pars.subvec(0, 31), pars.subvec(34, 39));
+    arma::mat x3 = pars;
+    Rcpp::Rcout << x << std::endl;
+    Rcpp::Rcout << x2 << std::endl;
+    Rcpp::Rcout << x3 << std::endl;
     
     // arma::vec delta = {1,2,3};
     // double temp1 = D_2_calc(1, 1, 1, 1, delta);

@@ -4,22 +4,22 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 3
 simulation = F
 thirty = T
-case_b = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-n_post = 495000
+n_post = 45000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 500000
+steps = 50000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-index_seeds = c(4)
+index_seeds = c(1:5)
 
 if(case_b) {
     
@@ -54,8 +54,9 @@ if(case_b) {
                     TeX(r'($\hat{\zeta}_{4,5}:$ DLER: 3 $\to$ 2)'),
                     TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
                     TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma_1^2)$)'), TeX(r'($\log(\sigma_2^2)$)'), TeX(r'($\log(\sigma_3^2)$)'),
-                    TeX(r'($\hat{\beta}_1:$ age)'), TeX(r'($\hat{\beta}_2:$ sex1)'), 
-                    TeX(r'($\hat{\beta}_3:$ yes edu)'), TeX(r'($\hat{\beta}_4:$ DLER)'))
+                    TeX(r'($\hat{\gamma}_1:$ age)'), TeX(r'($\hat{\gamma}_2:$ sex1)'), 
+                    TeX(r'($\hat{\gamma}_3:$ yes edu)'), TeX(r'($\hat{\gamma}_4:$ DLER)'),
+                    TeX(r'($\tau^2 + \sigma_1^2$)'))
 } else {
     if(simulation) {
         par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14:16)
@@ -104,8 +105,9 @@ if(case_b) {
                     TeX(r'(P(obs. S2 | true S3))'),
                     TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
                     TeX(r'($\tau^2$)'), TeX(r'($\sigma_1^2$)'), TeX(r'($\sigma_2^2$)'), TeX(r'($\sigma_3^2$)'),
-                    TeX(r'($\hat{\beta}_1:$ age)'), TeX(r'($\hat{\beta}_2:$ sex1)'), 
-                    TeX(r'($\hat{\beta}_3:$ yes edu)'), TeX(r'($\hat{\beta}_4:$ DLER)'))
+                    TeX(r'($\hat{\gamma}_1:$ age)'), TeX(r'($\hat{\gamma}_2:$ sex1)'), 
+                    TeX(r'($\hat{\gamma}_3:$ yes edu)'), TeX(r'($\hat{\gamma}_4:$ DLER)'),
+                    TeX(r'($\tau^2 + \sigma_1^2$)'))
     }
 }
             
@@ -157,11 +159,14 @@ for(seed in index_seeds){
         ind = ind + 1
 
         print(mcmc_out$accept)
-	mcmc_out$chain[,c(par_index$tau2, par_index$sigma2)] = exp(mcmc_out$chain[,c(par_index$tau2, par_index$sigma2)])
+	    mcmc_out$chain[,c(par_index$tau2, par_index$sigma2)] = 
+	        exp(mcmc_out$chain[,c(par_index$tau2, par_index$sigma2)])
 
         # Thinning the chain
         main_chain = mcmc_out$chain[index_post,]
         ind_keep = seq(1, nrow(main_chain), by=100)
+        tau_sig_sum = main_chain[,par_index$tau2] + main_chain[,par_index$sigma2[1]]
+        main_chain = cbind(main_chain, tau_sig_sum)
 
       	chain_list[[ind]] = main_chain[ind_keep, ]
     	post_means[ind,] <- colMeans(main_chain[ind_keep, ])
@@ -215,6 +220,9 @@ if(thirty) {
 
 if(case_b) {true_par = c(true_par[1:5], true_par[10:14])}
 
+# tau2_hat   = 0.3395152
+# sigma2_hat = 1.227959
+
 for(r in 1:length(labels)){
     
     par_mean[r] = round( mean(stacked_chains[,r]), 4)
@@ -238,6 +246,16 @@ for(r in 1:length(labels)){
                                 ' Median = ',toString(par_median[r])))
     abline( v=upper[r], col='red', lwd=2, lty=2)
     abline( v=lower[r], col='purple', lwd=2, lty=2)
+    
+    if(case_b) {
+        if(r == 29) abline( v=0.3395152, col='blue', lwd=2, lty=2)
+        if(r == 30) abline( v=1.227959,  col='blue', lwd=2, lty=2)
+        if(r == length(labels)) abline( v=1.227959 + 0.3395152,  col='blue', lwd=2, lty=2)
+    } else {
+        if(r == 33) abline( v=0.3395152, col='blue', lwd=2, lty=2)
+        if(r == 34) abline( v=1.227959,  col='blue', lwd=2, lty=2)
+        if(r == length(labels)) abline( v=1.227959 + 0.3395152,  col='blue', lwd=2, lty=2)
+    }
     
     if(simulation) {
         abline( v=true_par[r], col='green', lwd=2, lty=2)

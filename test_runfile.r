@@ -15,20 +15,20 @@ Sys.setenv("PKG_CXXFLAGS" = "-fopenmp")
 Sys.setenv("PKG_LIBS" = "-fopenmp")
 
 
-init_par = c(c(matrix(c(-4, 0,
-                        -4, 0,
-                        -4, 0,
-                        -4, 0,
-                        -4, 0), ncol=2, byrow = T)),
-             c(-4, -4),
-             c(6.411967, 6.481880, 6.335972), 
-             1, 
-             c(diag(3)),
-             rep(1,273))
+init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
+                        -4, 0, 0, 0, 0,
+                        -4, 0, 0, 0, 0,
+                        -4, 0, 0, 0, 0,
+                        -4, 0, 0, 0, 0), ncol=5, byrow = T)),
+             c(-4, -4, -4, -4),
+             c(6.411967, 0, 0), 
+             log(0.51^2), 
+             c(log(0.8^2), log(0.3^2), log(0.3^2)),
+             0, 0, 0, 0)   
 
-par_index = list( beta=1:10, misclass=11:12,
-                  mu_tilde = 13:15, tau2 = 16, upsilon = 17:25,
-                  mu_i = 26:298)
+par_index = list( zeta=1:25, misclass=26:29,
+                  delta = 30:32, tau2 = 33, sigma2 = 34:36,
+                  beta = 37:40)
 
 prior_mean = c(c(matrix(c(-5, 0,
                           -5, 0,
