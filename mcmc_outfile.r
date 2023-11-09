@@ -4,10 +4,10 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 3
+trial_num = 4
 simulation = F
 thirty = T
-case_b = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
@@ -159,8 +159,8 @@ for(seed in index_seeds){
         ind = ind + 1
 
         print(mcmc_out$accept)
-	    mcmc_out$chain[,c(par_index$tau2, par_index$sigma2)] = 
-	        exp(mcmc_out$chain[,c(par_index$tau2, par_index$sigma2)])
+	    # mcmc_out$chain[,c(par_index$tau2, par_index$sigma2)] = 
+	    #     exp(mcmc_out$chain[,c(par_index$tau2, par_index$sigma2)])
 
         # Thinning the chain
         main_chain = mcmc_out$chain[index_post,]

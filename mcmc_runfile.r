@@ -7,10 +7,10 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 4
+trial_num = 3
 simulation = F
 thirty = T
-case_b = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 init_par = NULL
@@ -77,7 +77,7 @@ if(simulation) {
         # misclass is kept in par_index for book-keeping in C++
         par_index = list( zeta=1:25, misclass=0,
                           delta = 26:28, tau2 = 29, sigma2 = 30:32,
-                          beta = 33:36)
+                          gamma = 33:36)
     } else {
         # Misclassification exists
         init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
@@ -93,15 +93,16 @@ if(simulation) {
         
         par_index = list( zeta=1:25, misclass=26:29,
                           delta = 30:32, tau2 = 33, sigma2 = 34:36,
-                          beta = 37:40)
+                          gamma = 37:40)
     }
 }
 
 n_sub = length(unique(data_format[,'ID..']))
 
 # Uninformed priors CHANGED **************************
-prior_mean = rep(0, length(init_par) - 1)
-prior_sd = rep(20, length(init_par) - 1)
+prior_mean = rep(0, length(init_par)-2)
+prior_sd = rep(20, length(init_par)-2)
+# prior_sd[29:31] = 5
 
 prior_par = list()
 prior_par[[1]] = prior_mean

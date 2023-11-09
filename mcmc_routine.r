@@ -27,10 +27,10 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
                    c(par_index$zeta[21:25]), c(par_index$delta), 
-                   c(par_index$tau2, par_index$sigma2[2:3]),
-                   # c(par_index$sigma2),
-                   # c(par_index$sigma2[2:3]),
-                   c(par_index$beta))
+                  #  c(par_index$tau2, par_index$sigma2[2:3]),
+                  #  c(par_index$sigma2),
+                   c(par_index$sigma2[2:3]),
+                   c(par_index$gamma))
   } else {
     if(simulation) {
       group = list(c(par_index$zeta), c(par_index$misclass),
@@ -40,10 +40,10 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
                    c(par_index$zeta[21:25]), c(par_index$misclass),
                    c(par_index$delta), 
-                   c(par_index$tau2, par_index$sigma2[2:3]),
-                   # c(par_index$sigma2),
-                   # c(par_index$sigma2[2:3]),
-                   c(par_index$beta))
+                  #  c(par_index$tau2, par_index$sigma2[2:3]),
+                  #  c(par_index$sigma2),
+                   c(par_index$sigma2[2:3]),
+                   c(par_index$gamma))
     }
       
   }
@@ -78,6 +78,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
     if(ttt %% 200 == 0) {
         print("pars")
         print(chain[ttt - 1,])
+        print(accept / (ttt %% 480))
     }
 
     for(j in 1:n_group){
@@ -101,14 +102,24 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       # Only propose valid parameters during the burnin period
       if(ttt < burnin){
         while(!is.finite(log_post)){
-          print('bad proposal')
+          print(paste0("bad proposal, ", j, ":"))
+          print(proposal[ind_j])
+
           proposal = pars
           if(length(ind_j > 1)) {
               proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],sigma=pcov[[j]]*pscale[j])
           } else {
               proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],sd=sqrt(pcov[[j]]*pscale[j]))
           }
-          
+
+          print("new proposal:")
+          print(proposal[ind_j])
+          print('mean')
+          print(pars[ind_j])
+          print('cov and corr')
+          print(pcov[[j]]*pscale[j])
+          print(cov2cor(pcov[[j]]*pscale[j]))
+
           if(case_b) {
               log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2, y_1, cov_info, simulation)
           } else {

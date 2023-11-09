@@ -13,7 +13,7 @@ set.seed(2023)
 dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 4
 simulation = F
 thirty = T
 use_labels = T
@@ -25,9 +25,9 @@ if(simulation) {
 } else {
     if(thirty) {
         if(case_b) {
-            index_seeds = c(2,4,5)
+            index_seeds = c(1:5)
         } else {
-            index_seeds = c(1,4,5)
+            index_seeds = c(1:5)
         }
     } else {
         if(case_b) {
@@ -40,7 +40,7 @@ if(simulation) {
 
 
 # Load the posterior samples of the HMM parameters ----------------------------
-n_post = 10000; burnin = 5000; steps = 500000
+n_post = 10000; burnin = 5000; steps = 50000
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 par_chain = NULL

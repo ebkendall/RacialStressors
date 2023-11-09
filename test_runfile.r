@@ -47,10 +47,6 @@ prior_par[[1]] = prior_mean
 prior_par[[2]] = prior_sd
 
 
-test = test_functions(init_par, prior_par, par_index)
-
-print(is.finite(test))
-
-print((test < -100))
+test_functions(init_par, prior_par, par_index)
 
 
