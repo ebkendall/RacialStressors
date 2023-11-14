@@ -4,7 +4,7 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 4
+trial_num = 10
 simulation = F
 thirty = T
 case_b = T
@@ -248,13 +248,13 @@ for(r in 1:length(labels)){
     abline( v=lower[r], col='purple', lwd=2, lty=2)
     
     if(case_b) {
-        if(r == 29) abline( v=0.3395152, col='blue', lwd=2, lty=2)
-        if(r == 30) abline( v=1.227959,  col='blue', lwd=2, lty=2)
-        if(r == length(labels)) abline( v=1.227959 + 0.3395152,  col='blue', lwd=2, lty=2)
+        if(r == 29) abline( v=log(0.3395152), col='blue', lwd=2, lty=2)
+        if(r == 30) abline( v=log(1.227959),  col='blue', lwd=2, lty=2)
+        if(r == length(labels)) abline( v=log(1.227959) + log(0.3395152),  col='blue', lwd=2, lty=2)
     } else {
-        if(r == 33) abline( v=0.3395152, col='blue', lwd=2, lty=2)
-        if(r == 34) abline( v=1.227959,  col='blue', lwd=2, lty=2)
-        if(r == length(labels)) abline( v=1.227959 + 0.3395152,  col='blue', lwd=2, lty=2)
+        if(r == 33) abline( v=log(0.3395152), col='blue', lwd=2, lty=2)
+        if(r == 34) abline( v=log(1.227959),  col='blue', lwd=2, lty=2)
+        if(r == length(labels)) abline( v=log(1.227959) + log(0.3395152),  col='blue', lwd=2, lty=2)
     }
     
     if(simulation) {

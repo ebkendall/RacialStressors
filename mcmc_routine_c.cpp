@@ -388,8 +388,8 @@ double fn_log_post_continuous_no_label( const arma::vec &EIDs, const arma::vec &
     arma::vec p_mean = prior_par(0);
     arma::mat p_sd = arma::diagmat(prior_par(1));
     
-    // arma::mat x = pars;
-    arma::mat x = arma::join_cols(pars.subvec(0, 27), pars.subvec(30, 35));
+    arma::mat x = pars;
+    // arma::mat x = arma::join_cols(pars.subvec(0, 27), pars.subvec(30, 35));
     double log_prior_dens = arma::as_scalar(dmvnorm(x.t(), p_mean, p_sd, true));
     in_value = in_value + log_prior_dens;
     

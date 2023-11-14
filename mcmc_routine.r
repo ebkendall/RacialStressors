@@ -27,9 +27,10 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
                    c(par_index$zeta[21:25]), c(par_index$delta), 
-                  #  c(par_index$tau2, par_index$sigma2[2:3]),
-                  #  c(par_index$sigma2),
-                   c(par_index$sigma2[2:3]),
+                   # c(par_index$sigma2),
+                   # c(par_index$tau2, par_index$sigma2[2:3]),
+                   # c(par_index$sigma2[2:3]),
+                   c(par_index$tau2, par_index$sigma2),
                    c(par_index$gamma))
   } else {
     if(simulation) {
@@ -40,9 +41,10 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
                    c(par_index$zeta[21:25]), c(par_index$misclass),
                    c(par_index$delta), 
-                  #  c(par_index$tau2, par_index$sigma2[2:3]),
-                  #  c(par_index$sigma2),
-                   c(par_index$sigma2[2:3]),
+                   # c(par_index$sigma2),
+                   # c(par_index$tau2, par_index$sigma2[2:3]),
+                   # c(par_index$sigma2[2:3]),
+                   c(par_index$tau2, par_index$sigma2),
                    c(par_index$gamma))
     }
       
@@ -52,7 +54,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   n_group = length(group)
 
   # proposal covariance and scale parameter for Metropolis step
-  pcov = list();	for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
+  pcov = list(); for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
   pscale = rep( 1, n_group)
 
   accept = rep( 0, n_group)
@@ -60,9 +62,12 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
  
   # Evaluate the log_post of the initial parameters
   if(case_b) {
-      log_post_prev = fn_log_post_continuous_no_label(EIDs, pars, prior_par, par_index, id, y_2, y_1, cov_info, simulation)
+      log_post_prev = fn_log_post_continuous_no_label(EIDs, pars, prior_par, 
+                                                      par_index, id, y_2, y_1, 
+                                                      cov_info, simulation)
   } else {
-      log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, id, y_2, cov_info, simulation)
+      log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index,
+                                             y_1, id, y_2, cov_info, simulation)
   }
   
   if(!is.finite(log_post_prev)){
@@ -87,16 +92,22 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       ind_j = group[[j]]
       proposal = pars
       if(length(ind_j) > 1) {
-          proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],sigma=pcov[[j]]*pscale[j])
+          proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
+                                     sigma=pcov[[j]]*pscale[j])
       } else {
-          proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],sd=sqrt(pcov[[j]]*pscale[j]))
+          proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],
+                                   sd=sqrt(pcov[[j]]*pscale[j]))
       }
 
       # Compute the log density for the proposal
       if(case_b) {
-          log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2, y_1, cov_info, simulation)
+          log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, 
+                                                     par_index, id, y_2, y_1, 
+                                                     cov_info, simulation)
       } else {
-          log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2, cov_info, simulation)
+          log_post = fn_log_post_continuous(EIDs, proposal, prior_par, 
+                                            par_index, y_1, id, y_2, cov_info,
+                                            simulation)
       }
 
       # Only propose valid parameters during the burnin period
@@ -107,9 +118,11 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
 
           proposal = pars
           if(length(ind_j > 1)) {
-              proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],sigma=pcov[[j]]*pscale[j])
+              proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
+                                         sigma=pcov[[j]]*pscale[j])
           } else {
-              proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],sd=sqrt(pcov[[j]]*pscale[j]))
+              proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],
+                                       sd=sqrt(pcov[[j]]*pscale[j]))
           }
 
           print("new proposal:")
@@ -121,9 +134,14 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
           print(cov2cor(pcov[[j]]*pscale[j]))
 
           if(case_b) {
-              log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, par_index, id, y_2, y_1, cov_info, simulation)
+              log_post = fn_log_post_continuous_no_label(EIDs, proposal, 
+                                                         prior_par, par_index, 
+                                                         id, y_2, y_1, cov_info,
+                                                         simulation)
           } else {
-              log_post = fn_log_post_continuous(EIDs, proposal, prior_par, par_index, y_1, id, y_2, cov_info, simulation)
+              log_post = fn_log_post_continuous(EIDs, proposal, prior_par, 
+                                                par_index, y_1, id, y_2, 
+                                                cov_info, simulation)
           }
         }
       }

@@ -3,72 +3,62 @@ library(mvtnorm)
 thirty = T
 
 # Load the current data ------------------------------------------------------
-if(thirty) {
-  load('Data/data_format_30.rda')
-  N = 500
-  # N = length(unique(data_format_30$ID..))
-  data_format = data_format_30
-} else {
-  load('Data/data_format_15.rda')
-  N = length(unique(data_format_15$ID..))
-  data_format = data_format_15
-}
+load('Data/data_format_30.rda')
+# N = 500
+N = length(unique(data_format_30$ID..))
+data_format = data_format_30
 
 n_sim = 1
 
 # True parameter values ------------------------------------------------------
-par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14:16)
+par_index = list( zeta=1:25, misclass=0,
+                  delta = 26:28, tau2 = 29, sigma2 = 30:32,
+                  gamma = 33:36)
 
-if(thirty) {
-    zeta = matrix(c(-1.98, -7, -1.6, -8.59, -8.72), ncol = 1)
-    misclass = c(-8.4, -8.65, -7.23, -8.37)
-    delta = c(6.49, -0.281, -0.114)
-    log_tau2 = -2
-    log_sigma2 = c(-3.8, -4.8, -4.8)
-} else {
-    zeta = matrix(c(-2.78, -7.97, -1.484, -9.03, -9.16), ncol = 1)
-    misclass = c(-9.17, -9.25, -7.99, -9.07)
-    delta = c(6.43, -0.329, -0.115)
-    log_tau2 = 0.534
-    log_sigma2 = c(-3.8, -4.8, -4.8)
-}
+load('Model_out/mcmc_out_1_10_30b.rda')
+zeta = matrix(colMeans(mcmc_out$chain[,par_index$zeta]), ncol = 5)
+delta = c(6.46408805, -0.26810867, -0.11329740)
+log_tau2 = -1.08023658
+log_sigma2 = c(0.20535332, -0.05919292, 0.26003737)
+gamma = matrix(colMeans(mcmc_out$chain[,par_index$gamma]), ncol = 1)
 
-true_par = c(c(zeta), misclass, delta, log_tau2, log_sigma2)
-if(thirty) {
-    save(true_par, file = 'Data/true_par_30.rda')   
-} else {
-    save(true_par, file = 'Data/true_par_15.rda')
-}
+true_par = c(c(zeta), delta, log_tau2, log_sigma2, gamma)
+save(true_par, file = 'Data/true_par_30.rda')
 
 # Simulate the data -----------------------------------------------------------
 
-M = matrix(c(1, exp(misclass[1]), exp(misclass[2]),
-             0,                1, exp(misclass[3]),
-             0, exp(misclass[4]),                1), nrow = 3, byrow = T)
-M = M / rowSums(M)
-
 tau2 = exp(log_tau2)
 Sigma2 = diag(exp(log_sigma2))
+
+cov_info = data_format[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
+cov_info$Age = as.numeric(cov_info$Age)
+cov_info$sex1 = as.numeric(cov_info$sex1)
+cov_info$edu_yes = as.numeric(cov_info$edu_yes)
+cov_info$DLER_avg = as.numeric(cov_info$DLER_avg)
+cov_info = as.matrix(cov_info)
 
 for(ind in 1:n_sim) {
     set.seed(ind)
     sim_data = NULL
 
+    EIDs = unique(data_format$ID..)
     for(i in 1:N) {
         print(i)
         id  = i
-        id_info = sample(x = unique(data_format[,"ID.."]), size = 1, replace = T)
+        # id_info = sample(x = unique(data_format[,"ID.."]), size = 1, replace = T)
+        id_info = EIDs[i]
         n_i = sum(data_format[,"ID.."] == id_info)
         b_i = NULL
         s_i = NULL
         t_pts = time = data_format[data_format[,"ID.."] == id_info, "Time"]
+        cov_i = cov_info[data_format$ID.. ==id_info, ]
     
         for(k in 1:n_i) {
               if(k == 1) {
                 b_i = 1
                 s_i = 1
               } else {
-                z_i = matrix(c(1), nrow=1)
+                z_i = matrix(c(1, cov_i[1,]), nrow=1)
     
                 q1   = exp(z_i %*% t(zeta[1, , drop=F])) 
                 q2   = exp(z_i %*% t(zeta[2, , drop=F]))
@@ -84,25 +74,23 @@ for(ind in 1:n_sim) {
           
                 # Sample the true, latent state sequence
                 b_i = c( b_i, sample(1:3, size=1, prob=P_i[tail(b_i,1),]))
-    
-                # Sample the observed state w/ misclassification probability
-                if(sum(b_i == 1) == length(b_i)) {
-                    # Mimic the fact that the initial state 1 sequence is observed
-                    # without error
-                    s_i = c( s_i, tail(b_i,1))
-                } else {
-                    s_i = c( s_i, sample(1:3, size=1, prob=M[tail(b_i,1),]))   
-                }
               }
+        }
+        
+        s_i = rep(99, length(b_i))
+        jj = 1
+        while(b_i[jj] == 1) {
+            s_i[jj] = 1
+            jj = jj+1
+            if(jj > length(b_i)) break
         }
     
         V_i = cbind(1, cbind(as.numeric(b_i == 2), as.numeric(b_i == 3)))
-        # I have sampled both the true state sequence as well as the 
-        # observed labels. Now we simulate the RSA sequence
+        X_i = matrix(1, nrow = nrow(V_i), ncol=1) %x% cov_i[1,,drop = F]
     
         delta_i = rmvnorm( n=1, mean= delta, sigma=Sigma2)
     
-        mean_Y_2 = V_i %*% matrix(delta_i, ncol = 1)
+        mean_Y_2 = V_i %*% matrix(delta_i, ncol = 1) + X_i %*% gamma
     
         rsa_i = rmvnorm(n=1, mean = mean_Y_2, sigma = diag(rep(tau2,n_i)) )
     
@@ -123,14 +111,14 @@ for(ind in 1:n_sim) {
     print(table(sim_data[,'True_state'])/dim(sim_data)[1])
     cat('\n')
     
-    print(sum(sim_data[,'State'] != sim_data[,'True_state']))
-    diff_ind = which(sim_data[,'State'] != sim_data[,'True_state'])
-    if(length(diff_ind) > 0) {
-        diff_ind = c(diff_ind, diff_ind+1, diff_ind - 1)
-        diff_ind = sort(diff_ind)
-        print(diff_ind)
-        print(sim_data[diff_ind, c('State', 'True_state')])   
-    }
+    # print(sum(sim_data[,'State'] != sim_data[,'True_state']))
+    # diff_ind = which(sim_data[,'State'] != sim_data[,'True_state'])
+    # if(length(diff_ind) > 0) {
+    #     diff_ind = c(diff_ind, diff_ind+1, diff_ind - 1)
+    #     diff_ind = sort(diff_ind)
+    #     print(diff_ind)
+    #     print(sim_data[diff_ind, c('State', 'True_state')])   
+    # }
 
 }
 
