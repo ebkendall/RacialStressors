@@ -43,14 +43,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   EIDs = unique(id)
  
   # Evaluate the log_post of the initial parameters
-  if(case_b) {
-      log_post_prev = fn_log_post_continuous_no_label(EIDs, pars, prior_par, 
-                                                      par_index, id, y_2, y_1, 
-                                                      cov_info, simulation)
-  } else {
-      log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index,
-                                             y_1, id, y_2, cov_info, simulation)
-  }
+  log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, 
+                                         id, y_2, cov_info, case_b)
   
   if(!is.finite(log_post_prev)){
       print("Infinite log-posterior; choose better initial parameters")
@@ -82,15 +76,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       }
 
       # Compute the log density for the proposal
-      if(case_b) {
-          log_post = fn_log_post_continuous_no_label(EIDs, proposal, prior_par, 
-                                                     par_index, id, y_2, y_1, 
-                                                     cov_info, simulation)
-      } else {
-          log_post = fn_log_post_continuous(EIDs, proposal, prior_par, 
-                                            par_index, y_1, id, y_2, cov_info,
-                                            simulation)
-      }
+      log_post = fn_log_post_continuous(EIDs, proposal, prior_par,par_index,y_1,
+                                        id, y_2, cov_info, case_b)
 
       # Only propose valid parameters during the burnin period
       if(ttt < burnin){
@@ -115,16 +102,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
           print(pcov[[j]]*pscale[j])
           print(cov2cor(pcov[[j]]*pscale[j]))
 
-          if(case_b) {
-              log_post = fn_log_post_continuous_no_label(EIDs, proposal, 
-                                                         prior_par, par_index, 
-                                                         id, y_2, y_1, cov_info,
-                                                         simulation)
-          } else {
-              log_post = fn_log_post_continuous(EIDs, proposal, prior_par, 
-                                                par_index, y_1, id, y_2, 
-                                                cov_info, simulation)
-          }
+          log_post = fn_log_post_continuous(EIDs, proposal, prior_par,par_index,
+                                            y_1, id, y_2, cov_info, case_b)
         }
       }
       

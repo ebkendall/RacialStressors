@@ -137,6 +137,7 @@ t = as.numeric(temp_data[,"Time"])
 
 cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
 
+# Centering age
 mean_age = mean(cov_info[,'Age'])
 cov_info[,'Age'] = cov_info[,'Age'] - mean_age
 
