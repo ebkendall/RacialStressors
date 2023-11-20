@@ -23,32 +23,14 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain = matrix( 0, steps, n_par)
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
-  if(case_b) {
-      group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
-                   c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
-                   c(par_index$zeta[21:25]), c(par_index$delta), 
-                   # c(par_index$sigma2),
-                   # c(par_index$tau2, par_index$sigma2[2:3]),
-                   # c(par_index$sigma2[2:3]),
-                   c(par_index$tau2, par_index$sigma2),
-                   c(par_index$gamma))
-  } else {
-    if(simulation) {
-      group = list(c(par_index$zeta), c(par_index$misclass),
-                    c(par_index$delta), c(par_index$tau2, par_index$sigma2))
-    } else {
-      group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
-                   c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
-                   c(par_index$zeta[21:25]), c(par_index$misclass),
-                   c(par_index$delta), 
-                   # c(par_index$sigma2),
-                   # c(par_index$tau2, par_index$sigma2[2:3]),
-                   # c(par_index$sigma2[2:3]),
-                   c(par_index$tau2, par_index$sigma2),
-                   c(par_index$gamma))
-    }
-      
-  }
+  group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
+               c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
+               c(par_index$zeta[21:25]), c(par_index$delta), 
+               # c(par_index$sigma2),
+               # c(par_index$tau2, par_index$sigma2[2:3]),
+               # c(par_index$sigma2[2:3]),
+               c(par_index$tau2, par_index$sigma2),
+               c(par_index$gamma))
 
   names(group) = NULL
   n_group = length(group)

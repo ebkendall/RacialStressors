@@ -8,9 +8,9 @@ print(ind)
 
 # Information defining which approach to take ----------------------------------
 trial_num = 1
-simulation = T
+simulation = F
 thirty = T
-case_b = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 init_par = NULL
@@ -19,8 +19,8 @@ if(simulation) {
     # Simulation
     if(thirty) {
         # 30s epochs
-        load('Data/sim_data_1_30.rda')
-        load('Data/true_par_30.rda')
+        load('Data/sim_data_2_30.rda')
+        load('Data/true_par_2_30.rda')
         data_format = sim_data
     } else {
         # 15s epochs
@@ -45,40 +45,20 @@ if(simulation) {
     data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
 }
 
-# Initialize the chains are arbitrary starting values
-if(case_b) {
-    # No misclassification because NO y_1
-    init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
-                            -4, 0, 0, 0, 0,
-                            -4, 0, 0, 0, 0,
-                            -4, 0, 0, 0, 0,
-                            -4, 0, 0, 0, 0), ncol=5, byrow = T)),
-                 c(6.411967, 0, 0), 
-                 log(0.51^2),  
-                 c(log(0.8^2), 0, 0),
-                 0, 0, 0, 0)
+init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
+                        -4, 0, 0, 0, 0,
+                        -4, 0, 0, 0, 0,
+                        -4, 0, 0, 0, 0,
+                        -4, 0, 0, 0, 0), ncol=5, byrow = T)),
+                c(6.411967, 0, 0), 
+                log(0.51^2),  
+                c(log(0.8^2), 0, 0),
+                0, 0, 0, 0)
     
-    # misclass is kept in par_index for book-keeping in C++
-    par_index = list( zeta=1:25, misclass=0,
-                      delta = 26:28, tau2 = 29, sigma2 = 30:32,
-                      gamma = 33:36)
-} else {
-    # Misclassification exists
-    init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
-                            -4, 0, 0, 0, 0,
-                            -4, 0, 0, 0, 0,
-                            -4, 0, 0, 0, 0,
-                            -4, 0, 0, 0, 0), ncol=5, byrow = T)),
-                 c(-4, -4, -4, -4),
-                 c(6.411967, 0, 0), 
-                 log(0.51^2), 
-                 c(log(0.8^2), 0, 0),
-                 0, 0, 0, 0)   
-    
-    par_index = list( zeta=1:25, misclass=26:29,
-                      delta = 30:32, tau2 = 33, sigma2 = 34:36,
-                      gamma = 37:40)
-}
+# misclass is kept in par_index for book-keeping in C++
+par_index = list( zeta=1:25, misclass=0,
+                    delta = 26:28, tau2 = 29, sigma2 = 30:32,
+                    gamma = 33:36)
 
 n_sub = length(unique(data_format[,'ID..']))
 
@@ -133,18 +113,16 @@ if(simulation) {
 # Specifying the priors --------------------------------------------------------
 prior_mean = rep(0, length(init_par))
 prior_sd = rep(20, length(init_par))
-if(case_b) {
-    prior_mean[26:28] = c(6.4640880, -0.2681087, -0.1132974)
-    
-    prior_mean[29] = -1.080237
-    prior_sd[29] = 1
-    prior_mean[30] = 0.20535332 
-    prior_sd[30] = 1
-    prior_mean[31] = -0.05919292  
-    prior_sd[31] = 1
-    prior_mean[32] = 0.26003737
-    prior_sd[32] = 1
-}
+
+prior_mean[26:28] = c(6.4640880, -0.2681087, -0.1132974)
+prior_mean[29] = -1.080237
+prior_sd[29] = 1
+prior_mean[30] = 0.20535332 
+prior_sd[30] = 1
+prior_mean[31] = -0.05919292  
+prior_sd[31] = 1
+prior_mean[32] = 0.26003737
+prior_sd[32] = 1
 
 prior_par = list()
 prior_par[[1]] = prior_mean
@@ -156,11 +134,11 @@ id = as.numeric(temp_data[,"ID.."])
 y_1 = as.numeric(temp_data[,"State"])
 y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
-if(simulation) {
-    cov_info = matrix(0, nrow = nrow(temp_data), ncol = 4)
-} else {
-    cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
-}
+
+cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
+
+mean_age = mean(cov_info[,'Age'])
+cov_info[,'Age'] = cov_info[,'Age'] - mean_age
 
 steps = 50000
 burnin = 5000

@@ -4,22 +4,22 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 10
-simulation = F
+trial_num = 1
+simulation = T
 thirty = T
 case_b = T
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-n_post = 45000
+n_post = 95000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 50000
+steps = 100000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-index_seeds = c(1:5)
+index_seeds = c(1,2,4)
 
 if(case_b) {
     
@@ -58,57 +58,42 @@ if(case_b) {
                     TeX(r'($\hat{\gamma}_3:$ yes edu)'), TeX(r'($\hat{\gamma}_4:$ DLER)'),
                     TeX(r'($\tau^2 + \sigma_1^2$)'))
 } else {
-    if(simulation) {
-        par_index = list( zeta=1:5, misclass=6:9, delta = 10:12, tau2 = 13, sigma2 = 14:16)
-        labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
-                    TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
-                    TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
-                    TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
-                    TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 2)'),
-                    TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'),
-                    TeX(r'(P(obs. S3 | true S2))'),
-                    TeX(r'(P(obs. S2 | true S3))'),
-                    TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
-                    TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma_1^2)$)'),
-                    TeX(r'($\log(\sigma_2^2)$)'), TeX(r'($\log(\sigma_3^2)$)'))
-    } else {
-        par_index = list( zeta=1:25, misclass=26:29,
-                          delta = 30:32, tau2 = 33, sigma2 = 34:36,
-                          beta = 37:41)    
-        labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
-                    TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
-                    TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
-                    TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
-                    TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 2)'),
-                    TeX(r'($\hat{\zeta}_{1,1}:$ age: 1 $\to$ 2)'), 
-                    TeX(r'($\hat{\zeta}_{1,2}:$ age: 2 $\to$ 1)'), 
-                    TeX(r'($\hat{\zeta}_{1,3}:$ age: 2 $\to$ 3)'),
-                    TeX(r'($\hat{\zeta}_{1,4}:$ age: 3 $\to$ 1)'),
-                    TeX(r'($\hat{\zeta}_{1,5}:$ age: 3 $\to$ 2)'),
-                    TeX(r'($\hat{\zeta}_{2,1}:$ sex1: 1 $\to$ 2)'), 
-                    TeX(r'($\hat{\zeta}_{2,2}:$ sex1: 2 $\to$ 1)'), 
-                    TeX(r'($\hat{\zeta}_{2,3}:$ sex1: 2 $\to$ 3)'),
-                    TeX(r'($\hat{\zeta}_{2,4}:$ sex1: 3 $\to$ 1)'),
-                    TeX(r'($\hat{\zeta}_{2,5}:$ sex1: 3 $\to$ 2)'),
-                    TeX(r'($\hat{\zeta}_{3,1}:$ yes edu: 1 $\to$ 2)'), 
-                    TeX(r'($\hat{\zeta}_{3,2}:$ yes edu: 2 $\to$ 1)'), 
-                    TeX(r'($\hat{\zeta}_{3,3}:$ yes edu: 2 $\to$ 3)'),
-                    TeX(r'($\hat{\zeta}_{3,4}:$ yes edu: 3 $\to$ 1)'),
-                    TeX(r'($\hat{\zeta}_{3,5}:$ yes edu: 3 $\to$ 2)'),
-                    TeX(r'($\hat{\zeta}_{4,1}:$ DLER: 1 $\to$ 2)'), 
-                    TeX(r'($\hat{\zeta}_{4,2}:$ DLER: 2 $\to$ 1)'), 
-                    TeX(r'($\hat{\zeta}_{4,3}:$ DLER: 2 $\to$ 3)'),
-                    TeX(r'($\hat{\zeta}_{4,4}:$ DLER: 3 $\to$ 1)'),
-                    TeX(r'($\hat{\zeta}_{4,5}:$ DLER: 3 $\to$ 2)'),
-                    TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'),
-                    TeX(r'(P(obs. S3 | true S2))'),
-                    TeX(r'(P(obs. S2 | true S3))'),
-                    TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
-                    TeX(r'($\tau^2$)'), TeX(r'($\sigma_1^2$)'), TeX(r'($\sigma_2^2$)'), TeX(r'($\sigma_3^2$)'),
-                    TeX(r'($\hat{\gamma}_1:$ age)'), TeX(r'($\hat{\gamma}_2:$ sex1)'), 
-                    TeX(r'($\hat{\gamma}_3:$ yes edu)'), TeX(r'($\hat{\gamma}_4:$ DLER)'),
-                    TeX(r'($\tau^2 + \sigma_1^2$)'))
-    }
+    par_index = list( zeta=1:25, misclass=26:29,
+                        delta = 30:32, tau2 = 33, sigma2 = 34:36,
+                        beta = 37:41)    
+    labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
+                TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 2)'),
+                TeX(r'($\hat{\zeta}_{1,1}:$ age: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{1,2}:$ age: 2 $\to$ 1)'), 
+                TeX(r'($\hat{\zeta}_{1,3}:$ age: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{1,4}:$ age: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{1,5}:$ age: 3 $\to$ 2)'),
+                TeX(r'($\hat{\zeta}_{2,1}:$ sex1: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{2,2}:$ sex1: 2 $\to$ 1)'), 
+                TeX(r'($\hat{\zeta}_{2,3}:$ sex1: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{2,4}:$ sex1: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{2,5}:$ sex1: 3 $\to$ 2)'),
+                TeX(r'($\hat{\zeta}_{3,1}:$ yes edu: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{3,2}:$ yes edu: 2 $\to$ 1)'), 
+                TeX(r'($\hat{\zeta}_{3,3}:$ yes edu: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{3,4}:$ yes edu: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{3,5}:$ yes edu: 3 $\to$ 2)'),
+                TeX(r'($\hat{\zeta}_{4,1}:$ DLER: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{4,2}:$ DLER: 2 $\to$ 1)'), 
+                TeX(r'($\hat{\zeta}_{4,3}:$ DLER: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{4,4}:$ DLER: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{4,5}:$ DLER: 3 $\to$ 2)'),
+                TeX(r'(P(obs. S2 | true S1))'), TeX(r'(P(obs. S3 | true S1))'),
+                TeX(r'(P(obs. S3 | true S2))'),
+                TeX(r'(P(obs. S2 | true S3))'),
+                TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
+                TeX(r'($\tau^2$)'), TeX(r'($\sigma_1^2$)'), TeX(r'($\sigma_2^2$)'), TeX(r'($\sigma_3^2$)'),
+                TeX(r'($\hat{\gamma}_1:$ age)'), TeX(r'($\hat{\gamma}_2:$ sex1)'), 
+                TeX(r'($\hat{\gamma}_3:$ yes edu)'), TeX(r'($\hat{\gamma}_4:$ DLER)'),
+                TeX(r'($\tau^2 + \sigma_1^2$)'))
 }
             
 
@@ -213,12 +198,10 @@ stacked_chains = do.call( rbind, chain_list)
 par_mean = par_median = upper = lower = rep( NA, length(labels))
 
 if(thirty) {
-    load('Data/true_par_30.rda')
+    load('Data/true_par_2_30.rda')
 } else {
     load('Data/true_par_15.rda')
 }
-
-if(case_b) {true_par = c(true_par[1:5], true_par[10:14])}
 
 # tau2_hat   = 0.3395152
 # sigma2_hat = 1.227959

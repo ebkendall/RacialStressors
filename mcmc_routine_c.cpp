@@ -49,11 +49,8 @@ double D_2_calc(const int state, const double y_2_k, const double tau2,
     double hold1 = (1/sqrt(2*pi*tau2)) * 
                      (1/sqrt(sigma_2_vec(0) * sigma_2_vec(1) * sigma_2_vec(2))) * 
                         sqrt(det_inv_W);
-    
-    double d_i = y_2_k;
-    if(!simulation) {
-        d_i = d_i - arma::dot(x, gamma);
-    }
+
+    double d_i = y_2_k - arma::dot(x, gamma);
     
     arma::vec temp1 = (d_i / tau2) * V_k_t + big_Sigma_inv * delta;
     double temp2 = arma::as_scalar(temp1.t() * inv_W * temp1);
@@ -84,11 +81,12 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     
     // Manually populate the misclassification probabilities
     arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
-    arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
-                    {0, 1, exp(vec_misclass_content(2))},
-                    {0, exp(vec_misclass_content(3)), 1}};
-    arma::vec m_row_sums = arma::sum(M, 1);
-    M = M.each_col() / m_row_sums;
+    // arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+    //                 {0, 1, exp(vec_misclass_content(2))},
+    //                 {0, exp(vec_misclass_content(3)), 1}};
+    // arma::vec m_row_sums = arma::sum(M, 1);
+    // M = M.each_col() / m_row_sums;
+    arma::mat M(3,3,arma::fill::eye);
     
     // Populate the transition probability matrix (independent of time)
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);

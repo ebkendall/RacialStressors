@@ -4,11 +4,11 @@ thirty = T
 
 # Load the current data ------------------------------------------------------
 load('Data/data_format_30.rda')
-# N = 500
-N = length(unique(data_format_30$ID..))
+N = 500
+# N = length(unique(data_format_30$ID..))
 data_format = data_format_30
 
-n_sim = 1
+n_sim = 2
 
 # True parameter values ------------------------------------------------------
 par_index = list( zeta=1:25, misclass=0,
@@ -23,7 +23,7 @@ log_sigma2 = c(0.20535332, -0.05919292, 0.26003737)
 gamma = matrix(colMeans(mcmc_out$chain[,par_index$gamma]), ncol = 1)
 
 true_par = c(c(zeta), delta, log_tau2, log_sigma2, gamma)
-save(true_par, file = 'Data/true_par_30.rda')
+save(true_par, file = paste0('Data/true_par_', n_sim, '_30.rda'))
 
 # Simulate the data -----------------------------------------------------------
 
@@ -37,7 +37,7 @@ cov_info$edu_yes = as.numeric(cov_info$edu_yes)
 cov_info$DLER_avg = as.numeric(cov_info$DLER_avg)
 cov_info = as.matrix(cov_info)
 
-for(ind in 1:n_sim) {
+for(ind in 2:n_sim) {
     set.seed(ind)
     sim_data = NULL
 
@@ -45,8 +45,8 @@ for(ind in 1:n_sim) {
     for(i in 1:N) {
         print(i)
         id  = i
-        # id_info = sample(x = unique(data_format[,"ID.."]), size = 1, replace = T)
-        id_info = EIDs[i]
+        id_info = sample(x = EIDs, size = 1, replace = T)
+        # id_info = EIDs[i]
         n_i = sum(data_format[,"ID.."] == id_info)
         b_i = NULL
         s_i = NULL
