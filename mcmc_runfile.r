@@ -7,10 +7,10 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 2
+trial_num = 3
 simulation = F
 thirty = T
-case_b = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 init_par = NULL
@@ -49,6 +49,7 @@ init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
                         -4, 0, 0, 0, 0,
                         -4, 0, 0, 0, 0,
                         -4, 0, 0, 0, 0,
+                        -4, 0, 0, 0, 0,
                         -4, 0, 0, 0, 0), ncol=5, byrow = T)),
                 c(6.411967, 0, 0), 
                 log(0.51^2),  
@@ -56,9 +57,8 @@ init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
                 0, 0, 0, 0)
     
 # misclass is kept in par_index for book-keeping in C++
-par_index = list( zeta=1:25, misclass=0,
-                    delta = 26:28, tau2 = 29, sigma2 = 30:32,
-                    gamma = 33:36)
+par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
+                 gamma = 38:41)
 
 n_sub = length(unique(data_format[,'ID..']))
 
@@ -114,15 +114,11 @@ if(simulation) {
 prior_mean = rep(0, length(init_par))
 prior_sd = rep(20, length(init_par))
 
-# prior_mean[26:28] = c(6.4640880, -0.2681087, -0.1132974)
-# prior_mean[29] = -1.080237
-# prior_sd[29] = 1
-# prior_mean[30] = 0.20535332 
-# prior_sd[30] = 1
-# prior_mean[31] = -0.05919292  
-# prior_sd[31] = 1
-# prior_mean[32] = 0.26003737
-# prior_sd[32] = 1
+prior_mean[par_index$delta] = c(6.4640880, -0.2681087, -0.1132974)
+prior_mean[par_index$tau2] = -1.080237
+prior_sd[par_index$tau2] = 1
+prior_mean[par_index$sigma2] = c(0.20535332, -0.05919292, 0.26003737)
+prior_sd[par_index$sigma2] = 1
 
 prior_par = list()
 prior_par[[1]] = prior_mean
