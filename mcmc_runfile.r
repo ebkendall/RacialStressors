@@ -7,10 +7,10 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 2
 simulation = F
 thirty = T
-case_b = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 init_par = NULL
@@ -114,15 +114,15 @@ if(simulation) {
 prior_mean = rep(0, length(init_par))
 prior_sd = rep(20, length(init_par))
 
-prior_mean[26:28] = c(6.4640880, -0.2681087, -0.1132974)
-prior_mean[29] = -1.080237
-prior_sd[29] = 1
-prior_mean[30] = 0.20535332 
-prior_sd[30] = 1
-prior_mean[31] = -0.05919292  
-prior_sd[31] = 1
-prior_mean[32] = 0.26003737
-prior_sd[32] = 1
+# prior_mean[26:28] = c(6.4640880, -0.2681087, -0.1132974)
+# prior_mean[29] = -1.080237
+# prior_sd[29] = 1
+# prior_mean[30] = 0.20535332 
+# prior_sd[30] = 1
+# prior_mean[31] = -0.05919292  
+# prior_sd[31] = 1
+# prior_mean[32] = 0.26003737
+# prior_sd[32] = 1
 
 prior_par = list()
 prior_par[[1]] = prior_mean
