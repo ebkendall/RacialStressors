@@ -13,11 +13,11 @@ set.seed(2023)
 dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
-trial_num = 4
+trial_num = 1
 simulation = F
 thirty = T
-use_labels = T
-case_b = F
+use_labels = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 if(simulation) {
@@ -115,13 +115,12 @@ if(simulation) {
 
 n_sub = length(unique(data_format[,'ID..']))
 
-if(case_b) {
-    # misclass is kept in par_index for book-keeping in C++
-    par_index = list(zeta=1:25, misclass=0, delta = 26:28, tau2 = 29, 
-                     sigma2 = 30:32, beta = 33:36)
+if(trial_num >= 3) {
+    par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
+                        gamma = 38:41)
 } else {
-    par_index = list(zeta=1:25, misclass=26:29, delta = 30:32, tau2 = 33, 
-                     sigma2 = 34:36, beta = 37:40)
+    par_index = list( zeta=1:25, misclass=0, delta = 26:28, tau2 = 29, 
+                    sigma2 = 30:32, beta = 33:36)
 }
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL
@@ -130,11 +129,12 @@ y_1 = as.numeric(temp_data[,"State"])
 y_2 = as.numeric(temp_data[,"RSA"])
 t = as.numeric(temp_data[,"Time"])
 EIDs = unique(id)
-if(simulation) {
-    cov_info = matrix(0, nrow = nrow(temp_data), ncol = 4)
-} else {
-    cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
-}
+
+cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
+
+# Centering age
+mean_age = mean(cov_info[,'Age'])
+cov_info[,'Age'] = cov_info[,'Age'] - mean_age
 
 new_steps =  100000
 new_burnin = 5000
@@ -144,7 +144,7 @@ if(use_labels & !(case_b)) {
                                   par_index, y_1, y_2, id, t, cov_info, simulation)
 } else {
     B_chain = state_space_sampler_no_label(new_steps, new_burnin, EIDs, colMeans(par_chain), 
-                                           par_index, y_2, id, t, y_1, cov_info, simulation)    
+                                           par_index, y_2, id, t, y_1, cov_info)    
 }
 
 file_name = NULL

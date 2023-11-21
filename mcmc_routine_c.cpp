@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 const double pi = 3.14159265358979323846;
 
-const arma::mat adj_mat = { {1, 1, 0},
+const arma::mat adj_mat = { {1, 1, 1},
                             {1, 1, 1},
                             {1, 1, 1}};
 
@@ -370,24 +370,14 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     arma::mat cov_info_i = cov_info.rows(sub_ind);
 
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta;
-    arma::colvec z_i;
-    if(simulation) {
-        zeta = arma::reshape(vec_zeta_content, 5, 1);
-        z_i = {1};
-    } else {
-        zeta = arma::reshape(vec_zeta_content, 5, 5);
-        z_i = {1, cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
-    }
+    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 5);
+    arma::colvec z_i = {1, cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
+    
     arma::vec x_i = {cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
     arma::vec P_init = {1, 0, 0};
     
     arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
-    arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
-                    {0, 1, exp(vec_misclass_content(2))},
-                    {0, exp(vec_misclass_content(3)), 1}};
-    arma::vec m_row_sums = arma::sum(M, 1);
-    M = M.each_col() / m_row_sums;
+    arma::mat M(3,3,arma::fill::eye);
     
     arma::vec delta = pars.elem(par_index(2) - 1);
     
@@ -395,9 +385,7 @@ double log_f_i_cpp(const int i, const int ii, const arma::vec &pars,
     double tau2 = exp(log_tau2);
     
     arma::vec log_sigma2 = pars.elem(par_index(4) - 1);
-    arma::vec sigma_2_vec = exp(log_sigma2);
-    // double log_sigma2 = arma::as_scalar(pars.elem(par_index(4) - 1));
-    // double sigma2 = exp(log_sigma2);
+    arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), exp(log_sigma2(2))};
     
     arma::vec gamma = pars.elem(par_index(5) - 1);
     
@@ -533,7 +521,7 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
                             const arma::field<arma::uvec> &par_index,
                             arma::vec t_pts, const arma::vec &id, 
                             const arma::vec &B, const arma::vec &y_2, 
-                            const int n_sub, const arma::mat &cov_info, const bool simulation) {
+                            const int n_sub, const arma::mat &cov_info) {
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) gamma
     // "i" is the numeric EID number
     // "ii" is the index of the EID
@@ -550,15 +538,10 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
     arma::mat cov_info_i = cov_info.rows(sub_ind);
 
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta;
-    arma::colvec z_i;
-    if(simulation) {
-        zeta = arma::reshape(vec_zeta_content, 5, 1);
-        z_i = {1};
-    } else {
-        zeta = arma::reshape(vec_zeta_content, 5, 5);
-        z_i = {1, cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
-    }
+    
+    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5);
+    arma::colvec z_i = {1, cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
+
     arma::vec x_i = {cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
     arma::vec P_init = {1, 0, 0};
     
@@ -569,8 +552,6 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
 
     arma::vec log_sigma2 = pars.elem(par_index(4) - 1);
     arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), exp(log_sigma2(2))};
-    // double log_sigma2 = arma::as_scalar(pars.elem(par_index(4) - 1));
-    // double sigma2 = exp(log_sigma2);
     
     arma::vec gamma = pars.elem(par_index(5) - 1);
     
@@ -594,10 +575,12 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
             double q4 = exp(q4_sub);
             double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
             double q5 = exp(q5_sub);
+            double q6_sub = arma::as_scalar(zeta.row(5) * z_i);
+            double q6 = exp(q6_sub);
             
-            arma::mat Q = { {  1,  q1,   0},
-                            { q2,   1,  q3},
-                            { q4,  q5,   1}};
+            arma::mat Q = { {  1,  q1,  q2},
+                            { q3,   1,  q4},
+                            { q5,  q6,   1}};
             arma::vec q_row_sums = arma::sum(Q, 1);
             arma::mat P_i = Q.each_col() / q_row_sums;
             
@@ -616,7 +599,7 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
                                    const arma::field<arma::uvec> &par_index,
                                    const arma::vec &id, arma::vec &b_curr, 
                                    const arma::vec &y_2, const arma::vec &y_1,
-                                   const arma::mat &cov_info, const bool simulation) {
+                                   const arma::mat &cov_info) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) gamma
     // "i" is the numeric EID number
@@ -657,11 +640,11 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
 
                 double log_target_prev = log_f_i_cpp_no_label(i, ii, pars, par_index,
                                                               t_pts, id, b_i, y_2,
-                                                              EIDs.n_elem, cov_info, simulation);
+                                                              EIDs.n_elem, cov_info);
 
                 double log_target = log_f_i_cpp_no_label(i, ii, pars, par_index,
                                                          t_pts, id, pr_B, y_2,
-                                                         EIDs.n_elem, cov_info, simulation);
+                                                         EIDs.n_elem, cov_info);
 
                 // Note that the proposal probs cancel in the MH ratio
                 double diff_check = log_target - log_target_prev;
@@ -683,7 +666,7 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
                               const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_2, const arma::vec &id, 
                               const arma::vec &t, const arma::vec &y_1,
-                              const arma::mat &cov_info, const bool simulation) {
+                              const arma::mat &cov_info) {
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) gamma
     
     
@@ -693,7 +676,7 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
     for(int ttt = 0; ttt < steps; ttt++) {
         
         Rcpp::Rcout << "---> " << ttt << std::endl;
-        arma::vec curr_B = update_b_i_cpp_no_label(EIDs, pars, par_index, id, prev_B, y_2, y_1, cov_info, simulation);
+        arma::vec curr_B = update_b_i_cpp_no_label(EIDs, pars, par_index, id, prev_B, y_2, y_1, cov_info);
         if(ttt >= burnin)  B_master.row(ttt - burnin) = curr_B.t();
         prev_B = curr_B;
         

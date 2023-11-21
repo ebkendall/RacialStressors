@@ -4,10 +4,10 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 3
 simulation = F
 thirty = T
-case_b = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
@@ -21,12 +21,48 @@ index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 index_seeds = c(1:5)
 
-    
-# misclass is kept in par_index for book-keeping in C++
-par_index = list( zeta=1:25, misclass=0, delta = 26:28, tau2 = 29, 
+if(trial_num >= 3) {
+    par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
+                     gamma = 38:41)
+    labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 1 $\to$ 3)'), 
+                TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{0,6}:$ Baseline: 3 $\to$ 2)'),
+                TeX(r'($\hat{\zeta}_{1,1}:$ age: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{1,2}:$ age: 1 $\to$ 3)'), 
+                TeX(r'($\hat{\zeta}_{1,3}:$ age: 2 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{1,4}:$ age: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{1,5}:$ age: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{1,6}:$ age: 3 $\to$ 2)'),
+                TeX(r'($\hat{\zeta}_{2,1}:$ sex1: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{2,2}:$ sex1: 1 $\to$ 3)'), 
+                TeX(r'($\hat{\zeta}_{2,3}:$ sex1: 2 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{2,4}:$ sex1: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{2,5}:$ sex1: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{2,6}:$ sex1: 3 $\to$ 2)'),
+                TeX(r'($\hat{\zeta}_{3,1}:$ yes edu: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{3,2}:$ yes edu: 1 $\to$ 3)'), 
+                TeX(r'($\hat{\zeta}_{3,3}:$ yes edu: 2 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{3,4}:$ yes edu: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{3,5}:$ yes edu: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{3,6}:$ yes edu: 3 $\to$ 2)'),
+                TeX(r'($\hat{\zeta}_{4,1}:$ DLER: 1 $\to$ 2)'), 
+                TeX(r'($\hat{\zeta}_{4,2}:$ DLER: 1 $\to$ 3)'), 
+                TeX(r'($\hat{\zeta}_{4,3}:$ DLER: 2 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{4,4}:$ DLER: 2 $\to$ 3)'),
+                TeX(r'($\hat{\zeta}_{4,5}:$ DLER: 3 $\to$ 1)'),
+                TeX(r'($\hat{\zeta}_{4,6}:$ DLER: 3 $\to$ 2)'),
+                TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
+                TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma_1^2)$)'), TeX(r'($\log(\sigma_2^2)$)'), TeX(r'($\log(\sigma_3^2)$)'),
+                TeX(r'($\hat{\gamma}_1:$ age)'), TeX(r'($\hat{\gamma}_2:$ sex1)'), 
+                TeX(r'($\hat{\gamma}_3:$ yes edu)'), TeX(r'($\hat{\gamma}_4:$ DLER)'),
+                TeX(r'($\tau^2 + \sigma_1^2$)'))
+} else {
+    par_index = list( zeta=1:25, misclass=0, delta = 26:28, tau2 = 29, 
                     sigma2 = 30:32, beta = 33:36)
-
-labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
+    labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
                 TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 2 $\to$ 1)'), 
                 TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 3)'),
                 TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 3 $\to$ 1)'),
@@ -56,6 +92,7 @@ labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'),
                 TeX(r'($\hat{\gamma}_1:$ age)'), TeX(r'($\hat{\gamma}_2:$ sex1)'), 
                 TeX(r'($\hat{\gamma}_3:$ yes edu)'), TeX(r'($\hat{\gamma}_4:$ DLER)'),
                 TeX(r'($\tau^2 + \sigma_1^2$)'))
+}
 
 # -----------------------------------------------------------------------------
 # Create mcmc trace plots and histograms
@@ -165,6 +202,7 @@ if(thirty) {
 
 # tau2_hat   = 0.3395152
 # sigma2_hat = 1.227959
+mle_ind = 1
 
 for(r in 1:length(labels)){
     
@@ -190,14 +228,18 @@ for(r in 1:length(labels)){
     abline( v=upper[r], col='red', lwd=2, lty=2)
     abline( v=lower[r], col='purple', lwd=2, lty=2)
     
-    if(r == 29) abline( v=log(0.3395152), col='blue', lwd=2, lty=2)
-    if(r == 30) abline( v=log(1.227959),  col='blue', lwd=2, lty=2)
-    if(r == length(labels)) abline( v=log(1.227959) + log(0.3395152),  col='blue', lwd=2, lty=2)
-    
     if(simulation) {
         abline( v=true_par[r], col='green', lwd=2, lty=2)
-    }
+    } else {
+        mle_vals = c(6.4557765, -0.2582171, -0.1166778, -1.0842574,  0.1973717,
+                     -0.0714276, 0.2777276)
+        if(r %in% c(par_index$delta, par_index$tau2, par_index$sigma2)) {
+            abline( v=mle_vals[mle_ind], col='blue', lwd=2, lty=2)
+            mle_ind = mle_ind + 1
+        }
 
+        if(r == length(labels)) abline( v=log(1.227959) + log(0.3395152),  col='blue', lwd=2, lty=2)
+    }
 }
 
 dev.off()

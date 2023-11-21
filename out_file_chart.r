@@ -2,7 +2,7 @@
 library(plotrix)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 4
+trial_num = 3
 simulation = F
 thirty = T
 use_labels = F
@@ -206,7 +206,7 @@ for(i in EIDs){
 	    }
 	}
 
-	b_chain_ind = 35000:45000
+	b_chain_ind = 50000:95000
 	barplot( rbind(   colMeans(B_chain[b_chain_ind, indices_i] == 1),
 				colMeans(B_chain[b_chain_ind, indices_i] == 2),
 				colMeans(B_chain[b_chain_ind, indices_i] == 3)), 
