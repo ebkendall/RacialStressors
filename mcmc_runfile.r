@@ -7,7 +7,7 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 3
+trial_num = 1
 simulation = F
 thirty = T
 case_b = F
@@ -70,6 +70,21 @@ if(simulation) {
     s2_group = data_format[data_format[,'State'] == 2, ]
     s3_group = data_format[data_format[,'State'] == 3, ]
     
+    alt_var_calc <- function(s_group) {
+        x_bar = mean(s_group[,'RSA'])
+        ss = rep(0, nrow(s_group))
+        for(i in 1:nrow(s_group)) {
+            ss[i] = (s_group[i,'RSA'] - x_bar)^2
+        }
+        ss = mean(ss)
+        print(paste0("mean: ", x_bar))
+        print(paste0("var: ", ss))
+    }
+    print("Empirical Estimates")
+    print("State 1:"); alt_var_calc(s1_group)
+    print("State 2:"); alt_var_calc(s2_group)
+    print("State 3:"); alt_var_calc(s3_group)
+    
     variance_calc <- function(s_group) {
         y_bar = mean(s_group$RSA)
         tau2_hat = 0
@@ -114,11 +129,11 @@ if(simulation) {
 prior_mean = rep(0, length(init_par))
 prior_sd = rep(20, length(init_par))
 
-prior_mean[par_index$delta] = c(6.4640880, -0.2681087, -0.1132974)
-prior_mean[par_index$tau2] = -1.080237
-prior_sd[par_index$tau2] = 1
-prior_mean[par_index$sigma2] = c(0.20535332, -0.05919292, 0.26003737)
-prior_sd[par_index$sigma2] = 1
+# prior_mean[par_index$delta] = c(6.4640880, -0.2681087, -0.1132974)
+# prior_mean[par_index$tau2] = -1.080237
+# prior_sd[par_index$tau2] = 1
+# prior_mean[par_index$sigma2] = c(0.20535332, -0.05919292, 0.26003737)
+# prior_sd[par_index$sigma2] = 1
 
 prior_par = list()
 prior_par[[1]] = prior_mean

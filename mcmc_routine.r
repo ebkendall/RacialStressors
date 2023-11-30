@@ -30,8 +30,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
                # c(par_index$sigma2),
                # c(par_index$tau2, par_index$sigma2[2:3]),
                # c(par_index$sigma2[2:3]),
-               c(par_index$tau2, par_index$sigma2),
-               c(par_index$gamma))
+               c(par_index$tau2, par_index$sigma2))
+              #  c(par_index$gamma))
 
   names(group) = NULL
   n_group = length(group)
@@ -71,13 +71,13 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
       if(length(ind_j) > 1) {
           proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
                                      sigma=pcov[[j]]*pscale[j])
-          # Guarantee alpha < beta
-          if(sum(ind_j %in% par_index$delta) == 3) {
-            while(proposal[par_index$delta][2] >= proposal[par_index$delta][3]) {
-              proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
-                                     sigma=pcov[[j]]*pscale[j])
-            }
-          }
+          # # Guarantee alpha < beta
+          # if(sum(ind_j %in% par_index$delta) == 3) {
+          #   while(proposal[par_index$delta][2] >= proposal[par_index$delta][3]) {
+          #     proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
+          #                            sigma=pcov[[j]]*pscale[j])
+          #   }
+          # }
       } else {
           proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],
                                    sd=sqrt(pcov[[j]]*pscale[j]))
@@ -97,13 +97,13 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
           if(length(ind_j > 1)) {
             proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
                                          sigma=pcov[[j]]*pscale[j])
-            # Guarantee alpha < beta
-            if(sum(ind_j %in% par_index$delta) == 3) {
-              while(proposal[par_index$delta][2] >= proposal[par_index$delta][3]) {
-                proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
-                                      sigma=pcov[[j]]*pscale[j])
-              }
-            }
+            # # Guarantee alpha < beta
+            # if(sum(ind_j %in% par_index$delta) == 3) {
+            #   while(proposal[par_index$delta][2] >= proposal[par_index$delta][3]) {
+            #     proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
+            #                           sigma=pcov[[j]]*pscale[j])
+            #   }
+            # }
           } else {
               proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],
                                        sd=sqrt(pcov[[j]]*pscale[j]))

@@ -4,7 +4,7 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 3
+trial_num = 1
 simulation = F
 thirty = T
 case_b = F
@@ -231,8 +231,8 @@ for(r in 1:length(labels)){
     if(simulation) {
         abline( v=true_par[r], col='green', lwd=2, lty=2)
     } else {
-        mle_vals = c(6.4557765, -0.2582171, -0.1166778, -1.0842574,  0.1973717,
-                     -0.0714276, 0.2777276)
+        mle_vals = c(6.4557765, -0.2582171, -0.1166778, 
+                    -1.0842574,  0.1973717, -0.0714276, 0.2777276)
         if(r %in% c(par_index$delta, par_index$tau2, par_index$sigma2)) {
             abline( v=mle_vals[mle_ind], col='blue', lwd=2, lty=2)
             mle_ind = mle_ind + 1

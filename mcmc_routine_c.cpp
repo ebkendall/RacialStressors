@@ -63,6 +63,30 @@ double D_2_calc(const int state, const double y_2_k, const double tau2,
     return d_2_final;
 }
 
+double D_2_calc_new(const int state, const double y_2_k, const double tau2, 
+                    const arma::vec sigma_2_vec, const arma::vec delta) {
+    double d_2_val = 0;
+
+    if(state == 1) {
+        double mean_ii = delta(0);
+        double var_ii = tau2 + sigma_2_vec(0);
+        double sd_ii = sqrt(var_ii);
+        d_2_val = arma::normpdf(y_2_k, mean_ii, sd_ii);
+    } else if(state == 2) {
+        double mean_ii = delta(0) + delta(1);
+        double var_ii = tau2 + sigma_2_vec(0) + sigma_2_vec(1);
+        double sd_ii = sqrt(var_ii);
+        d_2_val = arma::normpdf(y_2_k, mean_ii, sd_ii);
+    } else {
+        double mean_ii = delta(0) + delta(2);
+        double var_ii = tau2 + sigma_2_vec(0) + sigma_2_vec(2);
+        double sd_ii = sqrt(var_ii);
+        d_2_val = arma::normpdf(y_2_k, mean_ii, sd_ii);
+    }
+    
+    return d_2_val;
+}
+
 // [[Rcpp::export]]
 double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,  
                               const arma::field<arma::vec> &prior_par, 
@@ -91,7 +115,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     arma::vec log_sigma2 = pars.elem(par_index(4) - 1);
     arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), exp(log_sigma2(2))};
     
-    arma::vec gamma = pars.elem(par_index(5) - 1);
+    // arma::vec gamma = pars.elem(par_index(5) - 1);
 
     arma::mat M(3,3,arma::fill::eye);
     
@@ -133,9 +157,12 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         arma::mat P = Q.each_col() / q_row_sums;
         
         // Likelihood component from y_2
-        double d_1 = D_2_calc(1, y_2_i(0), tau2, sigma_2_vec, delta, x_i, gamma);
-        double d_2 = D_2_calc(2, y_2_i(0), tau2, sigma_2_vec, delta, x_i, gamma);
-        double d_3 = D_2_calc(3, y_2_i(0), tau2, sigma_2_vec, delta, x_i, gamma);
+        // double d_1 = D_2_calc(1, y_2_i(0), tau2, sigma_2_vec, delta, x_i, gamma);
+        // double d_2 = D_2_calc(2, y_2_i(0), tau2, sigma_2_vec, delta, x_i, gamma);
+        // double d_3 = D_2_calc(3, y_2_i(0), tau2, sigma_2_vec, delta, x_i, gamma);
+        double d_1 = D_2_calc_new(1, y_2_i(0), tau2, sigma_2_vec, delta);
+        double d_2 = D_2_calc_new(2, y_2_i(0), tau2, sigma_2_vec, delta);
+        double d_3 = D_2_calc_new(3, y_2_i(0), tau2, sigma_2_vec, delta);
 
         arma::vec d_fill = {d_1, d_2, d_3};
         if(d_fill.has_inf()) { 
@@ -157,9 +184,12 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         for(int k = 1; k < y_2_i.n_elem; k++) {
             
             // Likelihood component from y_2
-            d_1 = D_2_calc(1, y_2_i(k), tau2, sigma_2_vec, delta, x_i, gamma);
-            d_2 = D_2_calc(2, y_2_i(k), tau2, sigma_2_vec, delta, x_i, gamma);
-            d_3 = D_2_calc(3, y_2_i(k), tau2, sigma_2_vec, delta, x_i, gamma);
+            // d_1 = D_2_calc(1, y_2_i(k), tau2, sigma_2_vec, delta, x_i, gamma);
+            // d_2 = D_2_calc(2, y_2_i(k), tau2, sigma_2_vec, delta, x_i, gamma);
+            // d_3 = D_2_calc(3, y_2_i(k), tau2, sigma_2_vec, delta, x_i, gamma);
+            d_1 = D_2_calc_new(1, y_2_i(k), tau2, sigma_2_vec, delta);
+            d_2 = D_2_calc_new(2, y_2_i(k), tau2, sigma_2_vec, delta);
+            d_3 = D_2_calc_new(3, y_2_i(k), tau2, sigma_2_vec, delta);
 
             d_fill = {d_1, d_2, d_3};
             if(d_fill.has_inf()) { 
