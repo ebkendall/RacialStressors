@@ -7,7 +7,7 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 2
 simulation = F
 thirty = T
 case_b = F
@@ -58,7 +58,7 @@ init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
     
 # misclass is kept in par_index for book-keeping in C++
 par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
-                 gamma = 38:41)
+                 gamma = 38:41, mu = 42)
 
 n_sub = length(unique(data_format[,'ID..']))
 
@@ -119,9 +119,10 @@ if(simulation) {
     init_par[par_index$sigma2[1]] = log(s1_vars[2])
     init_par[par_index$sigma2[2]] = log(s2_vars[2])
     init_par[par_index$sigma2[3]] = log(s3_vars[2])
-    init_par[par_index$delta[1]] = s1_vars[3]
+    init_par[par_index$delta[1]] = 0
     init_par[par_index$delta[2]] = s2_vars[3] - s1_vars[3]
     init_par[par_index$delta[3]] = s3_vars[3] - s1_vars[3]   
+    init_par[par_index$mu] = s1_vars[3]
 }
 # ------------------------------------------------------------------------------
 
