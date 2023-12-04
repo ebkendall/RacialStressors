@@ -2,76 +2,25 @@
 library(plotrix)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 3
+trial_num = 4
 simulation = F
-thirty = T
-use_labels = F
 case_b = T
-s1 = T
 # ------------------------------------------------------------------------------
 
 Dir = 'Model_out/'
 
 file_name = NULL
 if(simulation) {
-    if(thirty) {
-        if(case_b) {
-            file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30b.rda")
-        } else {
-            if(use_labels) {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30.rda")
-            } else {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30_nl.rda")
-            }   
-        }
+    if(case_b) {
+        file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30b.rda")
     } else {
-        if(case_b) {
-            file_name = paste0("Model_out/B_chain_", trial_num, "_sim_15b.rda")
-        } else {
-            if(use_labels) {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_15.rda")
-            } else {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_sim_15_nl.rda")   
-            }   
-        }
+        file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30.rda")   
     }
 } else {
-    if(thirty) {
-        if(case_b) {
-            if(s1) {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_30b_s1.rda")
-            } else {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_30b_old.rda")   
-            }
-        } else {
-            if(use_labels) {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_30.rda")
-            } else {
-                if(s1) {
-                    file_name = paste0("Model_out/B_chain_", trial_num, "_30_nl_s1.rda")
-                } else {
-                    file_name = paste0("Model_out/B_chain_", trial_num, "_30_nl.rda")   
-                }
-            }   
-        }
+    if(case_b) {
+        file_name = paste0("Model_out/B_chain_", trial_num, "_30b_s1.rda")
     } else {
-        if(case_b) {
-            if(s1) {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_15b_s1.rda")
-            } else {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_15b_old.rda")   
-            }
-        } else {
-            if(use_labels) {
-                file_name = paste0("Model_out/B_chain_", trial_num, "_15.rda")
-            } else {
-                if(s1) {
-                    file_name = paste0("Model_out/B_chain_", trial_num, "_15_nl_s1.rda")   
-                } else {
-                    file_name = paste0("Model_out/B_chain_", trial_num, "_15_nl.rda")      
-                }
-            }   
-        }
+        file_name = paste0("Model_out/B_chain_", trial_num, "_30.rda")  
     }
 }
 
@@ -79,22 +28,12 @@ load(file_name)
 
 if(simulation) {
     # Simulation
-    if(thirty) {
-        load('Data/sim_data_1_30.rda')
-        data_format = sim_data
-    } else {
-        load('Data/sim_data_1_15.rda')
-        data_format = sim_data  
-    } 
+    load('Data/sim_data_1_30.rda')
+    data_format = sim_data
 } else {
     # Real data analysis
-    if(thirty) {
-	    load('Data/data_format_30.rda')
-    	data_format = data_format_30
-    } else {
-	    load('Data/data_format_15.rda')
-    	data_format = data_format_15   
-    }
+    load('Data/data_format_30.rda')
+    data_format = data_format_30
     
     miss_info = c(26296, 29698, 30625, 401, 423, 419, 457)
     data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
@@ -104,65 +43,21 @@ EIDs = unique(data_format[,"ID.."])
 
 # New patients ---------------------------------------------------------------
 if(simulation) {
-    if(thirty) {
-        if(case_b) {
-            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b.pdf')
-        } else {
-            if(use_labels) {
-                pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30.pdf')
-            } else {
-                pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30_nl.pdf')   
-            }   
-        }
+    if(case_b) {
+        pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b.pdf')
     } else {
-        if(case_b) {
-            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_15b.pdf')
+        if(use_labels) {
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30.pdf')
         } else {
-            if(use_labels) {
-                pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_15.pdf')
-            } else {
-                pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_15_nl.pdf')   
-            }
-        }
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30_nl.pdf')   
+        }   
     }
 } else {
-	if(thirty) {
-	    if(case_b) {
-	        if(s1) {
-	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1.pdf')
-	        } else {
-	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_old.pdf')   
-	        }
-	    } else {
-	        if(use_labels) {
-	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30.pdf')
-	        } else {
-	            if(s1) {
-	                pdf_title = paste0('Plots/chart_plot_', trial_num, '_30_nl_s1.pdf')   
-	            } else {
-	                pdf_title = paste0('Plots/chart_plot_', trial_num, '_30_nl.pdf')      
-	            }
-	        }
-	    }
-	} else {
-	    if(case_b) {
-	        if(s1) {
-	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_15b_s1.pdf')
-	        } else {
-	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_15b_old.pdf')   
-	        }
-	    } else {
-	        if(use_labels) {
-	            pdf_title = paste0('Plots/chart_plot_', trial_num, '_15.pdf')
-	        } else {
-	            if(s1) {
-	                pdf_title = paste0('Plots/chart_plot_', trial_num, '_15_nl_s1.pdf')
-	            } else {
-	                pdf_title = paste0('Plots/chart_plot_', trial_num, '_15_nl.pdf')      
-	            }
-	        }   
-	    }
-	}
+    if(case_b) {
+        pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1.pdf')
+    } else {
+        pdf_title = paste0('Plots/chart_plot_', trial_num, '_30.pdf')
+    }
 }
 
 pdf(pdf_title)

@@ -27,7 +27,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
                c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
                c(par_index$zeta[21:25]), c(par_index$zeta[26:30]),
                c(par_index$delta), 
-               c(par_index$tau2, par_index$sigma2),
+               c(par_index$tau2, par_index$sigma2[1]),
                c(par_index$gamma))
 
   names(group) = NULL
