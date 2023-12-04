@@ -63,16 +63,16 @@ double D_2_calc_fix(const int state, const double y_2_k, const double tau2,
     return d_2_val;
 }
 
-
 // [[Rcpp::export]]
 double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,  
                               const arma::field<arma::vec> &prior_par, 
                               const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_1, const arma::vec &id, 
                               const arma::vec &y_2, const arma::mat &cov_info,
-                              const bool case_b) {
+                              const bool case_b, arma::field<arma::vec> &Z_i) {
     
-    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) gamma
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
+    //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     arma::vec in_vals(EIDs.n_elem, arma::fill::zeros);
@@ -82,7 +82,13 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     
     // Populate the transition probability matrix (independent of time)
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5);
+    arma::mat zeta_init = arma::reshape(vec_zeta_content, 6, 4);
+    
+    // Random effect parameters for zeta baseline 
+    arma::vec zeta_0_mean = pars.elem(par_index(6) - 1);
+    arma::vec vec_zeta_0_var = pars.elem(par_index(6) - 1);
+    vec_zeta_0_var = exp(vec_zeta_0_var);
+    arma::mat zeta_0_var = arma::diagmat(vec_zeta_0_var);
     
     arma::vec delta = pars.elem(par_index(2) - 1);
     
@@ -108,6 +114,10 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         arma::uvec sub_ind = arma::find(id == i);
         arma::vec y_1_i = y_1.elem(sub_ind);
         arma::vec y_2_i = y_2.elem(sub_ind);
+        
+        // Adding the random effect baseline coefficient
+        arma::colvec zeta_0 = Z_i(ii);
+        arma::mat zeta = arma::join_horiz(zeta_0, zeta_init);
 
         // Evaluating the probability transition matrix
         arma::mat cov_info_i = cov_info.rows(sub_ind);
@@ -210,7 +220,11 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         } else if (in_vals.has_nan()) { 
             continue;
         } else {
-            in_vals(ii) = log(arma::accu(f_i)) + log_norm;
+            // Likelihood contribution from random effect transition baseline
+            arma::vec zeta_0_like = dmvnorm(zeta_0.t(), zeta_0_mean, zeta_0_var, true);
+            double zeta_0_like_val = arma::as_scalar(zeta_0_like);
+            
+            in_vals(ii) = log(arma::accu(f_i)) + log_norm + zeta_0_like_val;
         }
     }
     
@@ -237,6 +251,76 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     
     return in_value;
 }
+
+// [[Rcpp::export]]
+Rcpp::List update_Z_i(const arma::vec &EIDs, const arma::vec &pars,  
+                      const arma::field<arma::vec> &prior_par, 
+                      const arma::field<arma::uvec> &par_index,
+                      const arma::vec &y_1, const arma::vec &id, 
+                      const arma::vec &y_2, const arma::mat &cov_info,
+                      const bool case_b, arma::field<arma::mat> pcov_Z, 
+                      arma::vec pscale_Z, arma::vec accept_Z, int ttt, int burnin,
+                      double log_post_prev, arma::field<arma::vec> &Z_i) {
+    
+    for(int j=0; j < EIDs.n_elem; j++){
+        
+        arma::vec curr = Z_i(j);
+        arma::mat cov_j = pcov_Z(j);
+        double scale_j = pscale_Z(j);
+        
+        arma::mat scaled_cov = scale_j * cov_j;
+        arma::vec proposal = arma::mvnrnd(curr, scaled_cov, 1);
+        
+        arma::field<arma::vec> Z_i_temp = Z_i;
+        Z_i_temp(j) = proposal;
+        
+        double log_post = fn_log_post_continuous(EIDs,pars,prior_par,par_index,y_1,
+                                                 id, y_2, cov_info, case_b, Z_i_temp);
+        if(ttt < burnin){
+            while(log_post == -arma::datum::inf){
+                Rcpp::Rcout << "bad proposal" << std::endl;
+                
+                proposal = arma::mvnrnd(curr, scaled_cov, 1);
+                Z_i_temp(j) = proposal;
+                
+                log_post = fn_log_post_continuous(EIDs,pars,prior_par,par_index,y_1,
+                                                  id, y_2, cov_info, case_b, Z_i_temp);
+            }
+        }
+        
+        if(log_post == -arma::datum::inf) {
+            Rcpp::Rcout << "bad proposal post burnin" << std::endl;
+        }
+        
+        double ind_unif = arma::randu();
+        if( log_post - log_post_prev > log(ind_unif)){
+            log_post_prev = log_post;
+            Z_i(j) = proposal;
+            accept_Z(j) = accept_Z(j) +1;
+        }
+
+        if(ttt < burnin){
+            if(ttt == 100)  pscale_Z(j) = 1;
+
+            if(ttt % 30 == 0){
+                if(ttt % 480 == 0){
+                    accept_Z(j) = 0;
+
+                } else if( accept_Z(j) / (ttt % 480) < .4 ){
+                    pscale_Z(j) = (0.5 * 0.5) * pscale_Z(j);
+
+                } else if( accept_Z(j) / (ttt % 480) > .5 ){
+                    pscale_Z(j) = (1.5 * 1.5) * pscale_Z(j);
+                }
+            }
+        }
+    }
+    
+    List z_return = List::create(Z_i, pcov_Z, pscale_Z, log_post_prev);
+    return z_return;
+}
+
+
 
 arma::field<arma::field<arma::mat>> Omega_set(const arma::mat &G) {
     int N = G.n_cols; // dimension of adj matrix
@@ -360,7 +444,8 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
                             arma::vec t_pts, const arma::vec &id, 
                             const arma::vec &B, const arma::vec &y_2, 
                             const int n_sub, const arma::mat &cov_info) {
-    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) gamma
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
+    //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     double in_value = 0;
@@ -441,7 +526,8 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
                                    const arma::vec &y_2, const arma::vec &y_1,
                                    const arma::mat &cov_info) {
     
-    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) gamma
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
+    //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     
@@ -507,7 +593,8 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
                               const arma::vec &y_2, const arma::vec &id, 
                               const arma::vec &t, const arma::vec &y_1,
                               const arma::mat &cov_info) {
-    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, (5) gamma
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
+    //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
     
     arma::mat B_master(steps - burnin, y_2.n_elem, arma::fill::zeros);
     arma::vec prev_B(y_2.n_elem, arma::fill::ones);
@@ -548,6 +635,24 @@ double test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior
     Rcpp::Rcout << test_suc << std::endl;
     Rcpp::Rcout << B << std::endl;
     Rcpp::Rcout << C << std::endl;
+    
+    for(int j = 0; j < 20; j++) {
+        double ind_unif = arma::randu();
+        Rcpp::Rcout << ind_unif << ", log " << log(ind_unif) << std::endl;
+    }
+    
+    double inf_return = -1 * arma::datum::inf;
+    if(inf_return == -arma::datum::inf) {
+        Rcpp::Rcout << "Inf Check1" << std::endl;
+    }
+    
+    inf_return = arma::datum::inf;
+    if(inf_return == arma::datum::inf) {
+        Rcpp::Rcout << "Inf Check2" << std::endl;
+    }
+    
+    Rcpp::Rcout << 10 % 3 << std::endl;
+    Rcpp::Rcout << 9 % 3 << std::endl;
     
     return 0;
 }

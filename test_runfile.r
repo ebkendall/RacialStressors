@@ -1,9 +1,3 @@
-library(mvtnorm, quietly=T)
-library(foreach, quietly=T)
-library(doParallel, quietly=T)
-library(deSolve, quietly=T)
-library(LaplacesDemon, quietly=T)
-
 # Rcpp packages
 library(Rcpp, quietly=T)
 library(RcppArmadillo, quietly = T)

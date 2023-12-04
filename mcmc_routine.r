@@ -14,8 +14,8 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 # -----------------------------------------------------------------------------
 # The mcmc routine for samping the parameters
 # -----------------------------------------------------------------------------
-mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
-                         steps, burnin, n_sub, case_b, cov_info, simulation){
+mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
+                         burnin, n_sub, case_b, cov_info, simulation, Z_i){
 
   pars = init_par
   n = length(y_1)
@@ -23,12 +23,13 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain = matrix( 0, steps, n_par)
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
-  group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
-               c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
-               c(par_index$zeta[21:25]), c(par_index$zeta[26:30]),
+  group = list(c(par_index$zeta[1:4]), c(par_index$zeta[5:8]),
+               c(par_index$zeta[9:12]), c(par_index$zeta[13:16]),
+               c(par_index$zeta[17:20]), c(par_index$zeta[21:24]),
                c(par_index$delta), 
                c(par_index$tau2, par_index$sigma2[1]),
-               c(par_index$gamma))
+               c(par_index$gamma), c(par_index$zeta_tilde),
+               c(par_index$sigma2_zeta))
 
   names(group) = NULL
   n_group = length(group)
@@ -39,10 +40,14 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
 
   accept = rep( 0, n_group)
   EIDs = unique(id)
- 
+  
+  pcov_Z = list(); for(j in 1:length(EIDs))  pcov_Z[[j]] = diag(length(par_index$zeta_tilde))*0.001
+  pscale_Z = rep(1, length(EIDs))
+  accept_Z = rep(0, length(EIDs))
+  
   # Evaluate the log_post of the initial parameters
   log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, 
-                                         id, y_2, cov_info, case_b)
+                                         id, y_2, cov_info, case_b, Z_i)
   
   if(!is.finite(log_post_prev)){
       print("Infinite log-posterior; choose better initial parameters")
@@ -53,6 +58,15 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
   chain[1,] = pars
   for(ttt in 2:steps){
 
+    # Update the Z_i
+    cov_scale_Z_i = update_Z_i(EIDs, pars, prior_par, par_index,y_1, id, y_2, 
+                               cov_info, case_b, pcov_Z, pscale_Z, accept_Z,
+                               ttt, burnin, log_post_prev, Z_i)
+    Z_i = cov_scale_Z_i[[1]]
+    pcov_Z = cov_scale_Z_i[[2]]
+    pscale_Z = cov_scale_Z_i[[3]]
+    log_post_prev = cov_scale_Z_i[[4]]
+      
     chain[ttt,] = pars
     if(ttt %% 200 == 0) {
         print("pars")
@@ -82,7 +96,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
 
       # Compute the log density for the proposal
       log_post = fn_log_post_continuous(EIDs, proposal, prior_par,par_index,y_1,
-                                        id, y_2, cov_info, case_b)
+                                        id, y_2, cov_info, case_b, Z_i)
 
       # Only propose valid parameters during the burnin period
       if(ttt < burnin){
@@ -115,7 +129,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index,
           print(cov2cor(pcov[[j]]*pscale[j]))
 
           log_post = fn_log_post_continuous(EIDs, proposal, prior_par,par_index,
-                                            y_1, id, y_2, cov_info, case_b)
+                                            y_1, id, y_2, cov_info, case_b, Z_i)
         }
       }
       
