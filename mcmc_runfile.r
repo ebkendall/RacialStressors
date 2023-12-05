@@ -10,7 +10,7 @@ print(ind)
 # Information defining which approach to take ----------------------------------
 trial_num = 6
 simulation = F
-case_b = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 init_par = NULL
@@ -169,7 +169,7 @@ if(!simulation) {
     cov_info[,'Age'] = cov_info[,'Age'] - mean_age   
 }
 
-steps = 100000
+steps = 50000
 burnin = 5000
 
 s_time = Sys.time()

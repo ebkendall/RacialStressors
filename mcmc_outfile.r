@@ -4,9 +4,9 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 4
+trial_num = 6
 simulation = F
-case_b = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
@@ -20,15 +20,11 @@ index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 index_seeds = c(1:5)
 
-par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
-                    gamma = 38:41)
-labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
-            TeX(r'($\hat{\zeta}_{0,2}:$ Baseline: 1 $\to$ 3)'), 
-            TeX(r'($\hat{\zeta}_{0,3}:$ Baseline: 2 $\to$ 1)'),
-            TeX(r'($\hat{\zeta}_{0,4}:$ Baseline: 2 $\to$ 3)'),
-            TeX(r'($\hat{\zeta}_{0,5}:$ Baseline: 3 $\to$ 1)'),
-            TeX(r'($\hat{\zeta}_{0,6}:$ Baseline: 3 $\to$ 2)'),
-            TeX(r'($\hat{\zeta}_{1,1}:$ age: 1 $\to$ 2)'), 
+# par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
+#                     gamma = 38:41)
+par_index = list(zeta=1:24, misclass=0,delta = 25:27, tau2 = 28, sigma2 = 29:31,
+                 gamma = 32:35, zeta_tilde = 36:41, sigma2_zeta = 42:47)
+labels <- c(TeX(r'($\hat{\zeta}_{1,1}:$ age: 1 $\to$ 2)'), 
             TeX(r'($\hat{\zeta}_{1,2}:$ age: 1 $\to$ 3)'), 
             TeX(r'($\hat{\zeta}_{1,3}:$ age: 2 $\to$ 1)'),
             TeX(r'($\hat{\zeta}_{1,4}:$ age: 2 $\to$ 3)'),
@@ -57,6 +53,18 @@ labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'),
             # TeX(r'($\hat{\gamma}_0:$ baseline)'),
             TeX(r'($\hat{\gamma}_1:$ age)'), TeX(r'($\hat{\gamma}_2:$ sex1)'), 
             TeX(r'($\hat{\gamma}_3:$ yes edu)'), TeX(r'($\hat{\gamma}_4:$ DLER)'),
+            TeX(r'($\tilde{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
+            TeX(r'($\tilde{\zeta}_{0,2}:$ Baseline: 1 $\to$ 3)'), 
+            TeX(r'($\tilde{\zeta}_{0,3}:$ Baseline: 2 $\to$ 1)'),
+            TeX(r'($\tilde{\zeta}_{0,4}:$ Baseline: 2 $\to$ 3)'),
+            TeX(r'($\tilde{\zeta}_{0,5}:$ Baseline: 3 $\to$ 1)'),
+            TeX(r'($\tilde{\zeta}_{0,6}:$ Baseline: 3 $\to$ 2)'),
+            TeX(r'($\log(\sigma_{z,1}^2)$: Baseline: 1 $\to$ 2)'), 
+            TeX(r'($\log(\sigma_{z,2}^2)$: Baseline: 1 $\to$ 3)'), 
+            TeX(r'($\log(\sigma_{z,3}^2)$: Baseline: 2 $\to$ 1)'),
+            TeX(r'($\log(\sigma_{z,4}^2)$: Baseline: 2 $\to$ 3)'),
+            TeX(r'($\log(\sigma_{z,5}^2)$: Baseline: 3 $\to$ 1)'),
+            TeX(r'($\log(\sigma_{z,6}^2)$: Baseline: 3 $\to$ 2)'),
             # TeX(r'($\gamma_0 + \mu$)'), TeX(r'($\gamma_0 + \alpha$)'), TeX(r'($\gamma_0 + \beta$)'),
             # TeX(r'($\mu$)'),
             # TeX(r'($\mu + \xi$)'), 
@@ -204,7 +212,7 @@ for(r in 1:length(labels)){
         #             1.55661033186978, 1.32762953909378, 1.57489792721762)
         mle_val = c(6.1959793814433, 6.35079064587973,
                     1.55661033186978)
-        if(r > max(par_index$gamma)) {
+        if(r > max(par_index$sigma2_zeta)) {
             abline( v=mle_val[mle_ind], col='blue', lwd=2, lty=2)
             mle_ind = mle_ind + 1
         }

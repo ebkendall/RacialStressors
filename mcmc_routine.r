@@ -65,7 +65,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
     Z_i = cov_scale_Z_i[[1]]
     pcov_Z = cov_scale_Z_i[[2]]
     pscale_Z = cov_scale_Z_i[[3]]
-    log_post_prev = cov_scale_Z_i[[4]]
+    accept_Z = cov_scale_Z_i[[4]]
+    log_post_prev = cov_scale_Z_i[[5]]
       
     chain[ttt,] = pars
     if(ttt %% 200 == 0) {
@@ -201,6 +202,8 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
 
   return(list( chain=chain[burnin:steps,], 
                accept=accept/(steps-burnin),
-               pscale=pscale, pcov = pcov))
+               pscale=pscale, pcov = pcov, 
+               accept_Z = accept_Z/(steps-burnin),
+               pscale_Z=pscale_Z, pcov_Z = pcov_Z))
 }
 # -----------------------------------------------------------------------------

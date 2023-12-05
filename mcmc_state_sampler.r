@@ -13,7 +13,7 @@ set.seed(2023)
 dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
-trial_num = 4
+trial_num = 6
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -22,7 +22,7 @@ if(simulation) {
     index_seeds = c(1:5)
 } else {
     if(case_b) {
-        index_seeds = c(2,4)
+        index_seeds = c(2,3,5)
     } else {
         index_seeds = c(3)
     }
@@ -30,7 +30,7 @@ if(simulation) {
 
 
 # Load the posterior samples of the HMM parameters ----------------------------
-n_post = 10000; burnin = 5000; steps = 100000
+n_post = 10000; burnin = 5000; steps = 50000
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 par_chain = NULL
@@ -79,8 +79,10 @@ if(simulation) {
 
 n_sub = length(unique(data_format[,'ID..']))
 
-par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
-                 gamma = 38:41)
+# par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
+#                  gamma = 38:41)
+par_index = list(zeta=1:24, misclass=0,delta = 25:27, tau2 = 28, sigma2 = 29:31,
+                 gamma = 32:35, zeta_tilde = 36:41, sigma2_zeta = 42:47)
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL
 id = as.numeric(temp_data[,"ID.."])
@@ -101,12 +103,28 @@ if(!simulation) {
     cov_info[,'Age'] = cov_info[,'Age'] - mean_age   
 }
 
+pcov_Z = list(); for(j in 1:length(EIDs))  pcov_Z[[j]] = diag(length(par_index$zeta_tilde))*0.001
+pscale_Z = rep(1, length(EIDs))
+accept_Z = rep(0, length(EIDs))
+Z_i = vector(mode = 'list', length = length(EIDs))
+for(i in 1:length(EIDs)) {
+    Z_i[[i]] = matrix(colMeans(par_chain)[par_index$zeta_tilde], ncol = 1)
+}
+
+prior_mean = rep(0, ncol(par_chain))
+prior_sd = rep(20, ncol(par_chain))
+
+prior_par = list()
+prior_par[[1]] = prior_mean
+prior_par[[2]] = prior_sd
+
 new_steps =  100000
 new_burnin = 5000
 
 if(case_b) {
     B_chain = state_space_sampler_no_label(new_steps, new_burnin, EIDs, colMeans(par_chain), 
-                                           par_index, y_2, id, t, y_1, cov_info)
+                                           par_index, y_2, id, t, y_1, cov_info, case_b,
+                                           prior_par, pcov_Z, pscale_Z, accept_Z, Z_i)
 } else {
     B_chain = state_space_sampler(new_steps, new_burnin, EIDs, colMeans(par_chain), 
                                   par_index, y_1, y_2, id, t, cov_info, simulation)
