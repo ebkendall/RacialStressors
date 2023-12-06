@@ -1,14 +1,14 @@
 source("mcmc_routine.r")
 
-ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
-# args = commandArgs(TRUE)
-# ind = as.numeric(args[1]) 
+# ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
+args = commandArgs(TRUE)
+ind = as.numeric(args[1])
 
 set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 6
+trial_num = 1
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -32,39 +32,21 @@ if(simulation) {
     data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
 }
 
-init_par = c(c(matrix(c(0, 0, 0, 0,
-                        0, 0, 0, 0,
-                        0, 0, 0, 0,
-                        0, 0, 0, 0,
-                        0, 0, 0, 0,
-                        0, 0, 0, 0), ncol=4, byrow = T)),
+init_par = c(c(matrix(c(0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0), ncol=5, byrow = T)),
              c(6.411967, 0, 0), 
              log(0.51^2),  
              c(log(0.8^2), 0, 0),
-             0, 0, 0, 0,
-             rep(-4, 6),
-             rep(1, 6))
-
-# init_par = c(c(matrix(c(-4, 0, 0, 0, 0,
-#                         -4, 0, 0, 0, 0,
-#                         -4, 0, 0, 0, 0,
-#                         -4, 0, 0, 0, 0,
-#                         -4, 0, 0, 0, 0,
-#                         -4, 0, 0, 0, 0), ncol=5, byrow = T)),
-#                 c(0, 0, 0), 
-#                 log(0.51^2),  
-#                 c(log(0.8^2), 0, 0),
-#                 6.411967, 0, 0, 0, 0)
+             0, 0, 0, 0)
     
-par_index = list(zeta=1:24, misclass=0,delta = 25:27, tau2 = 28, sigma2 = 29:31,
-                 gamma = 32:35, zeta_tilde = 36:41, sigma2_zeta = 42:47)
+par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
+                 gamma = 38:41)
 
 n_sub = length(unique(data_format[,'ID..']))
-
-Z_i = vector(mode = 'list', length = n_sub)
-for(i in 1:n_sub) {
-    Z_i[[i]] = matrix(init_par[par_index$zeta_tilde], ncol = 1)
-}
 
 # Initializing the variance and mean terms ------------------------------------
 if(simulation) {
@@ -131,14 +113,14 @@ if(simulation) {
         "var: ", s3_vars[1] + s3_vars[2], '\n')
     
     init_par[par_index$tau2] = log(s1_vars[1])
+    
     init_par[par_index$sigma2[1]] = log(s1_vars[2])
     init_par[par_index$sigma2[2]] = log(s2_vars[2])
     init_par[par_index$sigma2[3]] = log(s3_vars[2])
-    # init_par[par_index$delta[1]] = 0
+    
     init_par[par_index$delta[1]] = s1_vars[3]
     init_par[par_index$delta[2]] = s2_vars[3] - s1_vars[3]
     init_par[par_index$delta[3]] = s3_vars[3] - s1_vars[3]   
-    # init_par[par_index$gamma[1]] = s1_vars[3]
 }
 # ------------------------------------------------------------------------------
 

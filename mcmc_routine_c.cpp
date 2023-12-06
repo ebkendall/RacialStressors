@@ -50,12 +50,12 @@ double D_2_calc_fix(const int state, const double y_2_k, const double tau2,
         d_2_val = arma::normpdf(y_2_k, mean_ii, sd_ii);
     } else if(state == 2) {
         double mean_ii = arma::dot(x, gamma) + delta(0) + delta(1);
-        double var_ii = tau2 + sigma_2_vec(0);
+        double var_ii = tau2 + sigma_2_vec(1);
         double sd_ii = sqrt(var_ii);
         d_2_val = arma::normpdf(y_2_k, mean_ii, sd_ii);
     } else {
         double mean_ii = arma::dot(x, gamma) + delta(0) + delta(2);
-        double var_ii = tau2 + sigma_2_vec(0);
+        double var_ii = tau2 + sigma_2_vec(2);
         double sd_ii = sqrt(var_ii);
         d_2_val = arma::normpdf(y_2_k, mean_ii, sd_ii);
     }
@@ -69,7 +69,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
                               const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_1, const arma::vec &id, 
                               const arma::vec &y_2, const arma::mat &cov_info,
-                              const bool case_b, arma::field<arma::vec> &Z_i) {
+                              const bool case_b) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
     //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
@@ -82,13 +82,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     
     // Populate the transition probability matrix (independent of time)
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta_init = arma::reshape(vec_zeta_content, 6, 4);
-    
-    // Random effect parameters for zeta baseline 
-    arma::vec zeta_0_mean = pars.elem(par_index(6) - 1);
-    arma::vec vec_zeta_0_var = pars.elem(par_index(6) - 1);
-    vec_zeta_0_var = exp(vec_zeta_0_var);
-    arma::mat zeta_0_var = arma::diagmat(vec_zeta_0_var);
+    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5);
     
     arma::vec delta = pars.elem(par_index(2) - 1);
     
@@ -115,10 +109,6 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         arma::vec y_1_i = y_1.elem(sub_ind);
         arma::vec y_2_i = y_2.elem(sub_ind);
         
-        // Adding the random effect baseline coefficient
-        arma::colvec zeta_0 = Z_i(ii);
-        arma::mat zeta = arma::join_horiz(zeta_0, zeta_init);
-
         // Evaluating the probability transition matrix
         arma::mat cov_info_i = cov_info.rows(sub_ind);
         arma::colvec z_i = {1, cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2), cov_info_i(0,3)};
@@ -144,9 +134,6 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         arma::mat P = Q.each_col() / q_row_sums;
         
         // Likelihood component from y_2
-        // double d_1 = D_2_calc_new(1, y_2_i(0), tau2, sigma_2_vec, delta, z_i, gamma);
-        // double d_2 = D_2_calc_new(2, y_2_i(0), tau2, sigma_2_vec, delta, z_i, gamma);
-        // double d_3 = D_2_calc_new(3, y_2_i(0), tau2, sigma_2_vec, delta, z_i, gamma);
         double d_1 = D_2_calc_fix(1, y_2_i(0), tau2, sigma_2_vec, delta, x_i, gamma);
         double d_2 = D_2_calc_fix(2, y_2_i(0), tau2, sigma_2_vec, delta, x_i, gamma);
         double d_3 = D_2_calc_fix(3, y_2_i(0), tau2, sigma_2_vec, delta, x_i, gamma);
@@ -171,9 +158,6 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         for(int k = 1; k < y_2_i.n_elem; k++) {
             
             // Likelihood component from y_2
-            // d_1 = D_2_calc_new(1, y_2_i(k), tau2, sigma_2_vec, delta, z_i, gamma);
-            // d_2 = D_2_calc_new(2, y_2_i(k), tau2, sigma_2_vec, delta, z_i, gamma);
-            // d_3 = D_2_calc_new(3, y_2_i(k), tau2, sigma_2_vec, delta, z_i, gamma);
             d_1 = D_2_calc_fix(1, y_2_i(k), tau2, sigma_2_vec, delta, x_i, gamma);
             d_2 = D_2_calc_fix(2, y_2_i(k), tau2, sigma_2_vec, delta, x_i, gamma);
             d_3 = D_2_calc_fix(3, y_2_i(k), tau2, sigma_2_vec, delta, x_i, gamma);
@@ -220,11 +204,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         } else if (in_vals.has_nan()) { 
             continue;
         } else {
-            // Likelihood contribution from random effect transition baseline
-            arma::vec zeta_0_like = dmvnorm(zeta_0.t(), zeta_0_mean, zeta_0_var, true);
-            double zeta_0_like_val = arma::as_scalar(zeta_0_like);
-            
-            in_vals(ii) = log(arma::accu(f_i)) + log_norm + zeta_0_like_val;
+            in_vals(ii) = log(arma::accu(f_i)) + log_norm;
         }
     }
     
@@ -251,84 +231,6 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     
     return in_value;
 }
-
-// [[Rcpp::export]]
-Rcpp::List update_Z_i(const arma::vec &EIDs, const arma::vec &pars,  
-                      const arma::field<arma::vec> &prior_par, 
-                      const arma::field<arma::uvec> &par_index,
-                      const arma::vec &y_1, const arma::vec &id, 
-                      const arma::vec &y_2, const arma::mat &cov_info,
-                      const bool case_b, arma::field<arma::mat> pcov_Z, 
-                      arma::vec pscale_Z, arma::vec accept_Z, int ttt, int burnin,
-                      double log_post_prev, arma::field<arma::vec> &Z_i) {
-    
-    for(int j=0; j < EIDs.n_elem; j++){
-        
-        arma::vec curr = Z_i(j);
-        arma::mat cov_j = pcov_Z(j);
-        double scale_j = pscale_Z(j);
-        
-        arma::mat scaled_cov = scale_j * cov_j;
-        arma::vec proposal = arma::mvnrnd(curr, scaled_cov, 1);
-        
-        arma::field<arma::vec> Z_i_temp = Z_i;
-        Z_i_temp(j) = proposal;
-        
-        double log_post = fn_log_post_continuous(EIDs,pars,prior_par,par_index,y_1,
-                                                 id, y_2, cov_info, case_b, Z_i_temp);
-        if(ttt < burnin){
-            while(log_post == -arma::datum::inf){
-                Rcpp::Rcout << "bad proposal" << std::endl;
-                
-                proposal = arma::mvnrnd(curr, scaled_cov, 1);
-                Z_i_temp(j) = proposal;
-                
-                log_post = fn_log_post_continuous(EIDs,pars,prior_par,par_index,y_1,
-                                                  id, y_2, cov_info, case_b, Z_i_temp);
-            }
-        }
-        
-        if(log_post == -arma::datum::inf) {
-            Rcpp::Rcout << "bad proposal post burnin" << std::endl;
-        }
-        
-        double ind_unif = arma::randu();
-        if( log_post - log_post_prev > log(ind_unif)){
-            log_post_prev = log_post;
-            Z_i(j) = proposal;
-            accept_Z(j) = accept_Z(j) +1;
-        }
-
-        if(ttt < burnin){
-            if(ttt == 100)  pscale_Z(j) = 1;
-
-            // if(100 <= ttt){
-            //     if(arma::accu(curr == proposal) != curr.n_elem) {
-            //         arma::mat cov_mat = arma::join_horiz(curr, proposal);
-            //         pcov_Z(j) = arma::cov(cov_mat.t());
-            //     }
-            // }
-            
-            if(ttt % 30 == 0){
-                if(ttt % 480 == 0){
-                    accept_Z(j) = 0;
-
-                } else if( accept_Z(j) / (ttt % 480) < .4 ){
-                    pscale_Z(j) = (0.5 * 0.5) * pscale_Z(j);
-
-                } else if( accept_Z(j) / (ttt % 480) > .5 ){
-                    pscale_Z(j) = (1.5 * 1.5) * pscale_Z(j);
-                }
-            }
-        }
-    }
-    
-    List z_return = List::create(Z_i, pcov_Z, pscale_Z, accept_Z, log_post_prev);
-    return z_return;
-}
-
-
-
 
 
 arma::field<arma::field<arma::mat>> Omega_set(const arma::mat &G) {
@@ -452,8 +354,7 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
                             const arma::field<arma::uvec> &par_index,
                             arma::vec t_pts, const arma::vec &id, 
                             const arma::vec &B, const arma::vec &y_2, 
-                            const int n_sub, const arma::mat &cov_info,
-                            arma::field<arma::vec> &Z_i) {
+                            const int n_sub, const arma::mat &cov_info) {
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
     //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
     // "i" is the numeric EID number
@@ -471,17 +372,7 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
     arma::mat cov_info_i = cov_info.rows(sub_ind);
 
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta_init = arma::reshape(vec_zeta_content, 6, 4);
-    
-    // Adding the random effect baseline coefficient
-    arma::colvec zeta_0 = Z_i(ii);
-    arma::mat zeta = arma::join_horiz(zeta_0, zeta_init);
-    
-    // Random effect parameters for zeta baseline 
-    arma::vec zeta_0_mean = pars.elem(par_index(6) - 1);
-    arma::vec vec_zeta_0_var = pars.elem(par_index(6) - 1);
-    vec_zeta_0_var = exp(vec_zeta_0_var);
-    arma::mat zeta_0_var = arma::diagmat(vec_zeta_0_var);
+    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5);
     
     arma::colvec z_i = {1, cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
     arma::colvec x_i = {cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
@@ -505,7 +396,6 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
             // Currently NEVER have k==0 because initial state is set to 1
             int b_k = b_i(k);
             double d_0 = D_2_calc_fix(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, gamma);
-            // D_2_calc(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, gamma);
             in_value = in_value + log(P_init[b_k - 1]) + log(d_0);
         } else{
             // Evaluating the probability transition matrix
@@ -532,15 +422,9 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
             int b_k = b_i(k);
 
             double d_k = D_2_calc_fix(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, gamma);
-            // D_2_calc(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, gamma);
             in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(d_k);
         }
     }
-    // Likelihood contribution from random effect transition baseline
-    arma::vec zeta_0_like = dmvnorm(zeta_0.t(), zeta_0_mean, zeta_0_var, true);
-    double zeta_0_like_val = arma::as_scalar(zeta_0_like);
-    
-    in_value = in_value + zeta_0_like_val;
     
     return in_value;
 }
@@ -549,8 +433,7 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
                                    const arma::field<arma::uvec> &par_index,
                                    const arma::vec &id, arma::vec &b_curr, 
                                    const arma::vec &y_2, const arma::vec &y_1,
-                                   const arma::mat &cov_info,
-                                   arma::field<arma::vec> &Z_i) {
+                                   const arma::mat &cov_info) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
     //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
@@ -592,11 +475,11 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
 
                 double log_target_prev = log_f_i_cpp_no_label(i, ii, pars, par_index,
                                                               t_pts, id, b_i, y_2,
-                                                              EIDs.n_elem, cov_info, Z_i);
+                                                              EIDs.n_elem, cov_info);
 
                 double log_target = log_f_i_cpp_no_label(i, ii, pars, par_index,
                                                          t_pts, id, pr_B, y_2,
-                                                         EIDs.n_elem, cov_info, Z_i);
+                                                         EIDs.n_elem, cov_info);
 
                 // Note that the proposal probs cancel in the MH ratio
                 double diff_check = log_target - log_target_prev;
@@ -633,25 +516,8 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
         
         Rcpp::Rcout << "---> " << ttt << std::endl;
         
-        double log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, 
-                                                      id, y_2, cov_info, case_b, Z_i);
-            
-        List cov_scale_Z_i = update_Z_i(EIDs, pars, prior_par, par_index,y_1, id, y_2,
-                                   cov_info, case_b, pcov_Z, pscale_Z, accept_Z,
-                                   ttt, burnin, log_post_prev, Z_i);
-        List Z_i_temp = cov_scale_Z_i[0];
-        List pcov_Z_temp = cov_scale_Z_i[1];
-        NumericVector pscale_Z_temp = cov_scale_Z_i[2];
-        NumericVector accept_Z_temp = cov_scale_Z_i[3];
-        
-        Z_i = as<arma::field<arma::vec>>(wrap(Z_i_temp));
-        pcov_Z = as<arma::field<arma::mat>>(wrap(pcov_Z_temp));
-        pscale_Z = as<arma::vec>(wrap(pscale_Z_temp));
-        accept_Z = as<arma::vec>(wrap(accept_Z_temp));
-        
         arma::vec curr_B = update_b_i_cpp_no_label(EIDs, pars, par_index, id, 
-                                                   prev_B, y_2, y_1, cov_info,
-                                                   Z_i);
+                                                   prev_B, y_2, y_1, cov_info);
         
         if(ttt >= burnin)  B_master.row(ttt - burnin) = curr_B.t();
         prev_B = curr_B;

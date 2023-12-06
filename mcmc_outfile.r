@@ -6,19 +6,19 @@ dir = 'Model_out/'
 # Information defining which approach to take ----------------------------------
 trial_num = 6
 simulation = F
-case_b = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-n_post = 95000
+n_post = 45000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 100000
+steps = 50000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-index_seeds = c(1:5)
+index_seeds = c(2,3,5)
 
 # par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
 #                     gamma = 38:41)

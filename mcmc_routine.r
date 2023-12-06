@@ -23,13 +23,11 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
   chain = matrix( 0, steps, n_par)
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
-  group = list(c(par_index$zeta[1:4]), c(par_index$zeta[5:8]),
-               c(par_index$zeta[9:12]), c(par_index$zeta[13:16]),
-               c(par_index$zeta[17:20]), c(par_index$zeta[21:24]),
-               c(par_index$delta), 
-               c(par_index$tau2, par_index$sigma2[1]),
-               c(par_index$gamma), c(par_index$zeta_tilde),
-               c(par_index$sigma2_zeta))
+  group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
+               c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
+               c(par_index$zeta[21:25]), c(par_index$zeta[26:30]),
+               c(par_index$delta), c(par_index$tau2, par_index$sigma2),
+               c(par_index$gamma))
 
   names(group) = NULL
   n_group = length(group)
@@ -41,13 +39,9 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
   accept = rep( 0, n_group)
   EIDs = unique(id)
   
-  pcov_Z = list(); for(j in 1:length(EIDs))  pcov_Z[[j]] = diag(length(par_index$zeta_tilde))*0.001
-  pscale_Z = rep(1, length(EIDs))
-  accept_Z = rep(0, length(EIDs))
-  
   # Evaluate the log_post of the initial parameters
   log_post_prev = fn_log_post_continuous(EIDs, pars, prior_par, par_index, y_1, 
-                                         id, y_2, cov_info, case_b, Z_i)
+                                         id, y_2, cov_info, case_b)
   
   if(!is.finite(log_post_prev)){
       print("Infinite log-posterior; choose better initial parameters")
@@ -57,16 +51,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
   # Begin the MCMC algorithm --------------------------------------------------
   chain[1,] = pars
   for(ttt in 2:steps){
-
-    # Update the Z_i
-    cov_scale_Z_i = update_Z_i(EIDs, pars, prior_par, par_index,y_1, id, y_2, 
-                               cov_info, case_b, pcov_Z, pscale_Z, accept_Z,
-                               ttt, burnin, log_post_prev, Z_i)
-    Z_i = cov_scale_Z_i[[1]]
-    pcov_Z = cov_scale_Z_i[[2]]
-    pscale_Z = cov_scale_Z_i[[3]]
-    accept_Z = cov_scale_Z_i[[4]]
-    log_post_prev = cov_scale_Z_i[[5]]
       
     chain[ttt,] = pars
     if(ttt %% 200 == 0) {
@@ -80,24 +64,19 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
       # Propose an update
       ind_j = group[[j]]
       proposal = pars
-      if(length(ind_j) > 1) {
-          proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
-                                     sigma=pcov[[j]]*pscale[j])
-          # Guarantee alpha < beta
-          if(sum(ind_j %in% par_index$delta) == 3) {
-            while(proposal[par_index$delta][2] >= proposal[par_index$delta][3]) {
+      proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
+                                 sigma=pcov[[j]]*pscale[j])
+      # Guarantee alpha < beta
+      if(sum(ind_j %in% par_index$delta) == 3) {
+          while(proposal[par_index$delta][2] >= proposal[par_index$delta][3]) {
               proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
-                                     sigma=pcov[[j]]*pscale[j])
-            }
+                                         sigma=pcov[[j]]*pscale[j])
           }
-      } else {
-          proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],
-                                   sd=sqrt(pcov[[j]]*pscale[j]))
       }
 
       # Compute the log density for the proposal
       log_post = fn_log_post_continuous(EIDs, proposal, prior_par,par_index,y_1,
-                                        id, y_2, cov_info, case_b, Z_i)
+                                        id, y_2, cov_info, case_b)
 
       # Only propose valid parameters during the burnin period
       if(ttt < burnin){
@@ -106,19 +85,15 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
           print(proposal[ind_j])
 
           proposal = pars
-          if(length(ind_j > 1)) {
-            proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
-                                         sigma=pcov[[j]]*pscale[j])
-            # Guarantee alpha < beta
-            if(sum(ind_j %in% par_index$delta) == 3) {
+          
+          proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
+                                     sigma=pcov[[j]]*pscale[j])
+          # Guarantee alpha < beta
+          if(sum(ind_j %in% par_index$delta) == 3) {
               while(proposal[par_index$delta][2] >= proposal[par_index$delta][3]) {
-                proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
-                                      sigma=pcov[[j]]*pscale[j])
+                  proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
+                                             sigma=pcov[[j]]*pscale[j])
               }
-            }
-          } else {
-              proposal[ind_j] = rnorm( n=1, mean=pars[ind_j],
-                                       sd=sqrt(pcov[[j]]*pscale[j]))
           }
 
           print("new proposal:")
@@ -130,7 +105,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
           print(cov2cor(pcov[[j]]*pscale[j]))
 
           log_post = fn_log_post_continuous(EIDs, proposal, prior_par,par_index,
-                                            y_1, id, y_2, cov_info, case_b, Z_i)
+                                            y_1, id, y_2, cov_info, case_b)
         }
       }
       
@@ -154,24 +129,13 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
         # transition.  This helps with mixing.
         if(ttt == 100)  pscale[j] = 1
         
-        if (length(ind_j) > 1) {
-            if(100 <= ttt & ttt <= 2000){
-              temp_chain = chain[1:ttt,ind_j]
-              pcov[[j]] = cov(temp_chain[ !duplicated(temp_chain),, drop=F])
-    
-            } else if(2000 < ttt){
-              temp_chain = chain[(ttt-2000):ttt,ind_j]
-              pcov[[j]] = cov(temp_chain[ !duplicated(temp_chain),, drop=F])
-            }
-        } else {
-            if(100 <= ttt & ttt <= 2000){
-                temp_chain = chain[1:ttt,ind_j]
-                pcov[[j]] = matrix(var(temp_chain[ !duplicated(temp_chain)]))
-                
-            } else if(2000 < ttt){
-                temp_chain = chain[(ttt-2000):ttt,ind_j]
-                pcov[[j]] = matrix(var(temp_chain[ !duplicated(temp_chain)]))
-            }
+        if(100 <= ttt & ttt <= 2000){
+            temp_chain = chain[1:ttt,ind_j]
+            pcov[[j]] = cov(temp_chain[ !duplicated(temp_chain),, drop=F])
+            
+        } else if(2000 < ttt){
+            temp_chain = chain[(ttt-2000):ttt,ind_j]
+            pcov[[j]] = cov(temp_chain[ !duplicated(temp_chain),, drop=F])
         }
         
         if( sum( is.na(pcov[[j]]) ) > 0)  pcov[[j]] = diag( length(ind_j) )
@@ -202,8 +166,6 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
 
   return(list( chain=chain[burnin:steps,], 
                accept=accept/(steps-burnin),
-               pscale=pscale, pcov = pcov, 
-               accept_Z = accept_Z/(steps-burnin),
-               pscale_Z=pscale_Z, pcov_Z = pcov_Z))
+               pscale=pscale, pcov = pcov))
 }
 # -----------------------------------------------------------------------------
