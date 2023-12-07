@@ -15,7 +15,7 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 # The mcmc routine for samping the parameters
 # -----------------------------------------------------------------------------
 mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
-                         burnin, n_sub, case_b, cov_info, simulation, Z_i){
+                         burnin, n_sub, case_b, cov_info, simulation){
 
   pars = init_par
   n = length(y_1)
@@ -23,11 +23,19 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
   chain = matrix( 0, steps, n_par)
   B_chain = matrix( 0, steps - burnin, length(y_1))
 
-  group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
-               c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
-               c(par_index$zeta[21:25]), c(par_index$zeta[26:30]),
-               c(par_index$delta), c(par_index$tau2, par_index$sigma2),
-               c(par_index$gamma))
+  if(case_b) {
+      group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
+                   c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
+                   c(par_index$zeta[21:25]), c(par_index$zeta[26:30]),
+                   c(par_index$delta), c(par_index$tau2, par_index$sigma2),
+                   c(par_index$gamma))
+  } else {
+      group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
+                   c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
+                   c(par_index$zeta[21:25]), c(par_index$zeta[26:30]),
+                   c(par_index$delta), c(par_index$tau2, par_index$sigma2),
+                   c(par_index$gamma), c(par_index$misclass))
+  }
 
   names(group) = NULL
   n_group = length(group)

@@ -94,7 +94,13 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     
     arma::vec gamma = pars.elem(par_index(5) - 1);
 
-    arma::mat M(3,3,arma::fill::eye);
+    // Manually populate the misclassification probabilities
+    arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
+    arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+                    {0, 1, exp(vec_misclass_content(2))},
+                    {0, exp(vec_misclass_content(3)), 1}};
+    arma::vec m_row_sums = arma::sum(M, 1);
+    M = M.each_col() / m_row_sums;
     
     omp_set_num_threads(16);
     # pragma omp parallel for
@@ -180,9 +186,9 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
             if(case_b) {
                 if(y_1_i(k) > 1) {
                     d_fill_1 = {1,1,1};
-                } else{
+                } else {
                     d_fill_1 = {1,0,0};
-                }   
+                }
             } else {
                 d_fill_1 = M.col(y_1_i(k) - 1);
             }

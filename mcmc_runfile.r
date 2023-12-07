@@ -1,14 +1,14 @@
 source("mcmc_routine.r")
 
-# ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
-args = commandArgs(TRUE)
-ind = as.numeric(args[1])
+ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
+# args = commandArgs(TRUE)
+# ind = as.numeric(args[1])
 
 set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 2
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -41,9 +41,10 @@ init_par = c(c(matrix(c(0, 0, 0, 0, 0,
              c(6.411967, 0, 0), 
              log(0.51^2),  
              c(log(0.8^2), 0, 0),
-             0, 0, 0, 0)
+             0, 0, 0, 0,
+             -1, -1, -1, -1)
     
-par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
+par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
                  gamma = 38:41)
 
 n_sub = length(unique(data_format[,'ID..']))
@@ -158,7 +159,7 @@ s_time = Sys.time()
 
 print(init_par)
 mcmc_out = mcmc_routine(y_1, y_2, t, id, init_par, prior_par, par_index,
-             steps, burnin, n_sub, case_b, cov_info, simulation, Z_i)
+             steps, burnin, n_sub, case_b, cov_info, simulation)
 
 e_time = Sys.time() - s_time; print(e_time)
 
