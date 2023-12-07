@@ -501,11 +501,7 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
                               const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_2, const arma::vec &id, 
                               const arma::vec &t, const arma::vec &y_1,
-                              const arma::mat &cov_info, const bool case_b, 
-                              const arma::field<arma::vec> &prior_par, 
-                              arma::field<arma::mat> pcov_Z, 
-                              arma::vec pscale_Z, arma::vec accept_Z, 
-                              arma::field<arma::vec> &Z_i) {
+                              const arma::mat &cov_info) {
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
     //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
     

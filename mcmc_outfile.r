@@ -4,7 +4,7 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 6
+trial_num = 1
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -18,13 +18,17 @@ steps = 50000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
-index_seeds = c(2,3,5)
+index_seeds = c(1:5)
 
-# par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
-#                     gamma = 38:41)
-par_index = list(zeta=1:24, misclass=0,delta = 25:27, tau2 = 28, sigma2 = 29:31,
-                 gamma = 32:35, zeta_tilde = 36:41, sigma2_zeta = 42:47)
-labels <- c(TeX(r'($\hat{\zeta}_{1,1}:$ age: 1 $\to$ 2)'), 
+par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
+                    gamma = 38:41)
+labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ baseline: 1 $\to$ 2)'), 
+            TeX(r'($\hat{\zeta}_{0,2}:$ baseline: 1 $\to$ 3)'), 
+            TeX(r'($\hat{\zeta}_{0,3}:$ baseline: 2 $\to$ 1)'),
+            TeX(r'($\hat{\zeta}_{0,4}:$ baseline: 2 $\to$ 3)'),
+            TeX(r'($\hat{\zeta}_{0,5}:$ baseline: 3 $\to$ 1)'),
+            TeX(r'($\hat{\zeta}_{0,6}:$ baseline: 3 $\to$ 2)'),
+            TeX(r'($\hat{\zeta}_{1,1}:$ age: 1 $\to$ 2)'), 
             TeX(r'($\hat{\zeta}_{1,2}:$ age: 1 $\to$ 3)'), 
             TeX(r'($\hat{\zeta}_{1,3}:$ age: 2 $\to$ 1)'),
             TeX(r'($\hat{\zeta}_{1,4}:$ age: 2 $\to$ 3)'),
@@ -50,27 +54,13 @@ labels <- c(TeX(r'($\hat{\zeta}_{1,1}:$ age: 1 $\to$ 2)'),
             TeX(r'($\hat{\zeta}_{4,6}:$ DLER: 3 $\to$ 2)'),
             TeX(r'($\delta_1 = \mu$)'), TeX(r'($\delta_2 = \alpha$)'), TeX(r'($\delta_3 = \beta$)'),
             TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma_1^2)$)'), TeX(r'($\log(\sigma_2^2)$)'), TeX(r'($\log(\sigma_3^2)$)'),
-            # TeX(r'($\hat{\gamma}_0:$ baseline)'),
             TeX(r'($\hat{\gamma}_1:$ age)'), TeX(r'($\hat{\gamma}_2:$ sex1)'), 
             TeX(r'($\hat{\gamma}_3:$ yes edu)'), TeX(r'($\hat{\gamma}_4:$ DLER)'),
-            TeX(r'($\tilde{\zeta}_{0,1}:$ Baseline: 1 $\to$ 2)'), 
-            TeX(r'($\tilde{\zeta}_{0,2}:$ Baseline: 1 $\to$ 3)'), 
-            TeX(r'($\tilde{\zeta}_{0,3}:$ Baseline: 2 $\to$ 1)'),
-            TeX(r'($\tilde{\zeta}_{0,4}:$ Baseline: 2 $\to$ 3)'),
-            TeX(r'($\tilde{\zeta}_{0,5}:$ Baseline: 3 $\to$ 1)'),
-            TeX(r'($\tilde{\zeta}_{0,6}:$ Baseline: 3 $\to$ 2)'),
-            TeX(r'($\log(\sigma_{z,1}^2)$: Baseline: 1 $\to$ 2)'), 
-            TeX(r'($\log(\sigma_{z,2}^2)$: Baseline: 1 $\to$ 3)'), 
-            TeX(r'($\log(\sigma_{z,3}^2)$: Baseline: 2 $\to$ 1)'),
-            TeX(r'($\log(\sigma_{z,4}^2)$: Baseline: 2 $\to$ 3)'),
-            TeX(r'($\log(\sigma_{z,5}^2)$: Baseline: 3 $\to$ 1)'),
-            TeX(r'($\log(\sigma_{z,6}^2)$: Baseline: 3 $\to$ 2)'),
-            # TeX(r'($\gamma_0 + \mu$)'), TeX(r'($\gamma_0 + \alpha$)'), TeX(r'($\gamma_0 + \beta$)'),
-            # TeX(r'($\mu$)'),
-            # TeX(r'($\mu + \xi$)'), 
             TeX(r'($\mu + \alpha$)'), TeX(r'($\mu + \beta$)'),
-            # TeX(r'($\tau^2 + \sigma_1^2$)'), TeX(r'($\tau^2 + \sigma_2^2$)'), 
-            TeX(r'($\tau^2 + \sigma_1^2$)'))
+            TeX(r'($\tau^2 + \sigma_1^2$)'), TeX(r'($\tau^2 + \sigma_2^2$)'), 
+            TeX(r'($\tau^2 + \sigma_3^2$)'), TeX(r'($\tau^2$)'),
+            TeX(r'($\sigma_1^2$)'), TeX(r'($\sigma_2^2$)'), 
+            TeX(r'($\sigma_3^2$)'))
 
 
 # -----------------------------------------------------------------------------
@@ -111,16 +101,21 @@ for(seed in index_seeds){
         main_chain = mcmc_out$chain[index_post,]
         ind_keep = seq(1, nrow(main_chain), by=100)
         
-        # mu_xi_sum = main_chain[,par_index$gamma[1]] + main_chain[,par_index$delta[1]]
         mu_alpha_sum = main_chain[,par_index$delta[1]] + main_chain[,par_index$delta[2]]
         mu_beta_sum = main_chain[,par_index$delta[1]] + main_chain[,par_index$delta[3]]
         
         tau_sig1_sum = exp(main_chain[,par_index$tau2]) + exp(main_chain[,par_index$sigma2[1]])
-        # tau_sig2_sum = exp(main_chain[,par_index$tau2]) + exp(main_chain[,par_index$sigma2[2]])
-        # tau_sig3_sum = exp(main_chain[,par_index$tau2]) + exp(main_chain[,par_index$sigma2[3]])
-        # main_chain = cbind(main_chain, cbind(mu_xi_sum, cbind(mu_alpha_sum, 
-        #                 cbind(mu_beta_sum, cbind(tau_sig1_sum, cbind(tau_sig2_sum, tau_sig3_sum))))))
-        main_chain = cbind(main_chain, mu_alpha_sum, mu_beta_sum, tau_sig1_sum)
+        tau_sig2_sum = exp(main_chain[,par_index$tau2]) + exp(main_chain[,par_index$sigma2[2]])
+        tau_sig3_sum = exp(main_chain[,par_index$tau2]) + exp(main_chain[,par_index$sigma2[3]])
+        
+        tau2 = exp(main_chain[,par_index$tau2])
+        sig1 = exp(main_chain[,par_index$sigma2[1]])
+        sig2 = exp(main_chain[,par_index$sigma2[2]])
+        sig3 = exp(main_chain[,par_index$sigma2[3]])
+
+        main_chain = cbind(main_chain, mu_alpha_sum, mu_beta_sum, 
+                           tau_sig1_sum, tau_sig2_sum, tau_sig3_sum,tau2,
+                           sig1, sig2, sig3)
 
       	chain_list[[ind]] = main_chain[ind_keep, ]
     	post_means[ind,] <- colMeans(main_chain[ind_keep, ])
@@ -201,18 +196,9 @@ for(r in 1:length(labels)){
     if(simulation) {
         abline( v=true_par[r], col='green', lwd=2, lty=2)
     } else {
-        # old_ss_val = c(6.4557765, -0.2582171, -0.1166778, 
-        #             -1.0842574,  0.1973717, -0.0714276, 0.2777276)
-        # if(r %in% c(par_index$delta, par_index$tau2, par_index$sigma2, par_index$mu)) {
-        #     abline( v=old_ss_val[mle_ind], col='blue', lwd=2, lty=2)
-        #     mle_ind = mle_ind + 1
-        # }
-        # if(r == length(labels)) abline( v=log(1.227959) + log(0.3395152),  col='blue', lwd=2, lty=2)
-        # mle_val = c(6.46408805031447, 6.1959793814433, 6.35079064587973,
-        #             1.55661033186978, 1.32762953909378, 1.57489792721762)
         mle_val = c(6.1959793814433, 6.35079064587973,
-                    1.55661033186978)
-        if(r > max(par_index$sigma2_zeta)) {
+                    1.55661033186978, 1.32762953909378, 1.57489792721762)
+        if(r > max(par_index$gamma)) {
             abline( v=mle_val[mle_ind], col='blue', lwd=2, lty=2)
             mle_ind = mle_ind + 1
         }
