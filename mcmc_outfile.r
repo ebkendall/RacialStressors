@@ -4,9 +4,9 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 2
 simulation = F
-case_b = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
@@ -20,8 +20,8 @@ index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 index_seeds = c(1:5)
 
-par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
-                    gamma = 38:41)
+par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
+                 gamma = 38:41)
 labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ baseline: 1 $\to$ 2)'), 
             TeX(r'($\hat{\zeta}_{0,2}:$ baseline: 1 $\to$ 3)'), 
             TeX(r'($\hat{\zeta}_{0,3}:$ baseline: 2 $\to$ 1)'),
@@ -56,6 +56,8 @@ labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ baseline: 1 $\to$ 2)'),
             TeX(r'($\log(\tau^2)$)'), TeX(r'($\log(\sigma_1^2)$)'), TeX(r'($\log(\sigma_2^2)$)'), TeX(r'($\log(\sigma_3^2)$)'),
             TeX(r'($\hat{\gamma}_1:$ age)'), TeX(r'($\hat{\gamma}_2:$ sex1)'), 
             TeX(r'($\hat{\gamma}_3:$ yes edu)'), TeX(r'($\hat{\gamma}_4:$ DLER)'),
+            TeX(r'(logit P(obs S2 | true S1))'), TeX(r'(logit P(obs S3 | true S1))'),
+            TeX(r'(logit P(obs S3 | true S2))'), TeX(r'(logit P(obs S2 | true S3))'),
             TeX(r'($\mu + \alpha$)'), TeX(r'($\mu + \beta$)'),
             TeX(r'($\tau^2 + \sigma_1^2$)'), TeX(r'($\tau^2 + \sigma_2^2$)'), 
             TeX(r'($\tau^2 + \sigma_3^2$)'), TeX(r'($\tau^2$)'),
@@ -198,7 +200,7 @@ for(r in 1:length(labels)){
     } else {
         mle_val = c(6.1959793814433, 6.35079064587973,
                     1.55661033186978, 1.32762953909378, 1.57489792721762)
-        if(r > max(par_index$gamma)) {
+        if(r > max(par_index$misclass)) {
             abline( v=mle_val[mle_ind], col='blue', lwd=2, lty=2)
             mle_ind = mle_ind + 1
         }

@@ -1,43 +1,16 @@
 #include <RcppDist.h>
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 
-#include <omp.h>
-// [[Rcpp::plugins(openmp)]]
+// #include <omp.h>
+// // [[Rcpp::plugins(openmp)]]
 
 using namespace Rcpp;
-
-const double pi = 3.14159265358979323846;
 
 const arma::mat adj_mat = { {1, 1, 1},
                             {1, 1, 1},
                             {1, 1, 1}};
 
 //  FUNCTIONS: ---------------------------------------------------------------
-double D_2_calc_new(const int state, const double y_2_k, const double tau2, 
-                    const arma::vec sigma_2_vec, const arma::vec delta,
-                    const arma::vec x, const arma::vec gamma) {
-    double d_2_val = 0;
-
-    if(state == 1) {
-        double mean_ii = arma::dot(x, gamma) + delta(0);
-        double var_ii = tau2 + sigma_2_vec(0);
-        double sd_ii = sqrt(var_ii);
-        d_2_val = arma::normpdf(y_2_k, mean_ii, sd_ii);
-    } else if(state == 2) {
-        double mean_ii = arma::dot(x, gamma) + delta(1);
-        double var_ii = tau2 + sigma_2_vec(1);
-        double sd_ii = sqrt(var_ii);
-        d_2_val = arma::normpdf(y_2_k, mean_ii, sd_ii);
-    } else {
-        double mean_ii = arma::dot(x, gamma) + delta(2);
-        double var_ii = tau2 + sigma_2_vec(2);
-        double sd_ii = sqrt(var_ii);
-        d_2_val = arma::normpdf(y_2_k, mean_ii, sd_ii);
-    }
-    
-    return d_2_val;
-}
-
 double D_2_calc_fix(const int state, const double y_2_k, const double tau2, 
                     const arma::vec sigma_2_vec, const arma::vec delta,
                     const arma::vec x, const arma::vec gamma) {
@@ -102,8 +75,8 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     arma::vec m_row_sums = arma::sum(M, 1);
     M = M.each_col() / m_row_sums;
     
-    omp_set_num_threads(16);
-    # pragma omp parallel for
+    // omp_set_num_threads(16);
+    // # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
         
@@ -360,7 +333,8 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
                             const arma::field<arma::uvec> &par_index,
                             arma::vec t_pts, const arma::vec &id, 
                             const arma::vec &B, const arma::vec &y_2, 
-                            const int n_sub, const arma::mat &cov_info) {
+                            const int n_sub, const arma::mat &cov_info,
+                            const bool case_b, const arma::vec &y_1) {
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
     //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
     // "i" is the numeric EID number
@@ -369,11 +343,11 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
     
     arma::vec eids = id;
     arma::uvec sub_ind = arma::find(eids == i);
-    int n_i = sub_ind.max() - sub_ind.min() + 1;
     
     // Subsetting the data to relate only to this participant
     arma::mat b_i = B;
     arma::mat y_2_sub = y_2.elem(sub_ind);
+    arma::vec y_1_sub = y_1.elem(sub_ind);
 
     arma::mat cov_info_i = cov_info.rows(sub_ind);
 
@@ -395,14 +369,26 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
     
     arma::vec gamma = pars.elem(par_index(5) - 1);
     
+    // Manually populate the misclassification probabilities
+    arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
+    arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+                    {0, 1, exp(vec_misclass_content(2))},
+                    {0, exp(vec_misclass_content(3)), 1}};
+    arma::vec m_row_sums = arma::sum(M, 1);
+    M = M.each_col() / m_row_sums;
+    
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     for(int w=0; w < t_pts.n_elem; ++w){
         int k = t_pts(w);
         if(k==0){
             // Currently NEVER have k==0 because initial state is set to 1
             int b_k = b_i(k);
+            int y_1_k = y_1_sub(k);
             double d_0 = D_2_calc_fix(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, gamma);
             in_value = in_value + log(P_init[b_k - 1]) + log(d_0);
+            if(!case_b) {
+                in_value = in_value + log(M(b_k - 1, y_1_k-1));
+            }
         } else{
             // Evaluating the probability transition matrix
             double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
@@ -426,9 +412,13 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
             
             int b_k_1 = b_i(k-1);
             int b_k = b_i(k);
+            int y_1_k = y_1_sub(k);
 
             double d_k = D_2_calc_fix(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, gamma);
             in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(d_k);
+            if(!case_b) {
+                in_value = in_value + log(M(b_k - 1, y_1_k-1));
+            }
         }
     }
     
@@ -439,7 +429,7 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
                                    const arma::field<arma::uvec> &par_index,
                                    const arma::vec &id, arma::vec &b_curr, 
                                    const arma::vec &y_2, const arma::vec &y_1,
-                                   const arma::mat &cov_info) {
+                                   const arma::mat &cov_info, const bool case_b) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
     //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
@@ -448,8 +438,8 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
     
     arma::vec B_return(b_curr.n_elem, arma::fill::zeros);
     
-    omp_set_num_threads(16);
-    # pragma omp parallel for
+    // omp_set_num_threads(16);
+    // # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
         arma::uvec sub_ind = arma::find(id == i);
@@ -481,11 +471,13 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
 
                 double log_target_prev = log_f_i_cpp_no_label(i, ii, pars, par_index,
                                                               t_pts, id, b_i, y_2,
-                                                              EIDs.n_elem, cov_info);
+                                                              EIDs.n_elem, cov_info,
+                                                              case_b, y_1);
 
                 double log_target = log_f_i_cpp_no_label(i, ii, pars, par_index,
                                                          t_pts, id, pr_B, y_2,
-                                                         EIDs.n_elem, cov_info);
+                                                         EIDs.n_elem, cov_info,
+                                                         case_b, y_1);
 
                 // Note that the proposal probs cancel in the MH ratio
                 double diff_check = log_target - log_target_prev;
@@ -507,7 +499,7 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
                               const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_2, const arma::vec &id, 
                               const arma::vec &t, const arma::vec &y_1,
-                              const arma::mat &cov_info) {
+                              const arma::mat &cov_info, const bool case_b) {
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
     //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
     
@@ -519,7 +511,8 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
         Rcpp::Rcout << "---> " << ttt << std::endl;
         
         arma::vec curr_B = update_b_i_cpp_no_label(EIDs, pars, par_index, id, 
-                                                   prev_B, y_2, y_1, cov_info);
+                                                   prev_B, y_2, y_1, cov_info,
+                                                   case_b);
         
         if(ttt >= burnin)  B_master.row(ttt - burnin) = curr_B.t();
         prev_B = curr_B;
@@ -528,6 +521,126 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
     return B_master;
 }
 
+// [[Rcpp::export]]
+arma::field<arma::vec> viterbi_alg(const arma::vec &EIDs, const arma::vec &pars,
+                                   const arma::field<arma::uvec> &par_index,
+                                   const arma::vec &id, const arma::vec &y_2, 
+                                   const arma::vec &y_1,const arma::mat &cov_info, 
+                                   const bool case_b) {
+
+    arma::vec state_vec = {1,2,3};
+    
+    arma::field<arma::vec> most_likely_ss(EIDs.n_elem);
+    
+    arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
+    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5);
+    
+    arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
+    arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+                    {0, 1, exp(vec_misclass_content(2))},
+                    {0, exp(vec_misclass_content(3)), 1}};
+    arma::vec m_row_sums = arma::sum(M, 1);
+    M = M.each_col() / m_row_sums;
+    
+    arma::vec delta = pars.elem(par_index(2) - 1);
+    
+    double log_tau2 = arma::as_scalar(pars.elem(par_index(3) - 1));
+    double tau2 = exp(log_tau2);
+    
+    arma::vec log_sigma2 = pars.elem(par_index(4) - 1);
+    arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), 
+                             exp(log_sigma2(2))};
+    
+    arma::vec gamma = pars.elem(par_index(5) - 1);
+    
+    for (int ii = 0; ii < EIDs.n_elem; ii++) {
+        int i = EIDs(ii);
+        arma::uvec sub_ind = arma::find(id == i);
+        int n_i = sub_ind.n_elem; 
+
+        arma::mat T_1(3, n_i, arma::fill::zeros);
+        arma::mat T_2(3, n_i, arma::fill::zeros);
+        
+        arma::vec y_1_i = y_1.elem(sub_ind);
+        arma::vec y_2_i = y_2.elem(sub_ind);
+        
+        // Evaluating the probability transition matrix
+        arma::mat cov_info_i = cov_info.rows(sub_ind);
+        arma::colvec z_i = {1, cov_info_i(0,0), cov_info_i(0,1), 
+                            cov_info_i(0,2), cov_info_i(0,3)};
+        arma::colvec x_i = {cov_info_i(0,0), cov_info_i(0,1), 
+                            cov_info_i(0,2), cov_info_i(0,3)};
+        
+        double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
+        double q1 = exp(q1_sub);
+        double q2_sub = arma::as_scalar(zeta.row(1) * z_i);
+        double q2 = exp(q2_sub);
+        double q3_sub = arma::as_scalar(zeta.row(2) * z_i);
+        double q3 = exp(q3_sub);
+        double q4_sub = arma::as_scalar(zeta.row(3) * z_i);
+        double q4 = exp(q4_sub);
+        double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
+        double q5 = exp(q5_sub);
+        double q6_sub = arma::as_scalar(zeta.row(5) * z_i);
+        double q6 = exp(q6_sub);
+        
+        arma::mat Q = { {  1,  q1,  q2},
+                        { q3,   1,  q4},
+                        { q5,  q6,   1}};
+        arma::vec q_row_sums = arma::sum(Q, 1);
+        arma::mat P = Q.each_col() / q_row_sums;
+
+        for (int j = 0; j < n_i; j++) {
+            // State 1 is observed without error and so initial state prob
+            // is pi = (1,0,0)
+            if((y_1_i(j) == 1) && (y_1_i(j+1) != 1)) {
+                T_1(0,j) = D_2_calc_fix(y_1_i(j), y_2_i(j), tau2, sigma_2_vec, 
+                                      delta, x_i, gamma);
+                if(!case_b) T_1(0,j) = T_1(0,j) * M(0, y_1_i(j)-1);
+            }
+            
+            if(y_1_i(j) > 1) {
+                for(int s = 0; s < 3; s++) {
+                    int state_s = s+1;
+                    double B_s_j = D_2_calc_fix(state_s, y_2_i(j), tau2, 
+                                                sigma_2_vec, delta, x_i, gamma);
+                    if(!case_b) B_s_j = B_s_j * M(s, y_1_i(j)-1);
+                    
+                    arma::uword curr_ind;
+                    double curr_max;
+                    
+                    arma::vec T_temp(3);
+                    
+                    for(int k = 0; k < 3; k++) {
+                        T_temp(k) = T_1(k, j-1) * P(k,s) * B_s_j;
+                        if(k==0 || (T_temp(k) > curr_max)) {
+                            curr_max = T_temp(k);
+                            curr_ind = k;
+                        }
+                    }
+                    T_1(s, j) = curr_max;
+                    T_2(s, j) = curr_ind;
+                }
+            }
+        }
+        
+        arma::vec z_t(n_i, arma::fill::zeros);
+        arma::vec x_t(n_i, arma::fill::zeros);
+        
+        arma::uword ind_t = T_1.col(n_i - 1).index_max();
+        z_t(n_i - 1) = ind_t;
+        x_t(n_i - 1) = state_vec(ind_t);
+        
+        for(int j = n_i-1; j > 0; j--) {
+            z_t(j-1) = T_2(z_t(j), j);
+            x_t(j-1) = state_vec(z_t(j-1));
+        }
+        
+        most_likely_ss(ii) = x_t;
+    }
+    
+    return most_likely_ss;
+}
 
 // [[Rcpp::export]]
 double test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_par, 

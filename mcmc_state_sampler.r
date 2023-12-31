@@ -13,20 +13,12 @@ set.seed(2023)
 dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 2
 simulation = F
 case_b = T
-# ------------------------------------------------------------------------------
 
-if(simulation) {
-    index_seeds = c(1:5)
-} else {
-    if(case_b) {
-        index_seeds = c(3:5)
-    } else {
-        index_seeds = c(3)
-    }
-}
+index_seeds = c(1:5)
+# ------------------------------------------------------------------------------
 
 
 # Load the posterior samples of the HMM parameters ----------------------------
@@ -79,7 +71,7 @@ if(simulation) {
 
 n_sub = length(unique(data_format[,'ID..']))
 
-par_index = list(zeta=1:30, misclass=0,delta = 31:33, tau2 = 34, sigma2 = 35:37,
+par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
                  gamma = 38:41)
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL
@@ -111,27 +103,32 @@ prior_par[[2]] = prior_sd
 new_steps =  100000
 new_burnin = 5000
 
-if(case_b) {
-    B_chain = state_space_sampler_no_label(new_steps, new_burnin, EIDs, apply(par_chain, 2, median), 
-                                           par_index, y_2, id, t, y_1, cov_info)
-} else {
-    B_chain = state_space_sampler(new_steps, new_burnin, EIDs, apply(par_chain, 2, median), 
-                                  par_index, y_1, y_2, id, t, cov_info, simulation)
-}
+B_chain_obs = vector(mode = 'list', length = length(EIDs))
+for(i in 1:length(EIDs)) B_chain_obs[[i]] = y_1[id == EIDs[i]]
+
+B_chain_MLE = viterbi_alg(EIDs, apply(par_chain, 2, median), par_index, id, y_2, y_1, cov_info, case_b)
+
+B_chain = state_space_sampler_no_label(new_steps, new_burnin, EIDs, apply(par_chain, 2, median), 
+                                       par_index, y_2, id, t, y_1, cov_info, case_b)
 
 file_name = NULL
 if(simulation) {
     if(case_b) {
         file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30b.rda")
+        file_name2 = paste0("Model_out/B_chain_", trial_num, "_sim_30b_MLE.rda")
     } else {
         file_name = paste0("Model_out/B_chain_", trial_num, "_sim_30.rda")   
+        file_name2 = paste0("Model_out/B_chain_", trial_num, "_sim_30_MLE.rda")  
     }
 } else {
     if(case_b) {
         file_name = paste0("Model_out/B_chain_", trial_num, "_30b_s1.rda")
+        file_name2 = paste0("Model_out/B_chain_", trial_num, "_30b_s1_MLE.rda")
     } else {
         file_name = paste0("Model_out/B_chain_", trial_num, "_30.rda")   
+        file_name2 = paste0("Model_out/B_chain_", trial_num, "_30_MLE.rda")   
     }
 }
 save(B_chain, file = file_name)
+save(B_chain_MLE, file = file_name2)
 # -----------------------------------------------------------------------------
