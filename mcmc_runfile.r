@@ -8,7 +8,7 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 4 # trial 3 is full model (updated mean age), trial 4 removes 1->3 
+trial_num = 5 # trial 3 is full model (updated mean age), trial 4 removes 1->3 
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -36,7 +36,7 @@ init_par = c(c(matrix(c(0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0,
-                        # 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0,
                         0, 0, 0, 0, 0), ncol=5, byrow = T)),
              c(6.411967, 0, 0), 
              log(0.51^2),  
@@ -44,10 +44,10 @@ init_par = c(c(matrix(c(0, 0, 0, 0, 0,
              0, 0, 0, 0,
              -1, -1, -1, -1)
     
-# par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
-#                  gamma = 38:41)
-par_index = list(zeta=1:25, misclass=37:40, delta = 26:28, tau2 = 29, sigma2 = 30:32,
-                 gamma = 33:36)
+par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
+                 gamma = 38:41)
+# par_index = list(zeta=1:25, misclass=37:40, delta = 26:28, tau2 = 29, sigma2 = 30:32,
+#                  gamma = 33:36)
 
 n_sub = length(unique(data_format[,'ID..']))
 
