@@ -26,7 +26,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
   if(case_b) {
       group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
-                   c(par_index$zeta[21:25]), c(par_index$zeta[26:30]),
+                   c(par_index$zeta[21:25]), #c(par_index$zeta[26:30]),
                    c(par_index$delta), c(par_index$tau2, par_index$sigma2),
                    c(par_index$gamma))
   } else {
@@ -103,22 +103,14 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
                                              sigma=pcov[[j]]*pscale[j])
               }
           }
-
-          print("new proposal:")
-          print(proposal[ind_j])
-          print('mean')
-          print(pars[ind_j])
-          print('cov and corr')
-          print(pcov[[j]]*pscale[j])
-          print(cov2cor(pcov[[j]]*pscale[j]))
-
+          
           log_post = fn_log_post_continuous(EIDs, proposal, prior_par,par_index,
                                             y_1, id, y_2, cov_info, case_b)
         }
       }
       
+      # Ensuring that we do not have problems from C++
       if(!is.finite(log_post) | is.nan(log_post)) {
-          # Ensuring that we do not have problems from C++
           print(paste0("bad proposal post burnin: ", log_post))
       }
       

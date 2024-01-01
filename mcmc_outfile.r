@@ -4,9 +4,9 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 2
+trial_num = 3
 simulation = F
-case_b = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
@@ -71,6 +71,8 @@ labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ baseline: 1 $\to$ 2)'),
 chain_list = vector(mode = "list", length = length(index_seeds))
 post_means = matrix(nrow = length(index_seeds), ncol = length(labels))
 
+load(paste0('Data/mean_age_', trial_num, '.rda'))
+
 ind = 0
 
 for(seed in index_seeds){
@@ -96,12 +98,17 @@ for(seed in index_seeds){
         ind = ind + 1
 
         print(mcmc_out$accept)
-	    # mcmc_out$chain[,c(par_index$tau2, par_index$sigma2)] = 
-	    #     exp(mcmc_out$chain[,c(par_index$tau2, par_index$sigma2)])
 
         # Thinning the chain
         main_chain = mcmc_out$chain[index_post,]
         ind_keep = seq(1, nrow(main_chain), by=100)
+        
+        # # Un-doing the centering
+        # main_chain[,par_index$zeta[1:6]] = main_chain[,par_index$zeta[1:6]] +
+        #     mean_age * main_chain[,par_index$zeta[7:12]]
+        # main_chain[,par_index$delta[1]] = main_chain[,par_index$delta[1]] +
+        #     mean_age * main_chain[,par_index$gamma[1]]
+        
         
         mu_alpha_sum = main_chain[,par_index$delta[1]] + main_chain[,par_index$delta[2]]
         mu_beta_sum = main_chain[,par_index$delta[1]] + main_chain[,par_index$delta[3]]

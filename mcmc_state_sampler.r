@@ -13,7 +13,7 @@ set.seed(2023)
 dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
-trial_num = 2
+trial_num = 3
 simulation = F
 case_b = T
 
@@ -22,7 +22,7 @@ index_seeds = c(1:5)
 
 
 # Load the posterior samples of the HMM parameters ----------------------------
-n_post = 10000; burnin = 5000; steps = 50000
+n_post = 45000; burnin = 5000; steps = 50000
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 par_chain = NULL
@@ -45,9 +45,8 @@ for (seed in index_seeds) {
     }
     
     load(file_name)
-    
     main_chain = mcmc_out$chain[index_post,]
-    ind_keep = seq(1, nrow(main_chain), by=10)
+    ind_keep = seq(1, nrow(main_chain), by=100)
     
     par_chain_i = main_chain[ind_keep, ]
     par_chain   = rbind(par_chain, par_chain_i)
@@ -89,7 +88,7 @@ cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
 
 # Centering age
 if(!simulation) {
-    mean_age = mean(cov_info[,'Age'])
+    load(paste0('Data/mean_age_', trial_num, '.rda'))
     cov_info[,'Age'] = cov_info[,'Age'] - mean_age   
 }
 

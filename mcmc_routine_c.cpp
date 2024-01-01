@@ -1,12 +1,12 @@
 #include <RcppDist.h>
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 
-// #include <omp.h>
-// // [[Rcpp::plugins(openmp)]]
+#include <omp.h>
+// [[Rcpp::plugins(openmp)]]
 
 using namespace Rcpp;
 
-const arma::mat adj_mat = { {1, 1, 1},
+const arma::mat adj_mat = { {1, 1, 0},
                             {1, 1, 1},
                             {1, 1, 1}};
 
@@ -55,7 +55,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     
     // Populate the transition probability matrix (independent of time)
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5);
+    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 5); // ************************
     
     arma::vec delta = pars.elem(par_index(2) - 1);
     
@@ -75,8 +75,8 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     arma::vec m_row_sums = arma::sum(M, 1);
     M = M.each_col() / m_row_sums;
     
-    // omp_set_num_threads(16);
-    // # pragma omp parallel for
+    omp_set_num_threads(16);
+    # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
         
@@ -103,12 +103,15 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         double q4 = exp(q4_sub);
         double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
         double q5 = exp(q5_sub);
-        double q6_sub = arma::as_scalar(zeta.row(5) * z_i);
-        double q6 = exp(q6_sub);
+        // double q6_sub = arma::as_scalar(zeta.row(5) * z_i); *********************
+        // double q6 = exp(q6_sub);
         
-        arma::mat Q = { {  1,  q1,  q2},
-                        { q3,   1,  q4},
-                        { q5,  q6,   1}};
+        // arma::mat Q = { {  1,  q1,  q2},
+        //                 { q3,   1,  q4},
+        //                 { q5,  q6,   1}}; ***************************************
+        arma::mat Q = { {  1,  q1,   0},
+                        { q2,   1,  q3},
+                        { q4,  q5,   1}};
         arma::vec q_row_sums = arma::sum(Q, 1);
         arma::mat P = Q.each_col() / q_row_sums;
         
@@ -352,7 +355,7 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
     arma::mat cov_info_i = cov_info.rows(sub_ind);
 
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5);
+    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 5); // ********************
     
     arma::colvec z_i = {1, cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
     arma::colvec x_i = {cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
@@ -401,12 +404,15 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
             double q4 = exp(q4_sub);
             double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
             double q5 = exp(q5_sub);
-            double q6_sub = arma::as_scalar(zeta.row(5) * z_i);
-            double q6 = exp(q6_sub);
+            // double q6_sub = arma::as_scalar(zeta.row(5) * z_i); *********************
+            // double q6 = exp(q6_sub);
             
-            arma::mat Q = { {  1,  q1,  q2},
-                            { q3,   1,  q4},
-                            { q5,  q6,   1}};
+            // arma::mat Q = { {  1,  q1,  q2},
+            //                 { q3,   1,  q4},
+            //                 { q5,  q6,   1}}; ***************************************
+            arma::mat Q = { {  1,  q1,   0},
+                            { q2,   1,  q3},
+                            { q4,  q5,   1}};
             arma::vec q_row_sums = arma::sum(Q, 1);
             arma::mat P_i = Q.each_col() / q_row_sums;
             
@@ -438,8 +444,8 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
     
     arma::vec B_return(b_curr.n_elem, arma::fill::zeros);
     
-    // omp_set_num_threads(16);
-    // # pragma omp parallel for
+    omp_set_num_threads(16);
+    # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
         arma::uvec sub_ind = arma::find(id == i);
@@ -533,7 +539,7 @@ arma::field<arma::vec> viterbi_alg(const arma::vec &EIDs, const arma::vec &pars,
     arma::field<arma::vec> most_likely_ss(EIDs.n_elem);
     
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5);
+    arma::mat zeta = arma::reshape(vec_zeta_content, 5, 5); // *************************
     
     arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
     arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
@@ -581,12 +587,15 @@ arma::field<arma::vec> viterbi_alg(const arma::vec &EIDs, const arma::vec &pars,
         double q4 = exp(q4_sub);
         double q5_sub = arma::as_scalar(zeta.row(4) * z_i);
         double q5 = exp(q5_sub);
-        double q6_sub = arma::as_scalar(zeta.row(5) * z_i);
-        double q6 = exp(q6_sub);
+        // double q6_sub = arma::as_scalar(zeta.row(5) * z_i); *********************
+        // double q6 = exp(q6_sub);
         
-        arma::mat Q = { {  1,  q1,  q2},
-                        { q3,   1,  q4},
-                        { q5,  q6,   1}};
+        // arma::mat Q = { {  1,  q1,  q2},
+        //                 { q3,   1,  q4},
+        //                 { q5,  q6,   1}}; ***************************************
+        arma::mat Q = { {  1,  q1,   0},
+                        { q2,   1,  q3},
+                        { q4,  q5,   1}};
         arma::vec q_row_sums = arma::sum(Q, 1);
         arma::mat P = Q.each_col() / q_row_sums;
 

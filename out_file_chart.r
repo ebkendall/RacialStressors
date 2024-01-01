@@ -2,7 +2,7 @@
 library(plotrix)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 2
+trial_num = 3
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
