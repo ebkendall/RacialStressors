@@ -1,8 +1,8 @@
 #include <RcppDist.h>
 // [[Rcpp::depends(RcppArmadillo, RcppDist)]]
 
-#include <omp.h>
-// [[Rcpp::plugins(openmp)]]
+// #include <omp.h>
+// // [[Rcpp::plugins(openmp)]]
 
 using namespace Rcpp;
 
@@ -75,8 +75,8 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     arma::vec m_row_sums = arma::sum(M, 1);
     M = M.each_col() / m_row_sums;
     
-    omp_set_num_threads(16);
-    # pragma omp parallel for
+    // omp_set_num_threads(16);
+    // # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
         
@@ -444,8 +444,8 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
     
     arma::vec B_return(b_curr.n_elem, arma::fill::zeros);
     
-    omp_set_num_threads(16);
-    # pragma omp parallel for
+    // omp_set_num_threads(16);
+    // # pragma omp parallel for
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
         arma::uvec sub_ind = arma::find(id == i);

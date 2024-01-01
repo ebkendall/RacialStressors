@@ -13,7 +13,7 @@ set.seed(2023)
 dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
-trial_num = 3
+trial_num = 4
 simulation = F
 case_b = T
 
@@ -70,8 +70,10 @@ if(simulation) {
 
 n_sub = length(unique(data_format[,'ID..']))
 
-par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
-                 gamma = 38:41)
+# par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
+#                  gamma = 38:41)
+par_index = list(zeta=1:25, misclass=37:40, delta = 26:28, tau2 = 29, sigma2 = 30:32,
+                 gamma = 33:36)
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL
 id = as.numeric(temp_data[,"ID.."])
