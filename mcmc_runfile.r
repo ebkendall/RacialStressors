@@ -46,8 +46,6 @@ init_par = c(c(matrix(c(0, 0, 0, 0, 0,
     
 par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
                  gamma = 38:41)
-# par_index = list(zeta=1:25, misclass=37:40, delta = 26:28, tau2 = 29, sigma2 = 30:32,
-#                  gamma = 33:36)
 
 n_sub = length(unique(data_format[,'ID..']))
 
@@ -160,7 +158,7 @@ if(!simulation) {
     save(mean_age, file = paste0('Data/mean_age_', trial_num, '.rda'))
 }
 
-steps = 50000
+steps = 500000
 burnin = 5000
 
 s_time = Sys.time()

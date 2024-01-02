@@ -13,7 +13,7 @@ set.seed(2023)
 dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
-trial_num = 4
+trial_num = 5
 simulation = F
 case_b = T
 
@@ -22,7 +22,7 @@ index_seeds = c(1:5)
 
 
 # Load the posterior samples of the HMM parameters ----------------------------
-n_post = 45000; burnin = 5000; steps = 50000
+n_post = 495000; burnin = 5000; steps = 500000
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
 par_chain = NULL
@@ -101,7 +101,7 @@ prior_par = list()
 prior_par[[1]] = prior_mean
 prior_par[[2]] = prior_sd
 
-new_steps =  100000
+new_steps =  500000
 new_burnin = 5000
 
 B_chain_obs = vector(mode = 'list', length = length(EIDs))
