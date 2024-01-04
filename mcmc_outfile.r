@@ -73,7 +73,7 @@ labels <- c(TeX(r'($\hat{\zeta}_{0,1}:$ baseline: 1 $\to$ 2)'),
 chain_list = vector(mode = "list", length = length(index_seeds))
 post_means = matrix(nrow = length(index_seeds), ncol = length(labels))
 
-load(paste0('Data/mean_age_', trial_num, '.rda'))
+# load(paste0('Data/mean_age_', trial_num, '.rda'))
 
 ind = 0
 
@@ -215,5 +215,8 @@ for(r in 1:length(labels)){
         }
     }
 }
+
+print(par_mean)
+save(par_mean, file = paste0('Model_out/par_mean', trial_num, '.rda'))
 
 dev.off()

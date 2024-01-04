@@ -101,7 +101,7 @@ prior_par = list()
 prior_par[[1]] = prior_mean
 prior_par[[2]] = prior_sd
 
-new_steps =  500000
+new_steps =  100000
 new_burnin = 5000
 
 B_chain_obs = vector(mode = 'list', length = length(EIDs))
@@ -109,7 +109,7 @@ for(i in 1:length(EIDs)) B_chain_obs[[i]] = y_1[id == EIDs[i]]
 
 B_chain_MLE = viterbi_alg(EIDs, apply(par_chain, 2, median), par_index, id, y_2, y_1, cov_info, case_b)
 
-B_chain = state_space_sampler_no_label(new_steps, new_burnin, EIDs, apply(par_chain, 2, median), 
+B_chain = state_space_sampler_no_label(new_steps, new_burnin, EIDs, par_chain, 
                                        par_index, y_2, id, t, y_1, cov_info, case_b)
 
 file_name = NULL
@@ -123,8 +123,8 @@ if(simulation) {
     }
 } else {
     if(case_b) {
-        file_name = paste0("Model_out/B_chain_", trial_num, "_30b_s1.rda")
-        file_name2 = paste0("Model_out/B_chain_", trial_num, "_30b_s1_MLE.rda")
+        file_name = paste0("Model_out/B_chain_", trial_num, "_30b_s1_up.rda")
+        file_name2 = paste0("Model_out/B_chain_", trial_num, "_30b_s1_MLE_up.rda")
     } else {
         file_name = paste0("Model_out/B_chain_", trial_num, "_30.rda")   
         file_name2 = paste0("Model_out/B_chain_", trial_num, "_30_MLE.rda")   

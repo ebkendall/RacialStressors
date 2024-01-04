@@ -448,11 +448,15 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
         
         int n_i = sub_ind.n_elem; 
         arma::vec y_1_sub = y_1.elem(sub_ind);
+
+        bool start_run = false;
         
         // Initial state is always 1 (so can start k == 1, not k == 0)
         for (int k = 0; k < n_i - 1; k++) {
             // keeping state 1 fixed without error
-            if(y_1_sub(k) > 1) {
+            if((y_1_sub(k) == 1) && (y_1_sub(k+1) != 1)) start_run = true;
+
+            if(start_run) {
                 arma::vec t_pts;
                 if (k == n_i - 2) {
                     t_pts = arma::linspace(k, k+1, 2);
@@ -462,12 +466,19 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
                 
                 arma::vec pr_B = b_i;
                 
-                // Sample and update the two neighboring states
-                arma::mat Omega_set = Omega_fun_cpp_new(k + 1, n_i, b_i);
-                
-                int sampled_index = arma::randi(arma::distr_param(1, Omega_set.n_rows));
-                
-                pr_B.rows(k, k+1) = Omega_set.row(sampled_index-1).t();
+                // First time point always has state 1 as the first state
+                if((y_1_sub(k) == 1) && (y_1_sub(k+1) != 1)) {
+                    double sampled_index = arma::randi(arma::distr_param(1, 3));
+                    arma::colvec os = {1, sampled_index};
+                    pr_B.rows(k, k+1) = os;
+                } else {
+                    // Sample and update the two neighboring states
+                    arma::mat Omega_set = Omega_fun_cpp_new(k + 1, n_i, b_i);
+                    
+                    int sampled_index = arma::randi(arma::distr_param(1, Omega_set.n_rows));
+                    
+                    pr_B.rows(k, k+1) = Omega_set.row(sampled_index-1).t();
+                }
 
                 double log_target_prev = log_f_i_cpp_no_label(i, ii, pars, par_index,
                                                               t_pts, id, b_i, y_2,
@@ -495,7 +506,7 @@ arma::vec update_b_i_cpp_no_label( const arma::vec &EIDs, const arma::vec &pars,
 
 // [[Rcpp::export]]
 arma::mat state_space_sampler_no_label(const int steps, const int burnin, 
-                              const arma::vec &EIDs, const arma::vec &pars,  
+                              const arma::vec &EIDs, const arma::mat &pars,  
                               const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_2, const arma::vec &id, 
                               const arma::vec &t, const arma::vec &y_1,
@@ -505,12 +516,15 @@ arma::mat state_space_sampler_no_label(const int steps, const int burnin,
     
     arma::mat B_master(steps - burnin, y_2.n_elem, arma::fill::zeros);
     arma::vec prev_B(y_2.n_elem, arma::fill::ones);
+    int max_ind = pars.n_rows;
     
     for(int ttt = 0; ttt < steps; ttt++) {
         
         Rcpp::Rcout << "---> " << ttt << std::endl;
+        int sampled_index = arma::randi(arma::distr_param(1, max_ind));
+        arma::vec pars_ttt = pars.row(sampled_index - 1).t();
         
-        arma::vec curr_B = update_b_i_cpp_no_label(EIDs, pars, par_index, id, 
+        arma::vec curr_B = update_b_i_cpp_no_label(EIDs, pars_ttt, par_index, id, 
                                                    prev_B, y_2, y_1, cov_info,
                                                    case_b);
         
@@ -646,60 +660,64 @@ arma::field<arma::vec> viterbi_alg(const arma::vec &EIDs, const arma::vec &pars,
 double test_functions(const arma::vec &pars, const arma::field<arma::vec> &prior_par, 
                     const arma::field<arma::uvec> &par_index) {
     
-    arma::mat x = {pars(0), pars(1), pars(2), pars(3), pars(4), pars(5),
-                   pars(6), pars(7), pars(8), pars(9), pars(10), pars(11),
-                   pars(12), pars(13), pars(14), pars(15), pars(16), pars(17),
-                   pars(18), pars(19), pars(20), pars(21), pars(22), pars(23),
-                   pars(24), pars(25), pars(26), pars(27), pars(28), pars(29),
-                   pars(30), pars(31), pars(34), pars(35),
-                   pars(36), pars(37), pars(38), pars(39)};
-    arma::mat x2 = arma::join_cols(pars.subvec(0, 31), pars.subvec(34, 39));
-    arma::mat x3 = pars;
-    Rcpp::Rcout << x << std::endl;
-    Rcpp::Rcout << x2 << std::endl;
-    Rcpp::Rcout << x3 << std::endl;
+    // arma::mat x = {pars(0), pars(1), pars(2), pars(3), pars(4), pars(5),
+    //                pars(6), pars(7), pars(8), pars(9), pars(10), pars(11),
+    //                pars(12), pars(13), pars(14), pars(15), pars(16), pars(17),
+    //                pars(18), pars(19), pars(20), pars(21), pars(22), pars(23),
+    //                pars(24), pars(25), pars(26), pars(27), pars(28), pars(29),
+    //                pars(30), pars(31), pars(34), pars(35),
+    //                pars(36), pars(37), pars(38), pars(39)};
+    // arma::mat x2 = arma::join_cols(pars.subvec(0, 31), pars.subvec(34, 39));
+    // arma::mat x3 = pars;
+    // Rcpp::Rcout << x << std::endl;
+    // Rcpp::Rcout << x2 << std::endl;
+    // Rcpp::Rcout << x3 << std::endl;
     
-    arma::mat A = {{2,0,0},{0,2,0},{0,0,2}};
-    arma::mat C;
-    bool test_suc = arma::inv(C, A);
-    arma::mat B = arma::inv(A);
-    Rcpp::Rcout << test_suc << std::endl;
-    Rcpp::Rcout << B << std::endl;
-    Rcpp::Rcout << C << std::endl;
+    // arma::mat A = {{2,0,0},{0,2,0},{0,0,2}};
+    // arma::mat C;
+    // bool test_suc = arma::inv(C, A);
+    // arma::mat B = arma::inv(A);
+    // Rcpp::Rcout << test_suc << std::endl;
+    // Rcpp::Rcout << B << std::endl;
+    // Rcpp::Rcout << C << std::endl;
     
-    for(int j = 0; j < 20; j++) {
-        double ind_unif = arma::randu();
-        Rcpp::Rcout << ind_unif << ", log " << log(ind_unif) << std::endl;
-    }
+    // for(int j = 0; j < 20; j++) {
+    //     double ind_unif = arma::randu();
+    //     Rcpp::Rcout << ind_unif << ", log " << log(ind_unif) << std::endl;
+    // }
     
-    double inf_return = -1 * arma::datum::inf;
-    if(inf_return == -arma::datum::inf) {
-        Rcpp::Rcout << "Inf Check1" << std::endl;
-    }
+    // double inf_return = -1 * arma::datum::inf;
+    // if(inf_return == -arma::datum::inf) {
+    //     Rcpp::Rcout << "Inf Check1" << std::endl;
+    // }
     
-    inf_return = arma::datum::inf;
-    if(inf_return == arma::datum::inf) {
-        Rcpp::Rcout << "Inf Check2" << std::endl;
-    }
+    // inf_return = arma::datum::inf;
+    // if(inf_return == arma::datum::inf) {
+    //     Rcpp::Rcout << "Inf Check2" << std::endl;
+    // }
     
-    Rcpp::Rcout << 10 % 3 << std::endl;
-    Rcpp::Rcout << 9 % 3 << std::endl;
+    // Rcpp::Rcout << 10 % 3 << std::endl;
+    // Rcpp::Rcout << 9 % 3 << std::endl;
     
-    arma::vec t = {1.1192126, 1.1192068, 1.6840622, 0.2306889};
-    arma::vec t2 = {-0.2498609, 0.4671621, -0.2409424, -0.8548681};
+    // arma::vec t = {1.1192126, 1.1192068, 1.6840622, 0.2306889};
+    // arma::vec t2 = {-0.2498609, 0.4671621, -0.2409424, -0.8548681};
     
-    arma::mat t3 = arma::join_horiz(t, t2);
+    // arma::mat t3 = arma::join_horiz(t, t2);
     
-    Rcpp::Rcout << arma::cov(t, t2) << std::endl;
-    Rcpp::Rcout << arma::cov(t.t(), t2.t()) << std::endl;
-    Rcpp::Rcout << arma::cov(t3) << std::endl;
-    Rcpp::Rcout << arma::cov(t3.t()) << std::endl;
+    // Rcpp::Rcout << arma::cov(t, t2) << std::endl;
+    // Rcpp::Rcout << arma::cov(t.t(), t2.t()) << std::endl;
+    // Rcpp::Rcout << arma::cov(t3) << std::endl;
+    // Rcpp::Rcout << arma::cov(t3.t()) << std::endl;
     
-    arma::vec a = {1,2,3,4};
-    arma::vec b = {1,2,3,4};
+    // arma::vec a = {1,2,3,4};
+    // arma::vec b = {1,2,3,4};
     
-    if(arma::accu(a == b) == a.n_elem) {
-        Rcpp::Rcout << "equal" << std::endl;
+    // if(arma::accu(a == b) == a.n_elem) {
+    //     Rcpp::Rcout << "equal" << std::endl;
+    // }
+
+    for(int i = 0; i < 10; i++) {
+        Rcpp::Rcout << arma::randi(arma::distr_param(1, 3)) << std::endl;
     }
     
     return 0;

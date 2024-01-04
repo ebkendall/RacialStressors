@@ -8,7 +8,7 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 5 # trial 3 is full model (updated mean age), trial 4 removes 1->3 
+trial_num = 6 # trial 3 is full model (updated mean age), trial 4 removes 1->3 
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -149,13 +149,18 @@ cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
 # Centering age
 if(!simulation) {
     ages = NULL
+    dler_val = NULL
     for(a in unique(data_format[,"ID.."])) {
         ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
     }
     mean_age = mean(ages)
-    cov_info[,'Age'] = cov_info[,'Age'] - mean_age   
+    mean_dler = mean(dler_val)
+    cov_info[,'Age'] = cov_info[,'Age'] - mean_age
+    cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler   
 
     save(mean_age, file = paste0('Data/mean_age_', trial_num, '.rda'))
+    save(mean_dler, file = paste0('Data/mean_dler_', trial_num, '.rda'))
 }
 
 steps = 500000
