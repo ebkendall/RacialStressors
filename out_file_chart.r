@@ -8,7 +8,7 @@ case_b = T
 # ------------------------------------------------------------------------------
 
 Dir = 'Model_out/'
-load(paste0('Model_out/par_mean', trial_num, '.rda'))
+load(paste0('Model_out/par_median', trial_num, '.rda'))
 par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
                  gamma = 38:41)
 
@@ -83,7 +83,7 @@ for(i in EIDs){
     cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
     cov_value = as.numeric(cov_value)
     cov_value[4] = round(cov_value[4], digits = 3)
-    baseline_mean = par_mean[par_index$delta[1]] + sum(par_mean[par_index$gamma] * cov_value)
+    baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
     baseline_mean = round(baseline_mean, digits = 3)
 
 	# t_grid = t_grid_bar = data_format[indices_i, "Time"]

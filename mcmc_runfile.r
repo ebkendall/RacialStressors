@@ -8,7 +8,7 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 6 # trial 3 is full model (updated mean age), trial 4 removes 1->3 
+trial_num = 7 # trial 3 is full model (updated mean age), trial 4 removes 1->3 
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -161,6 +161,12 @@ if(!simulation) {
 
     save(mean_age, file = paste0('Data/mean_age_', trial_num, '.rda'))
     save(mean_dler, file = paste0('Data/mean_dler_', trial_num, '.rda'))
+
+    load(paste0('Model_out/mcmc_out_', 1, '_', 5, '_30b.rda'))
+    init_par = c(mcmc_out$chain[495000,])
+    init_par[par_index$delta[1]] = init_par[par_index$delta[1]] - init_par[par_index$gamma[4]] * mean_dler
+    init_par[par_index$zeta[1:6]] = init_par[par_index$zeta[1:6]] - init_par[par_index$zeta[25:30]] * mean_dler
+    rm(mcmc_out)
 }
 
 steps = 500000
