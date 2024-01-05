@@ -2,7 +2,7 @@
 library(plotrix)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 5
+trial_num = 7
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -12,6 +12,8 @@ load(paste0('Model_out/par_median', trial_num, '.rda'))
 par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
                  gamma = 38:41)
 
+load(paste0('Data/mean_age_', trial_num, '.rda'))
+load(paste0('Data/mean_dler_', trial_num, '.rda'))
 
 file_name = NULL
 if(simulation) {
@@ -82,9 +84,12 @@ for(i in EIDs){
 
     cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
     cov_value = as.numeric(cov_value)
-    cov_value[4] = round(cov_value[4], digits = 3)
+    cov_value[1] = cov_value[1] - mean_age
+    cov_value[4] = cov_value[4] - mean_dler
     baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
     baseline_mean = round(baseline_mean, digits = 3)
+    cov_value[1] = round(cov_value[1], digits = 3)
+    cov_value[4] = round(cov_value[4], digits = 3)
 
 	# t_grid = t_grid_bar = data_format[indices_i, "Time"]
 	t_grid = t_grid_bar = 1:n_i
@@ -294,7 +299,7 @@ for(i in EIDs) {
 }
 dev.off()
 
-# Blunted response:
+# Blunted response (trial 5)
 # c(25897,  26104,  26116,  26194,  26242,  26275,  26371,  26452,  26527,  26701,
 #   26734,  26746,  26872,  26956,  27070,  27076,  27205,  27289,  27685,  27832,
 #   28651,  28792,  29275,  29293,  29341,  29419,  29617,  29686,  29761,  29791,
@@ -303,6 +308,15 @@ dev.off()
 #     415,    416,    417,    424,    425,    426,    427, 433001,    435,    436,
 #     441,    445,    448,    450,    451,    452,    456,    459,    500,    501,
 #     506,    508,    510,    516,    517)
+# Blunted response (trial 7)
+# c(25897,  26104,  26116,  26194,  26242,  26275,  26371,  26452,  26527,  26701,
+#   26734,  26746,  26872,  26956,  27070,  27076,  27205,  27289,  27685,  27832,
+#   28651,  28792,  29275,  29293,  29341,  29419,  29617,  29686,  29761,  29791,
+#     302,  30550,  30559,  31588,  31750,  32260,  32305,  32419,  33478,  33718,
+#   34105,    403,    404,    406,    407,    408,    410,    412,    413,    414,
+#     415,    416,    424,    425,    426,    427, 433001,    435,    436,    441,
+#     445,    448,    450,    451,    452,    456,    459,    500,    501,    506,
+#     508,    510,    516,    517)
 
 # Saved ones for the paper -----------------------------------------------------
 main_id = c(26116, 26269, 29014, 31039, 31471)
@@ -409,3 +423,28 @@ for(i in main_id) {
     }
     dev.off()
 }
+
+# Transition count: ------------------------------------------------------------
+count_transitions = matrix(0, nrow=3, ncol=3)
+total_trans = 0
+for(i in EIDs){
+    b_i_mle = as.numeric(c(B_chain_MLE[[which(EIDs == i)]]))
+	indices_i = (data_format[,'ID..']==i)
+	sub_dat = data_format[data_format[,"ID.."] == i, ]
+    # Check
+    if(length(b_i_mle) != nrow(sub_dat)) print(paste0(i, " issue"))
+
+    for(t in 1:(length(b_i_mle) - 1)) {
+        count_transitions[b_i_mle[t], b_i_mle[t+1]] = 
+            count_transitions[b_i_mle[t], b_i_mle[t+1]] + 1
+        total_trans = total_trans + 1
+    }
+}
+
+print(paste0("Total transitions: ", total_trans))
+print(nrow(data_format) - length(EIDs))
+
+print("Transition distribution")
+print(count_transitions)
+print("Transition Proportions")
+print(round(count_transitions / total_trans, digits = 4))
