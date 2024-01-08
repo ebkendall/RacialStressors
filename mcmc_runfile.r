@@ -8,7 +8,9 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 7 # trial 3 is full model (updated mean age), trial 4 removes 1->3 
+# trial 3 is full model (updated mean age), trial 4 removes 1->3 
+# trial 5 - 7 are the full models (trial 7 is what the results section is using)
+trial_num = 9
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -31,21 +33,35 @@ if(simulation) {
     miss_info = c(26296, 29698, 30625, 401, 423, 419, 457)
     data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
 }
-
-init_par = c(c(matrix(c(0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0), ncol=5, byrow = T)),
-             c(6.411967, 0, 0), 
-             log(0.51^2),  
-             c(log(0.8^2), 0, 0),
-             0, 0, 0, 0,
-             -1, -1, -1, -1)
-    
-par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
-                 gamma = 38:41)
+if(trial_num < 8) {
+    init_par = c(c(matrix(c(0, 0, 0, 0, 0,
+                            0, 0, 0, 0, 0,
+                            0, 0, 0, 0, 0,
+                            0, 0, 0, 0, 0,
+                            0, 0, 0, 0, 0,
+                            0, 0, 0, 0, 0), ncol=5, byrow = T)),
+                 c(6.411967, 0, 0), 
+                 log(0.51^2),  
+                 c(log(0.8^2), 0, 0),
+                 0, 0, 0, 0,
+                 -1, -1, -1, -1)
+    par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
+                     gamma = 38:41)
+} else {
+    init_par = c(c(matrix(c(0, 0,
+                            0, 0,
+                            0, 0,
+                            0, 0,
+                            0, 0,
+                            0, 0), ncol=2, byrow = T)),
+                 c(6.411967, 0, 0), 
+                 log(0.51^2),  
+                 c(log(0.8^2), 0, 0),
+                 0,
+                 -1, -1, -1, -1)
+    par_index = list(zeta=1:12, misclass=21:24, delta = 13:15, tau2 = 16, sigma2 = 17:19,
+                     gamma = 20)
+}
 
 n_sub = length(unique(data_format[,'ID..']))
 
@@ -144,29 +160,33 @@ if(simulation & case_b) {
     y_1 = as.numeric(temp_data[,"Alt_state"])
 }
 
-cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
+if(trial_num < 8) {
+    cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]   
+} else {
+    cov_info = temp_data[,c("DLER_avg"), drop=F]
+}
 
 # Centering age
 if(!simulation) {
-    ages = NULL
+    # ages = NULL
     dler_val = NULL
     for(a in unique(data_format[,"ID.."])) {
-        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+        # ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
         dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
     }
-    mean_age = mean(ages)
+    # mean_age = mean(ages)
     mean_dler = mean(dler_val)
-    cov_info[,'Age'] = cov_info[,'Age'] - mean_age
+    # cov_info[,'Age'] = cov_info[,'Age'] - mean_age
     cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler   
 
-    save(mean_age, file = paste0('Data/mean_age_', trial_num, '.rda'))
+    # save(mean_age, file = paste0('Data/mean_age_', trial_num, '.rda'))
     save(mean_dler, file = paste0('Data/mean_dler_', trial_num, '.rda'))
 
-    load(paste0('Model_out/mcmc_out_', 1, '_', 5, '_30b.rda'))
-    init_par = c(mcmc_out$chain[495000,])
-    init_par[par_index$delta[1]] = init_par[par_index$delta[1]] - init_par[par_index$gamma[4]] * mean_dler
-    init_par[par_index$zeta[1:6]] = init_par[par_index$zeta[1:6]] - init_par[par_index$zeta[25:30]] * mean_dler
-    rm(mcmc_out)
+    # load(paste0('Model_out/mcmc_out_', 1, '_', 5, '_30b.rda'))
+    # init_par = c(mcmc_out$chain[495000,])
+    # init_par[par_index$delta[1]] = init_par[par_index$delta[1]] - init_par[par_index$gamma[4]] * mean_dler
+    # init_par[par_index$zeta[1:6]] = init_par[par_index$zeta[1:6]] - init_par[par_index$zeta[25:30]] * mean_dler
+    # rm(mcmc_out)
 }
 
 steps = 500000
