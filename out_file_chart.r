@@ -71,7 +71,7 @@ if(simulation) {
     }
 }
 
-b_chain_ind = 45000:95000
+b_chain_ind = 295000:495000
 
 pdf(pdf_title)
 panels = c(3, 1)
@@ -226,6 +226,15 @@ for(i in EIDs) {
         sub_dat = data_format[data_format[,"ID.."] == i, ]
         n_i = sum(indices_i)
 
+        cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+        cov_value = as.numeric(cov_value)
+        cov_value[1] = cov_value[1] - mean_age
+        cov_value[4] = cov_value[4] - mean_dler
+        baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
+        baseline_mean = round(baseline_mean, digits = 3)
+        cov_value[1] = round(cov_value[1], digits = 3)
+        cov_value[4] = round(cov_value[4], digits = 3)
+
         t_grid = t_grid_bar = 1:n_i
         main_color = 'black'
         
@@ -326,6 +335,15 @@ for(i in main_id) {
     indices_i = (data_format[,'ID..']==i)
     sub_dat = data_format[data_format[,"ID.."] == i, ]
     n_i = sum(indices_i)
+
+    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+    cov_value = as.numeric(cov_value)
+    cov_value[1] = cov_value[1] - mean_age
+    cov_value[4] = cov_value[4] - mean_dler
+    baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
+    baseline_mean = round(baseline_mean, digits = 3)
+    cov_value[1] = round(cov_value[1] + mean_age, digits = 3)
+    cov_value[4] = round(cov_value[4] + mean_dler, digits = 3)
 
     t_grid = t_grid_bar = 1:n_i
     main_color = 'black'

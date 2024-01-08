@@ -239,6 +239,7 @@ for(s in sex) {
             P = Q / rowSums(Q)
             print(paste0('state 1 -> 2: ', round(P[1,2], digits=4)))
             print(paste0('state 1 -> 3: ', round(P[1,3], digits=4)))
+            print(paste0('sum of probs: ', round(P[1,2] + P[1,3], digits=4)))
         }
     }
 }
@@ -273,7 +274,7 @@ prob_evo <- function( par, par_index, t_i, cov_val){
 
 # baseline, age, sex, pEdu, dler
 dler_vals = seq(2.6, -1.4, by = -0.2)
-t_i = 1:100
+t_i = 1:200
 
 colfunc <- colorRampPalette(c("red", "green"))
 col_dler = colfunc(length(dler_vals))
@@ -304,8 +305,8 @@ for(i in 2:length(dler_vals)) {
     lines(x = t_i, y = case_0[[i]][2,], col = col_dler[i], lwd = 2)
 }
 lines(x = t_i, y = case_0[[which(dler_vals == 0)]][2,], col = 'blue', lwd = 4)
-legend( 'topleft', horiz=T, bty='n', x.intersp=.75,
-        legend=c( 'DLER = +2.6', 'DLER = 0.0', 'DLER = -1.4'), pch=15, pt.cex=3, 
+legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
+        legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3, 
         col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
 dev.off()
 
@@ -323,8 +324,8 @@ for(i in 2:length(dler_vals)) {
     lines(x = t_i, y = case_1[[i]][2,], col = col_dler[i], lwd = 2)
 }
 lines(x = t_i, y = case_1[[which(dler_vals == 0)]][2,], col = 'blue', lwd = 4)
-legend( 'topleft', horiz=T, bty='n', x.intersp=.75,
-        legend=c( 'DLER = +2.6', 'DLER = 0.0', 'DLER = -1.4'), pch=15, pt.cex=3, 
+legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
+        legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3, 
         col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
 dev.off()
 
@@ -342,8 +343,8 @@ for(i in 2:length(dler_vals)) {
     lines(x = t_i, y = case_0[[i]][3,], col = col_dler[i], lwd = 2)
 }
 lines(x = t_i, y = case_0[[which(dler_vals == 0)]][3,], col = 'blue', lwd = 4)
-legend( 'topleft', horiz=T, bty='n', x.intersp=.75,
-        legend=c( 'DLER = +2.6', 'DLER = 0.0', 'DLER = -1.4'), pch=15, pt.cex=3, 
+legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
+        legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3, 
         col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
 dev.off()
 
@@ -361,7 +362,7 @@ for(i in 2:length(dler_vals)) {
     lines(x = t_i, y = case_1[[i]][3,], col = col_dler[i], lwd = 2)
 }
 lines(x = t_i, y = case_1[[which(dler_vals == 0)]][3,], col = 'blue', lwd = 4)
-legend( 'topleft', horiz=T, bty='n', x.intersp=.75,
-        legend=c( 'DLER = +2.6', 'DLER = 0.0', 'DLER = -1.4'), pch=15, pt.cex=3, 
+legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
+        legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3, 
         col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
 dev.off()
