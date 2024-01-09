@@ -13,7 +13,7 @@ set.seed(2023)
 dir = 'Model_out/'
 
 # Information defining which approach to take ----------------------------------
-trial_num = 7
+trial_num = 9
 simulation = F
 case_b = T
 
@@ -70,8 +70,9 @@ if(simulation) {
 
 n_sub = length(unique(data_format[,'ID..']))
 
-par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
-                 gamma = 38:41)
+# par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
+#                  gamma = 38:41)
+par_index = list(zeta=1:6, misclass=15:18, delta = 7:9, tau2 = 10, sigma2 = 11:13)
 
 temp_data = as.matrix(data_format); rownames(temp_data) = NULL
 id = as.numeric(temp_data[,"ID.."])
@@ -84,15 +85,16 @@ if(simulation & case_b) {
     y_1 = as.numeric(temp_data[,"Alt_state"])
 }
 
-cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
+# cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]
+cov_info = matrix(0, nrow = nrow(temp_data), ncol = 1)
 
 # Centering age
-if(!simulation) {
-    load(paste0('Data/mean_age_', trial_num, '.rda'))
-    load(paste0('Data/mean_dler_', trial_num, '.rda'))
-    cov_info[,'Age'] = cov_info[,'Age'] - mean_age
-    cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler   
-}
+# if(!simulation) {
+#     load(paste0('Data/mean_age_', trial_num, '.rda'))
+#     load(paste0('Data/mean_dler_', trial_num, '.rda'))
+#     cov_info[,'Age'] = cov_info[,'Age'] - mean_age
+#     cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler   
+# }
 
 prior_mean = rep(0, ncol(par_chain))
 prior_sd = rep(20, ncol(par_chain))
@@ -101,7 +103,7 @@ prior_par = list()
 prior_par[[1]] = prior_mean
 prior_par[[2]] = prior_sd
 
-new_steps =  500000
+new_steps =  100000
 new_burnin = 5000
 
 B_chain_obs = vector(mode = 'list', length = length(EIDs))

@@ -13,8 +13,8 @@ print(ind)
 # trial 8 DLER is the only covariate
 # trial 9 baseline only model
 # trial_num = 9
-trial_num = 2
-simulation = T
+trial_num = 9
+simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
 

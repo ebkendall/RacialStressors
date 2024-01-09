@@ -347,10 +347,12 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
     arma::mat cov_info_i = cov_info.rows(sub_ind);
 
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5); 
+    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 1); // ****************
     
-    arma::colvec z_i = {1, cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
-    arma::colvec x_i = {cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
+    // arma::colvec z_i = {1, cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
+    // arma::colvec x_i = {cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
+    arma::colvec z_i = {1};
+    arma::colvec x_i = {0};
     
     arma::vec P_init = {1, 0, 0};
     
@@ -362,15 +364,16 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
     arma::vec log_sigma2 = pars.elem(par_index(4) - 1);
     arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), exp(log_sigma2(2))};
     
-    arma::vec gamma = pars.elem(par_index(5) - 1);
+    // arma::vec gamma = pars.elem(par_index(5) - 1);
+    arma::vec gamma = {0};
     
     // Manually populate the misclassification probabilities
-    arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
-    arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
-                    {0, 1, exp(vec_misclass_content(2))},
-                    {0, exp(vec_misclass_content(3)), 1}};
-    arma::vec m_row_sums = arma::sum(M, 1);
-    M = M.each_col() / m_row_sums;
+    // arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
+    // arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+    //                 {0, 1, exp(vec_misclass_content(2))},
+    //                 {0, exp(vec_misclass_content(3)), 1}};
+    // arma::vec m_row_sums = arma::sum(M, 1);
+    // M = M.each_col() / m_row_sums;
     
     // Full likelihood evaluation is not needed for updating pairs of b_i components
     for(int w=0; w < t_pts.n_elem; ++w){
@@ -381,9 +384,9 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
             int y_1_k = y_1_sub(k);
             double d_0 = D_2_calc_fix(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, gamma);
             in_value = in_value + log(P_init[b_k - 1]) + log(d_0);
-            if(!case_b) {
-                in_value = in_value + log(M(b_k - 1, y_1_k-1));
-            }
+            // if(!case_b) {
+            //     in_value = in_value + log(M(b_k - 1, y_1_k-1));
+            // }
         } else{
             // Evaluating the probability transition matrix
             double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
@@ -411,9 +414,9 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
 
             double d_k = D_2_calc_fix(b_k, y_2_sub(k), tau2, sigma_2_vec, delta, x_i, gamma);
             in_value = in_value + log(P_i( b_k_1 - 1, b_k - 1)) + log(d_k);
-            if(!case_b) {
-                in_value = in_value + log(M(b_k - 1, y_1_k-1));
-            }
+            // if(!case_b) {
+            //     in_value = in_value + log(M(b_k - 1, y_1_k-1));
+            // }
         }
     }
     
@@ -540,14 +543,14 @@ arma::field<arma::vec> viterbi_alg(const arma::vec &EIDs, const arma::vec &pars,
     arma::field<arma::vec> most_likely_ss(EIDs.n_elem);
     
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5); 
+    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 1); // *****************
     
-    arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
-    arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
-                    {0, 1, exp(vec_misclass_content(2))},
-                    {0, exp(vec_misclass_content(3)), 1}};
-    arma::vec m_row_sums = arma::sum(M, 1);
-    M = M.each_col() / m_row_sums;
+    // arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
+    // arma::mat M = { {1, exp(vec_misclass_content(0)), exp(vec_misclass_content(1))},
+    //                 {0, 1, exp(vec_misclass_content(2))},
+    //                 {0, exp(vec_misclass_content(3)), 1}};
+    // arma::vec m_row_sums = arma::sum(M, 1);
+    // M = M.each_col() / m_row_sums;
     
     arma::vec delta = pars.elem(par_index(2) - 1);
     
@@ -558,7 +561,8 @@ arma::field<arma::vec> viterbi_alg(const arma::vec &EIDs, const arma::vec &pars,
     arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), 
                              exp(log_sigma2(2))};
     
-    arma::vec gamma = pars.elem(par_index(5) - 1);
+    // arma::vec gamma = pars.elem(par_index(5) - 1);
+    arma::vec gamma = {0};
     
     for (int ii = 0; ii < EIDs.n_elem; ii++) {
         int i = EIDs(ii);
@@ -572,11 +576,13 @@ arma::field<arma::vec> viterbi_alg(const arma::vec &EIDs, const arma::vec &pars,
         arma::vec y_2_i = y_2.elem(sub_ind);
         
         // Evaluating the probability transition matrix
-        arma::mat cov_info_i = cov_info.rows(sub_ind);
-        arma::colvec z_i = {1, cov_info_i(0,0), cov_info_i(0,1), 
-                            cov_info_i(0,2), cov_info_i(0,3)};
-        arma::colvec x_i = {cov_info_i(0,0), cov_info_i(0,1), 
-                            cov_info_i(0,2), cov_info_i(0,3)};
+        // arma::mat cov_info_i = cov_info.rows(sub_ind);
+        // arma::colvec z_i = {1, cov_info_i(0,0), cov_info_i(0,1), 
+        //                     cov_info_i(0,2), cov_info_i(0,3)};
+        // arma::colvec x_i = {cov_info_i(0,0), cov_info_i(0,1), 
+        //                     cov_info_i(0,2), cov_info_i(0,3)};
+        arma::colvec z_i = {1};
+        arma::colvec x_i = {0};
         
         double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
         double q1 = exp(q1_sub);
@@ -603,7 +609,7 @@ arma::field<arma::vec> viterbi_alg(const arma::vec &EIDs, const arma::vec &pars,
             if((y_1_i(j) == 1) && (y_1_i(j+1) != 1)) {
                 T_1(0,j) = D_2_calc_fix(y_1_i(j), y_2_i(j), tau2, sigma_2_vec, 
                                       delta, x_i, gamma);
-                if(!case_b) T_1(0,j) = T_1(0,j) * M(0, y_1_i(j)-1);
+                // if(!case_b) T_1(0,j) = T_1(0,j) * M(0, y_1_i(j)-1);
             }
             
             if(y_1_i(j) > 1) {
@@ -611,7 +617,7 @@ arma::field<arma::vec> viterbi_alg(const arma::vec &EIDs, const arma::vec &pars,
                     int state_s = s+1;
                     double B_s_j = D_2_calc_fix(state_s, y_2_i(j), tau2, 
                                                 sigma_2_vec, delta, x_i, gamma);
-                    if(!case_b) B_s_j = B_s_j * M(s, y_1_i(j)-1);
+                    // if(!case_b) B_s_j = B_s_j * M(s, y_1_i(j)-1);
                     
                     arma::uword curr_ind;
                     double curr_max;

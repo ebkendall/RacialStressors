@@ -230,9 +230,18 @@ dev.off()
 
 
 # Probability of transitioning in 30s with certain covariate combinations -----
+ages = NULL
+dler_val = NULL
+for(a in unique(data_format[,"ID.."])) {
+    ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+    dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+}
+s_dler = sd(dler_val)
+print(paste0("Standard dev. DLER: ", s_dler))
+
 sex = c(0,1)
 pEdu = c(0,1)
-dler = c(-1,0,1)
+dler = c(-s_dler,0,s_dler)
 zeta_est = matrix(par_median[par_index$zeta], nrow=6, ncol=5)
 
 for(s in sex) {

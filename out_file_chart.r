@@ -2,18 +2,19 @@
 library(plotrix)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 7
+trial_num = 9
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
 
 Dir = 'Model_out/'
 load(paste0('Model_out/par_median', trial_num, '.rda'))
-par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
-                 gamma = 38:41)
+# par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
+#                  gamma = 38:41)
+par_index = list(zeta=1:6, misclass=15:18, delta = 7:9, tau2 = 10, sigma2 = 11:13)
 
-load(paste0('Data/mean_age_', trial_num, '.rda'))
-load(paste0('Data/mean_dler_', trial_num, '.rda'))
+# load(paste0('Data/mean_age_', trial_num, '.rda'))
+# load(paste0('Data/mean_dler_', trial_num, '.rda'))
 
 file_name = NULL
 if(simulation) {
@@ -71,7 +72,7 @@ if(simulation) {
     }
 }
 
-b_chain_ind = 295000:495000
+b_chain_ind = 5000:95000
 
 pdf(pdf_title)
 panels = c(3, 1)
@@ -82,14 +83,17 @@ for(i in EIDs){
 	sub_dat = data_format[data_format[,"ID.."] == i, ]
 	n_i = sum(indices_i)
 
-    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
-    cov_value = as.numeric(cov_value)
-    cov_value[1] = cov_value[1] - mean_age
-    cov_value[4] = cov_value[4] - mean_dler
-    baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
-    baseline_mean = round(baseline_mean, digits = 3)
-    cov_value[1] = round(cov_value[1], digits = 3)
-    cov_value[4] = round(cov_value[4], digits = 3)
+    # cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+    # cov_value = as.numeric(cov_value)
+    # cov_value[1] = cov_value[1] - mean_age
+    # cov_value[4] = cov_value[4] - mean_dler
+    # baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
+    # baseline_mean = round(baseline_mean, digits = 3)
+    # cov_value[1] = round(cov_value[1], digits = 3)
+    # cov_value[4] = round(cov_value[4], digits = 3)
+	cov_value = rep(0,4)
+	baseline_mean = par_median[par_index$delta[1]]
+	baseline_mean = round(baseline_mean, digits = 3)
 
 	# t_grid = t_grid_bar = data_format[indices_i, "Time"]
 	t_grid = t_grid_bar = 1:n_i
@@ -226,14 +230,17 @@ for(i in EIDs) {
         sub_dat = data_format[data_format[,"ID.."] == i, ]
         n_i = sum(indices_i)
 
-        cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
-        cov_value = as.numeric(cov_value)
-        cov_value[1] = cov_value[1] - mean_age
-        cov_value[4] = cov_value[4] - mean_dler
-        baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
+        # cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+        # cov_value = as.numeric(cov_value)
+        # cov_value[1] = cov_value[1] - mean_age
+        # cov_value[4] = cov_value[4] - mean_dler
+        # baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
+        # baseline_mean = round(baseline_mean, digits = 3)
+        # cov_value[1] = round(cov_value[1], digits = 3)
+        # cov_value[4] = round(cov_value[4], digits = 3)
+        cov_value = rep(0,4)
+        baseline_mean = par_median[par_index$delta[1]]
         baseline_mean = round(baseline_mean, digits = 3)
-        cov_value[1] = round(cov_value[1], digits = 3)
-        cov_value[4] = round(cov_value[4], digits = 3)
 
         t_grid = t_grid_bar = 1:n_i
         main_color = 'black'
@@ -330,20 +337,23 @@ dev.off()
 # Saved ones for the paper -----------------------------------------------------
 main_id = c(26116, 26269, 29014, 31039, 31471)
 for(i in main_id) {
-    pdf(paste0("Plots/", i, ".pdf"), paper="a4r")
+    pdf(paste0("Plots/", i, "_simple.pdf"), paper="a4r")
     par(mfrow=c(3,1), mar=c(2,5,2,5))
     indices_i = (data_format[,'ID..']==i)
     sub_dat = data_format[data_format[,"ID.."] == i, ]
     n_i = sum(indices_i)
 
-    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
-    cov_value = as.numeric(cov_value)
-    cov_value[1] = cov_value[1] - mean_age
-    cov_value[4] = cov_value[4] - mean_dler
-    baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
+    # cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+    # cov_value = as.numeric(cov_value)
+    # cov_value[1] = cov_value[1] - mean_age
+    # cov_value[4] = cov_value[4] - mean_dler
+    # baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
+    # baseline_mean = round(baseline_mean, digits = 3)
+    # cov_value[1] = round(cov_value[1] + mean_age, digits = 3)
+    # cov_value[4] = round(cov_value[4] + mean_dler, digits = 3)
+    cov_value = rep(0,4)
+    baseline_mean = par_median[par_index$delta[1]]
     baseline_mean = round(baseline_mean, digits = 3)
-    cov_value[1] = round(cov_value[1] + mean_age, digits = 3)
-    cov_value[4] = round(cov_value[4] + mean_dler, digits = 3)
 
     t_grid = t_grid_bar = 1:n_i
     main_color = 'black'
