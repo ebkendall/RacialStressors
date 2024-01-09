@@ -52,7 +52,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     
     // Populate the transition probability matrix (independent of time)
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 2); // ****************
+    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5); 
     
     arma::vec delta = pars.elem(par_index(2) - 1);
     
@@ -85,10 +85,8 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         
         // Evaluating the probability transition matrix
         arma::mat cov_info_i = cov_info.rows(sub_ind);
-        // arma::colvec z_i = {1, cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2), cov_info_i(0,3)};
-        // arma::colvec x_i = {cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2), cov_info_i(0,3)};
-        arma::colvec z_i = {1, cov_info_i(0,0)}; // ****************************
-        arma::colvec x_i = {cov_info_i(0,0)}; // *******************************
+        arma::colvec z_i = {1, cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2), cov_info_i(0,3)};
+        arma::colvec x_i = {cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2), cov_info_i(0,3)};
         
         double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
         double q1 = exp(q1_sub);

@@ -10,8 +10,11 @@ print(ind)
 # Information defining which approach to take ----------------------------------
 # trial 3 is full model (updated mean age), trial 4 removes 1->3 
 # trial 5 - 7 are the full models (trial 7 is what the results section is using)
-trial_num = 9
-simulation = F
+# trial 8 DLER is the only covariate
+# trial 9 baseline only model
+# trial_num = 9
+trial_num = 2
+simulation = T
 case_b = T
 # ------------------------------------------------------------------------------
 
@@ -20,8 +23,8 @@ init_par = NULL
 if(simulation) {
     # Simulation
     # 30s epochs
-    load('Data/sim_data_3_30.rda')
-    load('Data/true_par_3_30.rda')
+    load('Data/sim_data_7_30.rda')
+    load('Data/true_par_7_30.rda')
     data_format = sim_data
 } else {
     # Real data analysis
@@ -48,19 +51,16 @@ if(trial_num < 8) {
     par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
                      gamma = 38:41)
 } else {
-    init_par = c(c(matrix(c(0, 0,
-                            0, 0,
-                            0, 0,
-                            0, 0,
-                            0, 0,
-                            0, 0), ncol=2, byrow = T)),
+    init_par = c(c(matrix(c(0,
+                            0,
+                            0,
+                            0,
+                            0,
+                            0), ncol=1, byrow = T)),
                  c(6.411967, 0, 0), 
                  log(0.51^2),  
-                 c(log(0.8^2), 0, 0),
-                 0,
-                 -1, -1, -1, -1)
-    par_index = list(zeta=1:12, misclass=21:24, delta = 13:15, tau2 = 16, sigma2 = 17:19,
-                     gamma = 20)
+                 c(log(0.8^2), 0, 0))
+    par_index = list(zeta=1:6, misclass=15:18, delta = 7:9, tau2 = 10, sigma2 = 11:13)
 }
 
 n_sub = length(unique(data_format[,'ID..']))
@@ -163,23 +163,23 @@ if(simulation & case_b) {
 if(trial_num < 8) {
     cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]   
 } else {
-    cov_info = temp_data[,c("DLER_avg"), drop=F]
+    cov_info = matrix(0, nrow=nrow(temp_data), ncol=1)
 }
 
 # Centering age
 if(!simulation) {
-    # ages = NULL
+    ages = NULL
     dler_val = NULL
     for(a in unique(data_format[,"ID.."])) {
-        # ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
         dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
     }
-    # mean_age = mean(ages)
+    mean_age = mean(ages)
     mean_dler = mean(dler_val)
-    # cov_info[,'Age'] = cov_info[,'Age'] - mean_age
-    cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler   
+    cov_info[,'Age'] = cov_info[,'Age'] - mean_age
+    cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler
 
-    # save(mean_age, file = paste0('Data/mean_age_', trial_num, '.rda'))
+    save(mean_age, file = paste0('Data/mean_age_', trial_num, '.rda'))
     save(mean_dler, file = paste0('Data/mean_dler_', trial_num, '.rda'))
 
     # load(paste0('Model_out/mcmc_out_', 1, '_', 5, '_30b.rda'))
