@@ -12,9 +12,10 @@ print(ind)
 # trial 2: run for 200,000 steps, started everything in state 1
 # trial 3: run for 200,000 steps, started everything at observed states
 # trial 4: run for 200,000 steps, started everything at observed states, misclass
-trial_num = 4
+# trial 5: run for 200,000 steps, start at last run of ind 1, trial 3
+trial_num = 5
 simulation = F
-case_b = F
+case_b = T
 # ------------------------------------------------------------------------------
 
 init_par = NULL
@@ -125,7 +126,11 @@ if(simulation) {
     
     init_par[par_index$delta[1]] = s1_vars[3]
     init_par[par_index$delta[2]] = s2_vars[3] - s1_vars[3]
-    init_par[par_index$delta[3]] = s3_vars[3] - s1_vars[3]   
+    init_par[par_index$delta[3]] = s3_vars[3] - s1_vars[3]
+
+    # Initializing at an older set of values: 
+    load('Model_out/mcmc_out_1_3_30b.rda')
+    init_par = mcmc_out$chain[195001, ]
 }
 # ------------------------------------------------------------------------------
 
@@ -166,13 +171,20 @@ if(!simulation) {
 
 B = list()
 for(i in 1:length(EIDs)) {
-    # b_i = data_format[data_format[,"ID.."] == EIDs[i], "State"]
-    # B[[i]] = matrix(b_i, ncol = 1)
-    B[[i]] = matrix(1, nrow = sum(data_format[,"ID.."] == EIDs[i]), ncol = 1)
+    if(!simulation) {
+        b_i = mcmc_out$B_chain[195000, data_format[,"ID.."] == EIDs[i]]
+        B[[i]] = matrix(b_i, ncol = 1)
+        # b_i = data_format[data_format[,"ID.."] == EIDs[i], "State"]
+        # B[[i]] = matrix(b_i, ncol = 1)
+        
+        # B[[i]] = matrix(1, nrow = sum(data_format[,"ID.."] == EIDs[i]), ncol = 1)   
+    }
 }
 
+if(!simulation) rm(mcmc_out)
+
 steps = 200000
-burnin = 5000
+burnin = 0
 
 s_time = Sys.time()
 

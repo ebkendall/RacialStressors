@@ -2,7 +2,7 @@
 library(plotrix)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+trial_num = 3
 simulation = F
 case_b = T
 
@@ -73,7 +73,7 @@ if(simulation) {
     }
 }
 
-b_chain_ind = 5000:95000
+b_chain_ind = 5000:195000
 
 pdf(pdf_title)
 panels = c(4, 1)
