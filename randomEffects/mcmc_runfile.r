@@ -8,9 +8,13 @@ set.seed(ind)
 print(ind)
 
 # Information defining which approach to take ----------------------------------
-trial_num = 1
+# trial 1: run for 100,000 steps, started everything in state 1
+# trial 2: run for 200,000 steps, started everything in state 1
+# trial 3: run for 200,000 steps, started everything at observed states
+# trial 4: run for 200,000 steps, started everything at observed states, misclass
+trial_num = 4
 simulation = F
-case_b = T
+case_b = F
 # ------------------------------------------------------------------------------
 
 init_par = NULL
@@ -162,10 +166,12 @@ if(!simulation) {
 
 B = list()
 for(i in 1:length(EIDs)) {
+    # b_i = data_format[data_format[,"ID.."] == EIDs[i], "State"]
+    # B[[i]] = matrix(b_i, ncol = 1)
     B[[i]] = matrix(1, nrow = sum(data_format[,"ID.."] == EIDs[i]), ncol = 1)
 }
 
-steps = 100000
+steps = 200000
 burnin = 5000
 
 s_time = Sys.time()

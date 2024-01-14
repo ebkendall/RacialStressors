@@ -4,18 +4,17 @@ library(latex2exp)
 dir = 'Model_out/' 
 
 # Information defining which approach to take ----------------------------------
-trial_num = 7
-# trial_num = 2
+trial_num = 1
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-n_post = 495000
+n_post = 95000
 # Step number at which the adaptive tuning scheme was frozen
 burnin = 5000
 # Total number of steps the mcmc algorithm is computed for
-steps = 500000
+steps = 100000
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
@@ -230,7 +229,7 @@ dev.off()
 
 if(!simulation) {
     # Probability of transitioning in 30s with certain covariate combinations -----
-    load('Data/data_format_30.rda')
+    load('../Data/data_format_30.rda')
     data_format = data_format_30
     
     # Removing the participants with missing labels
@@ -393,3 +392,5 @@ if(!simulation) {
     dev.off()
     
 }
+
+

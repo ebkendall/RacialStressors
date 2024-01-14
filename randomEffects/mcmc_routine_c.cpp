@@ -136,6 +136,9 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         for(int k = 1; k < y_2_i.n_elem; k++) {
             if(y_1_i(k) > 1) {
                 log_state_val = log_state_val + log(P(b_i(k-1) - 1, b_i(k) - 1));
+                if(!case_b) {
+                    log_state_val = log_state_val + log(M(b_i(k) - 1, y_1_i(k)-1));
+                }
             }
         }
 

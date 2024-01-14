@@ -163,7 +163,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
 
     # Restart the acceptance ratio at burnin.
     if(ttt == burnin){ accept = rep( 0, n_group) }
-    if(ttt > burnin){ B_chain[ ttt, ] = do.call( 'c', B) }
+    if(ttt > burnin){ B_chain[ ttt-burnin, ] = do.call( 'c', B) }
     
     if(ttt%%1==0)  cat('--->',ttt,'\n')
   }
