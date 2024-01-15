@@ -12,7 +12,11 @@ print(ind)
 # trial 2: run for 200,000 steps, started everything in state 1
 # trial 3: run for 200,000 steps, started everything at observed states
 # trial 4: run for 200,000 steps, started everything at observed states, misclass
-# trial 5: run for 200,000 steps, start at last run of ind 1, trial 3
+
+# trial 5: run for 200,000 steps, start at last run of ind 1, trial 3 (covariate)
+# trial 6: run for 200,000 steps, baseline only
+# trial 7: run for 200,000 steps, baseline & DLER
+
 trial_num = 5
 simulation = F
 case_b = T
