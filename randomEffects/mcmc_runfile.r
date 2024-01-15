@@ -7,17 +7,25 @@ ind = as.numeric(Sys.getenv('SLURM_ARRAY_TASK_ID'))
 set.seed(ind)
 print(ind)
 
+# Model type -------------------------------------------------------------------
+# 1: baseline only
+# 2: baseline & DLER
+# 3: all covariates
+
+covariate_struct = 2
+# ------------------------------------------------------------------------------
+
 # Information defining which approach to take ----------------------------------
 # trial 1: run for 100,000 steps, started everything in state 1
 # trial 2: run for 200,000 steps, started everything in state 1
 # trial 3: run for 200,000 steps, started everything at observed states
 # trial 4: run for 200,000 steps, started everything at observed states, misclass
 
-# trial 5: run for 200,000 steps, start at last run of ind 1, trial 3 (covariate)
-# trial 6: run for 200,000 steps, baseline only
-# trial 7: run for 200,000 steps, baseline & DLER
+# trial 5: run for 200,000 steps, start at last run of ind 1, trial 3 (model 3)
+# trial 6: run for 200,000 steps, baseline only (model 1)
+# trial 7: run for 200,000 steps, baseline & DLER (model 2)
 
-trial_num = 5
+trial_num = 7
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -40,21 +48,92 @@ if(simulation) {
     miss_info = c(26296, 29698, 30625, 401, 423, 419, 457)
     data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
 }
+
 EIDs = unique(data_format[,"ID.."])
 
-init_par = c(c(matrix(c(0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0,
-                        0, 0, 0, 0, 0), ncol=5, byrow = T)),
+# Making the data into a matrix
+temp_data = as.matrix(data_format); rownames(temp_data) = NULL
+id = as.numeric(temp_data[,"ID.."])
+y_1 = as.numeric(temp_data[,"State"])
+y_2 = as.numeric(temp_data[,"RSA"])
+t = as.numeric(temp_data[,"Time"])
+
+if(simulation & case_b) {
+    y_1 = as.numeric(temp_data[,"Alt_state"])
+} 
+
+# Defining the parameter and covariance structure
+if(covariate_struct == 1) {
+    # Baseline only model
+    init_par = c(c(matrix(c(-2,
+                            -2,
+                            -2,
+                            -2,
+                            -2,
+                            -2), ncol=1, byrow = T)),
+             c(6.411967, 0, 0), 
+             log(0.51^2),  
+             c(log(0.8^2), 0, 0),
+             -1, -1, -1, -1)
+    par_index = list(zeta=1:6, misclass=14:17, delta = 7:9, tau2 = 10, 
+                     sigma2 = 11:13, gamma = -1)
+
+    cov_info = matrix(0, nrow=nrow(temp_data), ncol = 1)
+} else if(covariate_struct == 2) {
+    # Baseline & DLER model
+    init_par = c(c(matrix(c(-2, 0,
+                            -2, 0,
+                            -2, 0,
+                            -2, 0,
+                            -2, 0,
+                            -2, 0), ncol=2, byrow = T)),
+             c(6.411967, 0, 0), 
+             log(0.51^2),  
+             c(log(0.8^2), 0, 0),
+             0,
+             -1, -1, -1, -1)
+    par_index = list(zeta=1:12, misclass=21:24, delta = 13:15, tau2 = 16, 
+                     sigma2 = 17:19, gamma = 20)
+
+    cov_info = temp_data[,c("DLER_avg"), drop=F]
+
+    # Centering DLER
+    dler_val = NULL
+    for(a in EIDs) {
+        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+    }
+    mean_dler = mean(dler_val)
+    cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler
+} else {
+    #  All covariates
+    init_par = c(c(matrix(c(-2, 0, 0, 0, 0,
+                            -2, 0, 0, 0, 0,
+                            -2, 0, 0, 0, 0,
+                            -2, 0, 0, 0, 0,
+                            -2, 0, 0, 0, 0,
+                            -2, 0, 0, 0, 0), ncol=5, byrow = T)),
              c(6.411967, 0, 0), 
              log(0.51^2),  
              c(log(0.8^2), 0, 0),
              0, 0, 0, 0,
              -1, -1, -1, -1)
-par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
-                 gamma = 38:41)
+    par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, 
+                     sigma2 = 35:37, gamma = 38:41)
+
+    cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F] 
+
+    # Centering Age & DLER
+    ages = NULL
+    dler_val = NULL
+    for(a in EIDs) {
+        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+    }
+    mean_age = mean(ages)
+    mean_dler = mean(dler_val)
+    cov_info[,'Age'] = cov_info[,'Age'] - mean_age
+    cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler 
+}
 
 n_sub = length(unique(data_format[,'ID..']))
 
@@ -133,8 +212,8 @@ if(simulation) {
     init_par[par_index$delta[3]] = s3_vars[3] - s1_vars[3]
 
     # Initializing at an older set of values: 
-    load('Model_out/mcmc_out_1_3_30b.rda')
-    init_par = mcmc_out$chain[195001, ]
+    # load('Model_out/mcmc_out_1_3_30b.rda')
+    # init_par = mcmc_out$chain[195001, ]
 }
 # ------------------------------------------------------------------------------
 
@@ -147,54 +226,29 @@ prior_par[[1]] = prior_mean
 prior_par[[2]] = prior_sd
 # ------------------------------------------------------------------------------
 
-temp_data = as.matrix(data_format); rownames(temp_data) = NULL
-id = as.numeric(temp_data[,"ID.."])
-y_1 = as.numeric(temp_data[,"State"])
-y_2 = as.numeric(temp_data[,"RSA"])
-t = as.numeric(temp_data[,"Time"])
-
-if(simulation & case_b) {
-    y_1 = as.numeric(temp_data[,"Alt_state"])
-}
-
-cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F]   
-
-# Centering age
-if(!simulation) {
-    ages = NULL
-    dler_val = NULL
-    for(a in EIDs) {
-        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-    }
-    mean_age = mean(ages)
-    mean_dler = mean(dler_val)
-    cov_info[,'Age'] = cov_info[,'Age'] - mean_age
-    cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler
-}
-
 B = list()
 for(i in 1:length(EIDs)) {
     if(!simulation) {
-        b_i = mcmc_out$B_chain[195000, data_format[,"ID.."] == EIDs[i]]
-        B[[i]] = matrix(b_i, ncol = 1)
+        # b_i = mcmc_out$B_chain[195000, data_format[,"ID.."] == EIDs[i]]
+        # B[[i]] = matrix(b_i, ncol = 1)
         # b_i = data_format[data_format[,"ID.."] == EIDs[i], "State"]
         # B[[i]] = matrix(b_i, ncol = 1)
         
-        # B[[i]] = matrix(1, nrow = sum(data_format[,"ID.."] == EIDs[i]), ncol = 1)   
+        B[[i]] = matrix(1, nrow = sum(data_format[,"ID.."] == EIDs[i]), ncol = 1)
     }
 }
 
-if(!simulation) rm(mcmc_out)
+# if(!simulation) rm(mcmc_out)
 
 steps = 200000
-burnin = 0
+burnin = 5000
 
 s_time = Sys.time()
 
 print(init_par)
 mcmc_out = mcmc_routine(y_1, y_2, t, id, init_par, prior_par, par_index,
-             steps, burnin, n_sub, case_b, cov_info, simulation, B)
+             steps, burnin, n_sub, case_b, cov_info, simulation, B, 
+             covariate_struct)
 
 e_time = Sys.time() - s_time; print(e_time)
 

@@ -59,7 +59,8 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
                               const arma::field<arma::uvec> &par_index,
                               const arma::vec &y_1, const arma::vec &id, 
                               const arma::vec &y_2, const arma::mat &cov_info,
-                              const bool case_b, arma::field<arma::vec> B) {
+                              const bool case_b, arma::field<arma::vec> B,
+                              const int covariate_struct) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
     //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
@@ -70,9 +71,21 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     // Initial state probabilities
     arma::vec init = {1, 0, 0};
     
-    // Populate the transition probability matrix (independent of time)
+    // Populate the parameters dependent on the covariate structure: zeta & gamma
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5); 
+    arma::mat zeta;
+    arma::vec gamma;
+    
+    if(covariate_struct == 1) {
+        gamma = {0}; 
+        zeta = arma::reshape(vec_zeta_content, 6, 1); 
+    } else if(covariate_struct == 2) {
+        gamma = pars.elem(par_index(5) - 1);
+        zeta = arma::reshape(vec_zeta_content, 6, 2); 
+    } else {
+        gamma = pars.elem(par_index(5) - 1);
+        zeta = arma::reshape(vec_zeta_content, 6, 5); 
+    }
     
     arma::vec delta = pars.elem(par_index(2) - 1);
     
@@ -81,8 +94,6 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     
     arma::vec log_sigma2 = pars.elem(par_index(4) - 1);
     arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), exp(log_sigma2(2))};
-    
-    arma::vec gamma = pars.elem(par_index(5) - 1);
 
     // Manually populate the misclassification probabilities
     arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
@@ -100,16 +111,30 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         arma::uvec s2 = arma::find(b_i == 2);
         arma::uvec s3 = arma::find(b_i == 3);
         
-        // Subsetting the data
+        // Sub-setting the data
         arma::uvec sub_ind = arma::find(id == i);
         arma::vec y_1_i = y_1.elem(sub_ind);
         arma::vec y_2_i = y_2.elem(sub_ind);
         
-        // Evaluating the probability transition matrix
+        // Structuring the covariates
         arma::mat cov_info_i = cov_info.rows(sub_ind);
-        arma::colvec z_i = {1, cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2), cov_info_i(0,3)};
-        arma::colvec x_i = {cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2), cov_info_i(0,3)};
+        arma::colvec z_i;
+        arma::colvec x_i;
         
+        if(covariate_struct == 1) {
+            z_i = {1};
+            x_i = {0};
+        } else if(covariate_struct == 2) {
+            z_i = {1, cov_info_i(0,0)};
+            x_i = {cov_info_i(0,0)};
+        } else {
+            z_i = {1, cov_info_i(0,0), cov_info_i(0,1), 
+                      cov_info_i(0,2), cov_info_i(0,3)};
+            x_i = {cov_info_i(0,0), cov_info_i(0,1), 
+                   cov_info_i(0,2), cov_info_i(0,3)};
+        }
+        
+        // Evaluating the probability transition matrix
         double q1_sub = arma::as_scalar(zeta.row(0) * z_i);
         double q1 = exp(q1_sub);
         double q2_sub = arma::as_scalar(zeta.row(1) * z_i);
@@ -303,7 +328,8 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
                             arma::vec t_pts, const arma::vec &id, 
                             const arma::vec &B, const arma::vec &y_2, 
                             const int n_sub, const arma::mat &cov_info,
-                            const bool case_b, const arma::vec &y_1) {
+                            const bool case_b, const arma::vec &y_1, 
+                            const int covariate_struct) {
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
     //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
     // "i" is the numeric EID number
@@ -321,14 +347,40 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
     
     arma::mat y_2_sub = y_2.elem(sub_ind);
     arma::vec y_1_sub = y_1.elem(sub_ind);
-
-    arma::mat cov_info_i = cov_info.rows(sub_ind);
-
-    arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
-    arma::mat zeta = arma::reshape(vec_zeta_content, 6, 5);
     
-    arma::colvec z_i = {1, cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
-    arma::colvec x_i = {cov_info_i(0, 0), cov_info_i(0, 1), cov_info_i(0, 2), cov_info_i(0, 3)};
+    // Populate the parameters dependent on the covariate structure: zeta & gamma
+    arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
+    arma::mat zeta;
+    arma::vec gamma;
+    
+    if(covariate_struct == 1) {
+        gamma = {0}; 
+        zeta = arma::reshape(vec_zeta_content, 6, 1); 
+    } else if(covariate_struct == 2) {
+        gamma = pars.elem(par_index(5) - 1);
+        zeta = arma::reshape(vec_zeta_content, 6, 2); 
+    } else {
+        gamma = pars.elem(par_index(5) - 1);
+        zeta = arma::reshape(vec_zeta_content, 6, 5); 
+    }
+
+    // Structuring the covariates
+    arma::mat cov_info_i = cov_info.rows(sub_ind);
+    arma::colvec z_i;
+    arma::colvec x_i;
+    
+    if(covariate_struct == 1) {
+        z_i = {1};
+        x_i = {0};
+    } else if(covariate_struct == 2) {
+        z_i = {1, cov_info_i(0,0)};
+        x_i = {cov_info_i(0,0)};
+    } else {
+        z_i = {1, cov_info_i(0,0), cov_info_i(0,1), 
+               cov_info_i(0,2), cov_info_i(0,3)};
+        x_i = {cov_info_i(0,0), cov_info_i(0,1), 
+               cov_info_i(0,2), cov_info_i(0,3)};
+    }
     
     arma::vec P_init = {1, 0, 0};
     
@@ -339,8 +391,6 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
 
     arma::vec log_sigma2 = pars.elem(par_index(4) - 1);
     arma::vec sigma_2_vec = {exp(log_sigma2(0)), exp(log_sigma2(1)), exp(log_sigma2(2))};
-    
-    arma::vec gamma = pars.elem(par_index(5) - 1);
     
     // Manually populate the misclassification probabilities
     arma::vec vec_misclass_content = pars.elem(par_index(1) - 1);
@@ -424,10 +474,11 @@ arma::field<arma::vec> update_b_i(const arma::vec &EIDs, const arma::vec &pars,
                                   const arma::field<arma::uvec> &par_index,
                                   const arma::vec &id,arma::field<arma::vec> B, 
                                   const arma::vec &y_2, const arma::vec &y_1,
-                                  const arma::mat &cov_info, const bool case_b){
+                                  const arma::mat &cov_info, const bool case_b,
+                                  const int covariate_struct){
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
-    //                (5) gamma,
+    //                (5) gamma
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     
@@ -476,12 +527,12 @@ arma::field<arma::vec> update_b_i(const arma::vec &EIDs, const arma::vec &pars,
                 double log_target_prev = log_f_i_cpp_no_label(i, ii, pars, par_index,
                                                               t_pts, id, b_i, y_2,
                                                               EIDs.n_elem, cov_info,
-                                                              case_b, y_1);
+                                                              case_b, y_1, covariate_struct);
 
                 double log_target = log_f_i_cpp_no_label(i, ii, pars, par_index,
                                                          t_pts, id, pr_B, y_2,
                                                          EIDs.n_elem, cov_info,
-                                                         case_b, y_1);
+                                                         case_b, y_1, covariate_struct);
 
                 // Note that the proposal probs cancel in the MH ratio
                 double diff_check = log_target - log_target_prev;
