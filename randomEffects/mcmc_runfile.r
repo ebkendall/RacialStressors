@@ -12,7 +12,7 @@ print(ind)
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 2
+covariate_struct = 1
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
@@ -22,11 +22,15 @@ covariate_struct = 2
 # trial 4: run for 200,000 steps, started everything at observed states, misclass
 
 # trial 5: run for 200,000 steps, start at last run of ind 1, trial 3 (model 3)
-# trial 6: run for 200,000 steps, baseline only (model 1)
-# trial 7: run for 200,000 steps, baseline & DLER (model 2)
+# trial 6: run for 200,000 steps, started everything in state 1, baseline only (model 1)
+# trial 7: run for 200,000 steps, started everything in state 1, baseline & DLER (model 2)
 
-trial_num = 7
-simulation = F
+# trial 8 : run for 200,000 steps, started obs states, model 1
+# trial 9 : run for 200,000 steps, started obs states, model 2
+# trial 10: run for 200,000 steps, started obs states, model 3
+
+trial_num = 1
+simulation = T
 case_b = T
 # ------------------------------------------------------------------------------
 
@@ -35,8 +39,8 @@ init_par = NULL
 if(simulation) {
     # Simulation
     # 30s epochs
-    load('../Data/sim_data_7_30.rda')
-    load('../Data/true_par_7_30.rda')
+    load(paste0('Data/sim_data_', covariate_struct, '_30.rda'))
+    load(paste0('Data/true_par_', covariate_struct, '_30.rda'))
     data_format = sim_data
 } else {
     # Real data analysis
@@ -97,13 +101,15 @@ if(covariate_struct == 1) {
 
     cov_info = temp_data[,c("DLER_avg"), drop=F]
 
-    # Centering DLER
-    dler_val = NULL
-    for(a in EIDs) {
-        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+    if(!simulation) {
+        # Centering DLER
+        dler_val = NULL
+        for(a in EIDs) {
+            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+        }
+        mean_dler = mean(dler_val)
+        cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler   
     }
-    mean_dler = mean(dler_val)
-    cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler
 } else {
     #  All covariates
     init_par = c(c(matrix(c(-2, 0, 0, 0, 0,
@@ -122,17 +128,19 @@ if(covariate_struct == 1) {
 
     cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F] 
 
-    # Centering Age & DLER
-    ages = NULL
-    dler_val = NULL
-    for(a in EIDs) {
-        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+    if(!simulation) {
+        # Centering Age & DLER
+        ages = NULL
+        dler_val = NULL
+        for(a in EIDs) {
+            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+        }
+        mean_age = mean(ages)
+        mean_dler = mean(dler_val)
+        cov_info[,'Age'] = cov_info[,'Age'] - mean_age
+        cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler    
     }
-    mean_age = mean(ages)
-    mean_dler = mean(dler_val)
-    cov_info[,'Age'] = cov_info[,'Age'] - mean_age
-    cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler 
 }
 
 n_sub = length(unique(data_format[,'ID..']))
@@ -211,9 +219,6 @@ if(simulation) {
     init_par[par_index$delta[2]] = s2_vars[3] - s1_vars[3]
     init_par[par_index$delta[3]] = s3_vars[3] - s1_vars[3]
 
-    # Initializing at an older set of values: 
-    # load('Model_out/mcmc_out_1_3_30b.rda')
-    # init_par = mcmc_out$chain[195001, ]
 }
 # ------------------------------------------------------------------------------
 
@@ -228,17 +233,11 @@ prior_par[[2]] = prior_sd
 
 B = list()
 for(i in 1:length(EIDs)) {
-    if(!simulation) {
-        # b_i = mcmc_out$B_chain[195000, data_format[,"ID.."] == EIDs[i]]
-        # B[[i]] = matrix(b_i, ncol = 1)
-        # b_i = data_format[data_format[,"ID.."] == EIDs[i], "State"]
-        # B[[i]] = matrix(b_i, ncol = 1)
-        
-        B[[i]] = matrix(1, nrow = sum(data_format[,"ID.."] == EIDs[i]), ncol = 1)
-    }
+    b_i = data_format[data_format[,"ID.."] == EIDs[i], "State"]
+    B[[i]] = matrix(b_i, ncol = 1)
+    
+    # B[[i]] = matrix(1, nrow = sum(data_format[,"ID.."] == EIDs[i]), ncol = 1)
 }
-
-# if(!simulation) rm(mcmc_out)
 
 steps = 200000
 burnin = 5000

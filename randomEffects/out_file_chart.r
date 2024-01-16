@@ -1,8 +1,16 @@
 # library(matrixStats)
 library(plotrix)
 
+# Model type -------------------------------------------------------------------
+# 1: baseline only
+# 2: baseline & DLER
+# 3: all covariates
+
+covariate_struct = 3
+# ------------------------------------------------------------------------------
+
 # Information defining which approach to take ----------------------------------
-trial_num = 3
+trial_num = 5
 simulation = F
 case_b = T
 
@@ -12,8 +20,17 @@ seed = as.numeric(args[1])
 
 Dir = 'Model_out/'
 load(paste0('Model_out/par_median', trial_num, '.rda'))
-par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, sigma2 = 35:37,
-                 gamma = 38:41)
+
+if(covariate_struct == 1) {
+    par_index = list(zeta=1:6, misclass=14:17, delta = 7:9, tau2 = 10, 
+                     sigma2 = 11:13, gamma = -1)
+} else if(covariate_struct) {
+    par_index = list(zeta=1:12, misclass=21:24, delta = 13:15, tau2 = 16, 
+                     sigma2 = 17:19, gamma = 20)
+} else {
+    par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, 
+                     sigma2 = 35:37, gamma = 38:41)
+}
 
 file_name = NULL
 if(simulation) {
@@ -73,7 +90,7 @@ if(simulation) {
     }
 }
 
-b_chain_ind = 5000:195000
+b_chain_ind = 5000:200000
 
 pdf(pdf_title)
 panels = c(4, 1)
@@ -84,16 +101,35 @@ for(i in EIDs){
 	sub_dat = data_format[data_format[,"ID.."] == i, ]
 	n_i = sum(indices_i)
 
-    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
-    cov_value = as.numeric(cov_value)
-    cov_value[1] = cov_value[1] - mean_age
-    cov_value[4] = cov_value[4] - mean_dler
-    baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
-    baseline_mean = round(baseline_mean, digits = 3)
-    cov_value[1] = round(cov_value[1], digits = 3)
-    cov_value[4] = round(cov_value[4], digits = 3)
+    if(covariate_struct == 1) {
+        baseline_mean = par_median[par_index$delta[1]]
+        baseline_mean = round(baseline_mean, digits = 3)
+        plot_title = paste0('Participant: ', i, ', mean: ', baseline_mean)
+    } else if(covariate_struct == 2) {
+        cov_value = c(sub_dat[1,"DLER_avg"])
+        cov_value = as.numeric(cov_value)
+        cov_value[1] = cov_value[1] - mean_dler
+        baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
+        baseline_mean = round(baseline_mean, digits = 3)
+        cov_value[1] = round(cov_value[1], digits = 3)
 
-	# t_grid = t_grid_bar = data_format[indices_i, "Time"]
+        plot_title = paste0('Participant: ', i, ', DLER: ', cov_value[1],
+                            ', mean: ', baseline_mean)
+    } else {
+        cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+        cov_value = as.numeric(cov_value)
+        cov_value[1] = cov_value[1] - mean_age
+        cov_value[4] = cov_value[4] - mean_dler
+        baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
+        baseline_mean = round(baseline_mean, digits = 3)
+        cov_value[1] = round(cov_value[1], digits = 3)
+        cov_value[4] = round(cov_value[4], digits = 3)
+
+        plot_title = paste0('Participant: ', i, ', sex: ', cov_value[2], 
+                          ', pEdu: ', cov_value[3], ', DLER: ', cov_value[4],
+                          ', age: ', cov_value[1], ', mean: ', baseline_mean)
+    }
+
 	t_grid = t_grid_bar = 1:n_i
 	main_color = 'black'
 	
@@ -125,10 +161,7 @@ for(i in EIDs){
 
 	plot(x=pb, y=data_format[indices_i, "RSA"], 
             xlab='time', ylab = 'RSA', col.main=main_color, 
-            main = paste0('Participant: ', i, ', sex: ', cov_value[2], 
-                          ', pEdu: ', cov_value[3], ', DLER: ', cov_value[4],
-                          ', age: ', cov_value[1], ', mean: ', baseline_mean), 
-            xlim = range(pb) + c(-0.5,0.5),
+            main = plot_title, xlim = range(pb) + c(-0.5,0.5),
 	        xaxt='n', yaxt='n', col.lab = main_color)
 	axis( side=1, at=pb, col.axis=main_color, labels=t_grid)
 	axis( side=2, at=seq(min(data_format[indices_i, "RSA"]), 
@@ -176,3 +209,15 @@ for(i in EIDs){
 	
 }
 dev.off()
+
+
+# # Most likely state sequence
+# num_non_s1 = matrix(nrow = length(EIDs), ncol = 2)
+# num_non_s1[,1] = EIDs
+# colnames(num_non_s1) = c('EIDs', 'num_non_s1')
+# for(i in EIDs) {
+#     state_i = data_format[data_format$ID.. == i, "State"]
+#     num_non_s1[num_non_s1[,"EIDs"] == i, 2] = sum(state_i != 1)
+# }
+# 
+# num_non_s1 = num_non_s1[order(num_non_s1[,2]),]

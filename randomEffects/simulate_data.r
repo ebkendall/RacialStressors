@@ -1,19 +1,19 @@
 library(mvtnorm)
 
-ind = 1
-set.seed(ind)
-sim_data = NULL
-
 # Model type -------------------------------------------------------------------
 # 1: baseline only
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 1
+covariate_struct = 3
 # ------------------------------------------------------------------------------
 
+ind = covariate_struct
+set.seed(ind)
+sim_data = NULL
+
 # Load the current data ------------------------------------------------------
-load('Data/data_format_30.rda')
+load('../Data/data_format_30.rda')
 data_format = data_format_30
 miss_info = c(26296, 29698, 30625, 401, 423, 419, 457)
 data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
@@ -30,10 +30,12 @@ if(covariate_struct == 1) {
     
     cov_info = matrix(0, nrow=nrow(data_format), ncol = 1)
     
-    # load('Model_out/mcmc_out_1_7_30b.rda')
-    # true_par = colMeans(mcmc_out$chain[295000:495000, ])
-    # 
-    # save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
+    load('Model_out/mcmc_out_2_8_30b.rda')
+    true_par = apply(mcmc_out$chain[1:195001, ], 2, median)
+    save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
+    
+    gamma = matrix(0, nrow = 1, ncol = 1)
+    
 } else if(covariate_struct == 2) {
     # Baseline & DLER model
     par_index = list(zeta=1:12, misclass=21:24, delta = 13:15, tau2 = 16, 
@@ -50,10 +52,12 @@ if(covariate_struct == 1) {
     mean_dler = mean(dler_val)
     cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler
     
-    # load('Model_out/mcmc_out_1_7_30b.rda')
-    # true_par = colMeans(mcmc_out$chain[295000:495000, ])
-    # 
-    # save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
+    load('Model_out/mcmc_out_4_9_30b.rda')
+    true_par = apply(mcmc_out$chain[1:195001, ], 2, median)
+    save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
+    
+    gamma = matrix(true_par[par_index$gamma], ncol = 1)
+    
 } else {
     #  All covariates
     par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, 
@@ -77,10 +81,11 @@ if(covariate_struct == 1) {
     cov_info[,'Age'] = cov_info[,'Age'] - mean_age
     cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler
     
-    # load('Model_out/mcmc_out_1_7_30b.rda')
-    # true_par = colMeans(mcmc_out$chain[295000:495000, ])
-    # 
-    # save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
+    load('Model_out/mcmc_out_5_5_30b.rda')
+    true_par = apply(mcmc_out$chain[1:200000, ], 2, median)
+    save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
+    
+    gamma = matrix(true_par[par_index$gamma], ncol = 1)
 }
 
 # Simulate the data -----------------------------------------------------------
@@ -88,7 +93,6 @@ tau2 = exp(true_par[par_index$tau2])
 sigma2_vec = exp(true_par[par_index$sigma2])
 zeta = matrix(true_par[par_index$zeta], nrow = 6)
 delta = true_par[par_index$delta]
-gamma = matrix(true_par[par_index$gamma], ncol = 1)
 
 for(i in 1:N) {
     print(i)
@@ -97,14 +101,18 @@ for(i in 1:N) {
     b_i = NULL
     s_i = NULL
     t_pts = time = data_format[data_format[,"ID.."] == id_info, "Time"]
-    cov_i = cov_info[data_format$ID.. ==id_info, ]
-    sub_dat = data_format[data_format[,"ID.."] == id_info, ]
+    cov_i = cov_info[data_format$ID.. ==id_info, ,drop=F]
+    sub_dat = data_format[data_format[,"ID.."] == id_info, ,drop=F]
     y_1_sub = c(sub_dat[,"State"])
+    
+    if(covariate_struct == 1) {
+        z_i = matrix(1, nrow=1, ncol = 1)
+    } else {
+        z_i = matrix(c(1, cov_i[1,]), nrow=1)
+    }
 
     b_i = 1
     for(k in 2:n_i) {
-        z_i = matrix(c(1, cov_i[1,]), nrow=1)
-        
         q1   = exp(z_i %*% t(zeta[1, , drop=F])) 
         q2   = exp(z_i %*% t(zeta[2, , drop=F]))
         q3   = exp(z_i %*% t(zeta[3, , drop=F]))
@@ -160,16 +168,27 @@ for(i in 1:N) {
         rsa_i[b_i == 3] = rsa_i_s3
     }
 
-    sim_data_sub = cbind(rep(i, n_i), time, b_i, c(rsa_i), s_i, cov_i)
+    if(covariate_struct == 1) {
+        sim_data_sub = cbind(rep(i, n_i), time, b_i, c(rsa_i), s_i)    
+    } else {
+        sim_data_sub = cbind(rep(i, n_i), time, b_i, c(rsa_i), s_i, cov_i)   
+    }
 
     sim_data = rbind(sim_data, sim_data_sub)
 
 }
 
-colnames(sim_data) = c("ID..", "Time", "State", "RSA", "Alt_state", 
-                       "Age", "sex1", "edu_yes", "DLER_avg")
+if(covariate_struct == 1) {
+    colnames(sim_data) = c("ID..", "Time", "State", "RSA", "Alt_state")
+} else if(covariate_struct == 2) {
+    colnames(sim_data) = c("ID..", "Time", "State", "RSA", "Alt_state", "DLER_avg")
+} else {
+    colnames(sim_data) = c("ID..", "Time", "State", "RSA", "Alt_state", 
+                           "Age", "sex1", "edu_yes", "DLER_avg")
+}
 
-print(head(sim_data))
+
+print(head(sim_data, 20))
 
 save(sim_data, file = paste0("Data/sim_data_", ind, "_30.rda"))
 
