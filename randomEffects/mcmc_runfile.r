@@ -29,7 +29,7 @@ covariate_struct = 1
 # trial 9 : run for 200,000 steps, started obs states, model 2
 # trial 10: run for 200,000 steps, started obs states, model 3
 
-trial_num = 1
+trial_num = covariate_struct + 3
 simulation = T
 case_b = T
 # ------------------------------------------------------------------------------
@@ -239,15 +239,16 @@ for(i in 1:length(EIDs)) {
     # B[[i]] = matrix(1, nrow = sum(data_format[,"ID.."] == EIDs[i]), ncol = 1)
 }
 
-steps = 200000
-burnin = 5000
+big_steps = 1000000
+steps     = 100000
+burnin    = 5000
 
 s_time = Sys.time()
 
 print(init_par)
 mcmc_out = mcmc_routine(y_1, y_2, t, id, init_par, prior_par, par_index,
              steps, burnin, n_sub, case_b, cov_info, simulation, B, 
-             covariate_struct)
+             covariate_struct, big_steps, trial_num, ind)
 
 e_time = Sys.time() - s_time; print(e_time)
 

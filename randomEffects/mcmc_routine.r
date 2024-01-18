@@ -15,13 +15,14 @@ Sys.setenv("PKG_LIBS" = "-fopenmp")
 # The mcmc routine for samping the parameters
 # -----------------------------------------------------------------------------
 mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
-                         burnin, n_sub, case_b, cov_info, simulation, B, covariate_struct){
+                         burnin, n_sub, case_b, cov_info, simulation, B, 
+                         covariate_struct, big_steps, trial_num, ind){
 
     pars = init_par
     n = length(y_1)
     n_par = length(pars)
     chain = matrix( 0, steps, n_par)
-    B_chain = matrix( 0, steps - burnin, length(y_1))
+    B_chain = matrix( 0, steps, length(y_1))
 
     if(case_b) {
         if(covariate_struct == 1) {
@@ -69,13 +70,15 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
     
     # Begin the MCMC algorithm --------------------------------------------------
     chain[1,] = pars
-    for(ttt in 2:steps){
+    for(ttt in 2:big_steps){
+
+        chain_ind = ttt %% steps
+        if(chain_ind == 0) chain_ind = steps
         
-        chain[ttt,] = pars
+        chain[chain_ind,] = pars
         if(ttt %% 200 == 0) {
             print("pars")
-            print(chain[ttt - 1,])
-            print(accept / (ttt %% 480))
+            print(chain[chain_ind - 1,])
         }
         
         # Update the state space
@@ -116,24 +119,24 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
             # Only propose valid parameters during the burnin period
             if(ttt < burnin){
                 while(!is.finite(log_post)){
-                print(paste0("bad proposal, ", j, ":"))
-                print(proposal[ind_j])
+                    print(paste0("bad proposal, ", j, ":"))
+                    print(proposal[ind_j])
 
-                proposal = pars
-                
-                proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
-                                            sigma=pcov[[j]]*pscale[j])
-                # Guarantee alpha < beta
-                if(sum(ind_j %in% par_index$delta) == 3) {
-                    while(proposal[par_index$delta][2] >= proposal[par_index$delta][3]) {
-                        proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
-                                                    sigma=pcov[[j]]*pscale[j])
+                    proposal = pars
+                    
+                    proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
+                                                sigma=pcov[[j]]*pscale[j])
+                    # Guarantee alpha < beta
+                    if(sum(ind_j %in% par_index$delta) == 3) {
+                        while(proposal[par_index$delta][2] >= proposal[par_index$delta][3]) {
+                            proposal[ind_j] = rmvnorm( n=1, mean=pars[ind_j],
+                                                        sigma=pcov[[j]]*pscale[j])
+                        }
                     }
-                }
-                
-                log_post = fn_log_post_continuous(EIDs, proposal, prior_par,
-                                                  par_index, y_1, id, y_2, cov_info, 
-                                                  case_b, B, covariate_struct)
+                    
+                    log_post = fn_log_post_continuous(EIDs, proposal, prior_par,
+                                                    par_index, y_1, id, y_2, cov_info, 
+                                                    case_b, B, covariate_struct)
                 }
             }
             
@@ -148,7 +151,7 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
                 accept[j] = accept[j] +1
             }
             
-            chain[ttt,ind_j] = pars[ind_j]
+            chain[chain_ind,ind_j] = pars[ind_j]
 
             # Proposal tuning scheme ------------------------------------------------
             if(ttt < burnin){
@@ -186,14 +189,44 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
 
         # Restart the acceptance ratio at burnin.
         if(ttt == burnin){ accept = rep( 0, n_group) }
-        if(ttt > burnin){ B_chain[ ttt-burnin, ] = do.call( 'c', B) }
+        if(ttt > burnin){ B_chain[ chain_ind, ] = do.call( 'c', B) }
         
         if(ttt%%1==0)  cat('--->',ttt,'\n')
+
+        if(ttt > burnin & ttt%%steps == 0) {
+            if(ttt/steps == 1) {
+                mcmc_out = list(chain=chain[burnin:steps,], B_chain=B_chain,
+                                accept=accept/(steps-burnin), pscale=pscale, 
+                                pcov = pcov)
+                ind_keep = seq(burnin + 10, steps, by=10)
+                chain_big   = chain[ind_keep,]
+                B_chain_big = B_chain[ind_keep, ]
+            } else {
+                mcmc_out = list(chain=chain, B_chain=B_chain,
+                                accept=accept/(steps-burnin), pscale=pscale, 
+                                pcov = pcov)
+                ind_keep = seq(10, steps, by=10)
+                chain_big   = rbind(chain_big, chain[ind_keep,])
+                B_chain_big = rbind(B_chain_big, B_chain[ind_keep, ])
+            }
+
+            # Save intermediary chain
+            if(simulation) {
+                save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
+                                            trial_num, 'it', ttt/steps, '_sim.rda'))
+            } else {
+                save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
+                                            trial_num, 'it', ttt/steps, '.rda'))
+            }
+
+            # Reset the chains
+            chain = matrix( 0, steps, n_par)
+            B_chain = matrix( 0, steps, length(y_1))
+        }
     }
     # ---------------------------------------------------------------------------
-    print(accept/(steps-burnin))
 
-    return(list( chain=chain[burnin:steps,], B_chain=B_chain,
-                accept=accept/(steps-burnin), pscale=pscale, pcov = pcov))
+    return(list(chain=chain_big, B_chain=B_chain_big,
+                pscale=pscale, pcov = pcov))
 }
 # -----------------------------------------------------------------------------

@@ -6,13 +6,17 @@ library(plotrix)
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 3
+covariate_struct = 2
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
-trial_num = 5
-simulation = F
+simulation = T
 case_b = T
+if(simulation) {
+    trial_num = covariate_struct
+} else {
+    trial_num = 10
+}
 
 args = commandArgs(TRUE)
 seed = as.numeric(args[1])
@@ -51,8 +55,8 @@ load(file_name)
 
 if(simulation) {
     # Simulation
-    load('Data/sim_data_1_30.rda')
-    data_format = sim_data
+    load(paste0('Data/sim_data_', covariate_struct, '_30.rda'))
+    data_format = as.data.frame(sim_data)
     
     EIDs = unique(data_format[,"ID.."])
 } else {
@@ -64,15 +68,6 @@ if(simulation) {
     data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
     
     EIDs = unique(data_format[,"ID.."])
-    
-    ages = NULL
-    dler_val = NULL
-    for(a in EIDs) {
-        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-    }
-    mean_age = mean(ages)
-    mean_dler = mean(dler_val)
 }
 
 # New patients ---------------------------------------------------------------
@@ -90,7 +85,7 @@ if(simulation) {
     }
 }
 
-b_chain_ind = 5000:200000
+b_chain_ind = 1:195000
 
 pdf(pdf_title)
 panels = c(4, 1)
@@ -106,6 +101,13 @@ for(i in EIDs){
         baseline_mean = round(baseline_mean, digits = 3)
         plot_title = paste0('Participant: ', i, ', mean: ', baseline_mean)
     } else if(covariate_struct == 2) {
+        
+        dler_val = NULL
+        for(a in EIDs) {
+            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+        }
+        mean_dler = mean(dler_val)
+        
         cov_value = c(sub_dat[1,"DLER_avg"])
         cov_value = as.numeric(cov_value)
         cov_value[1] = cov_value[1] - mean_dler
@@ -116,6 +118,16 @@ for(i in EIDs){
         plot_title = paste0('Participant: ', i, ', DLER: ', cov_value[1],
                             ', mean: ', baseline_mean)
     } else {
+        
+        ages = NULL
+        dler_val = NULL
+        for(a in EIDs) {
+            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+        }
+        mean_age = mean(ages)
+        mean_dler = mean(dler_val)
+        
         cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
         cov_value = as.numeric(cov_value)
         cov_value[1] = cov_value[1] - mean_age
@@ -133,24 +145,20 @@ for(i in EIDs){
 	t_grid = t_grid_bar = 1:n_i
 	main_color = 'black'
 	
-	x_mean_1 = c(min(which(sub_dat$State == 1)), max(which(sub_dat$State == 1))+1)
-	x_mean_2 = c(min(which(sub_dat$State == 2)), max(which(sub_dat$State == 2))+1)
-	x_mean_3 = c(min(which(sub_dat$State == 3)), max(which(sub_dat$State == 3)))
+	if(!simulation) {
+	    x_mean_1 = c(min(which(sub_dat$State == 1)), max(which(sub_dat$State == 1))+1)
+	    x_mean_2 = c(min(which(sub_dat$State == 2)), max(which(sub_dat$State == 2))+1)
+	    x_mean_3 = c(min(which(sub_dat$State == 3)), max(which(sub_dat$State == 3)))
+	    
+	    y_mean_1 = mean(sub_dat$RSA[sub_dat$State == 1])
+	    y_mean_2 = mean(sub_dat$RSA[sub_dat$State == 2])
+	    y_mean_3 = mean(sub_dat$RSA[sub_dat$State == 3])   
+	}
 	
-	y_mean_1 = mean(sub_dat$RSA[sub_dat$State == 1])
-	y_mean_2 = mean(sub_dat$RSA[sub_dat$State == 2])
-	y_mean_3 = mean(sub_dat$RSA[sub_dat$State == 3])
-	
-	if(simulation){
-	    b_i = as.numeric(data_format[ indices_i,"True_state"])
-	    to_s1 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==1]
-	    to_s2 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==2]
-	    to_s3 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==3]
-    } else {
-        b_i = as.numeric(data_format[ indices_i,"State"])
-        to_s2 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==2]
-        to_s3 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==3]
-    }
+	b_i = as.numeric(data_format[ indices_i,"State"])
+	to_s1 = c(1,(2:n_i)[diff(b_i)!=0 & b_i[-1]==1])
+	to_s2 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==2]
+	to_s3 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==3]
 
     # Plot the "ghost plot" to make everything line up
     pb = barplot(rbind( colMeans(mcmc_out$B_chain[b_chain_ind, indices_i] == 1),
@@ -167,14 +175,16 @@ for(i in EIDs){
 	axis( side=2, at=seq(min(data_format[indices_i, "RSA"]), 
                          max(data_format[indices_i, "RSA"])), col.axis=main_color)
 	
-	segments(x0 = x_mean_1[1]-0.5, x1 = x_mean_1[2]-0.5, y0 = y_mean_1, y1 = y_mean_1, col = 'azure2', lwd = 3)
-	segments(x0 = x_mean_2[1]-0.5, x1 = x_mean_2[2]-0.5, y0 = y_mean_2, y1 = y_mean_2, col = 'azure2', lwd = 3)
-	segments(x0 = x_mean_3[1]-0.5, x1 = x_mean_3[2]-0.5, y0 = y_mean_3, y1 = y_mean_3, col = 'azure2', lwd = 3)
+	if(!simulation) {
+	    segments(x0 = x_mean_1[1]-0.5, x1 = x_mean_1[2]-0.5, y0 = y_mean_1, y1 = y_mean_1, col = 'azure2', lwd = 3)
+	    segments(x0 = x_mean_2[1]-0.5, x1 = x_mean_2[2]-0.5, y0 = y_mean_2, y1 = y_mean_2, col = 'azure2', lwd = 3)
+	    segments(x0 = x_mean_3[1]-0.5, x1 = x_mean_3[2]-0.5, y0 = y_mean_3, y1 = y_mean_3, col = 'azure2', lwd = 3)   
+	}
 	
 	if(simulation){
-	    abline( v=t_grid[to_s1]-0.5, col='darkolivegreen3', lwd=2)
-	    abline( v=t_grid[to_s2]-0.5, col='darkorchid4', lwd=2)
-	    abline( v=t_grid[to_s3]-0.5, col='darkgrey', lwd=2)
+	    abline( v=t_grid[to_s1]-0.5, col='dodgerblue', lwd=2)
+	    abline( v=t_grid[to_s2]-0.5, col='firebrick1', lwd=2)
+	    abline( v=t_grid[to_s3]-0.5, col='yellow2', lwd=2)
 	} else {
 	    abline( v=t_grid[to_s2]-0.5, col='darkorchid4', lwd=2)
 	    abline( v=t_grid[to_s3]-0.5, col='darkgrey', lwd=2)
@@ -199,9 +209,9 @@ for(i in EIDs){
 	axis( side=2, at=seq(0,1,by=0.25), col.axis=main_color)
 
     if(simulation){
-        abline( v=t_grid[to_s1]-0.5, col='darkolivegreen3', lwd=2)
-        abline( v=t_grid[to_s2]-0.5, col='darkorchid4', lwd=2)
-        abline( v=t_grid[to_s3]-0.5, col='darkgrey', lwd=2)
+        abline( v=t_grid[to_s1]-0.5, col='dodgerblue', lwd=2)
+        abline( v=t_grid[to_s2]-0.5, col='firebrick1', lwd=2)
+        abline( v=t_grid[to_s3]-0.5, col='yellow2', lwd=2)
 	} else {
 	    abline( v=t_grid[to_s2]-0.5, col='darkorchid4', lwd=2)
 	    abline( v=t_grid[to_s3]-0.5, col='darkgrey', lwd=2)

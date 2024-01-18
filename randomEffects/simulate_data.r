@@ -32,6 +32,8 @@ if(covariate_struct == 1) {
     
     load('Model_out/mcmc_out_2_8_30b.rda')
     true_par = apply(mcmc_out$chain[1:195001, ], 2, median)
+    true_par[par_index$zeta] = c(-3, -3, -3, -1, -5, -5)
+    true_par[par_index$delta][2:3] = c(-4, -1)
     save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
     
     gamma = matrix(0, nrow = 1, ncol = 1)
@@ -54,6 +56,9 @@ if(covariate_struct == 1) {
     
     load('Model_out/mcmc_out_4_9_30b.rda')
     true_par = apply(mcmc_out$chain[1:195001, ], 2, median)
+
+    true_par[par_index$zeta][1:6] = c(-3, -3, -3, -1, -5, -5)
+    true_par[par_index$delta][2:3] = c(-3,-1)
     save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
     
     gamma = matrix(true_par[par_index$gamma], ncol = 1)
@@ -83,6 +88,7 @@ if(covariate_struct == 1) {
     
     load('Model_out/mcmc_out_5_5_30b.rda')
     true_par = apply(mcmc_out$chain[1:200000, ], 2, median)
+    true_par[par_index$delta][2:3] = c(-3,-1)
     save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
     
     gamma = matrix(true_par[par_index$gamma], ncol = 1)
@@ -111,23 +117,29 @@ for(i in 1:N) {
         z_i = matrix(c(1, cov_i[1,]), nrow=1)
     }
 
+    start_run = FALSE
     b_i = 1
     for(k in 2:n_i) {
-        q1   = exp(z_i %*% t(zeta[1, , drop=F])) 
-        q2   = exp(z_i %*% t(zeta[2, , drop=F]))
-        q3   = exp(z_i %*% t(zeta[3, , drop=F]))
-        q4   = exp(z_i %*% t(zeta[4, , drop=F]))
-        q5   = exp(z_i %*% t(zeta[5, , drop=F]))
-        q6   = exp(z_i %*% t(zeta[6, , drop=F]))
-        
-        # transitions: 1->2, 2->1, 2->3, 3->1, 3->2
-        Q = matrix(c(  1,  q1, q2,
-                      q3,   1, q4,
-                      q5,  q6,  1), ncol=3, byrow=T)
-        P_i = Q / rowSums(Q)
-        
-        # Sample the true, latent state sequence
-        b_i = c( b_i, sample(1:3, size=1, prob=P_i[tail(b_i,1),]))
+        if(y_1_sub[k] != 1 && y_1_sub[k-1] == 1) start_run = TRUE
+        if(start_run) {
+            q1   = exp(z_i %*% t(zeta[1, , drop=F])) 
+            q2   = exp(z_i %*% t(zeta[2, , drop=F]))
+            q3   = exp(z_i %*% t(zeta[3, , drop=F]))
+            q4   = exp(z_i %*% t(zeta[4, , drop=F]))
+            q5   = exp(z_i %*% t(zeta[5, , drop=F]))
+            q6   = exp(z_i %*% t(zeta[6, , drop=F]))
+            
+            # transitions: 1->2, 2->1, 2->3, 3->1, 3->2
+            Q = matrix(c(  1,  q1, q2,
+                        q3,   1, q4,
+                        q5,  q6,  1), ncol=3, byrow=T)
+            P_i = Q / rowSums(Q)
+            
+            # Sample the true, latent state sequence
+            b_i = c( b_i, sample(1:3, size=1, prob=P_i[tail(b_i,1),]))
+        } else {
+            b_i = c(b_i, 1)
+        }
     }
     
     s_i = rep(99, length(b_i))
@@ -193,5 +205,6 @@ print(head(sim_data, 20))
 save(sim_data, file = paste0("Data/sim_data_", ind, "_30.rda"))
 
 cat('\n','Proption of occurances in each state:','\n')
+print(table(sim_data[,'State']))
 print(table(sim_data[,'State'])/dim(sim_data)[1])
 cat('\n')

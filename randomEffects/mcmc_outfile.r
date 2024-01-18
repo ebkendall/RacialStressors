@@ -8,13 +8,17 @@ dir = 'Model_out/'
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 3
+covariate_struct = 2
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
-trial_num = 10
-simulation = F
+simulation = T
 case_b = T
+if(simulation) {
+    trial_num = covariate_struct
+} else {
+    trial_num = 10
+}
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
@@ -213,7 +217,7 @@ stacked_chains = do.call( rbind, chain_list)
 par_mean = par_median = upper = lower = rep( NA, length(labels))
 
 if(simulation) {
-    load('Data/true_par_7_30.rda')
+    load(paste0('Data/true_par_', covariate_struct, '_30.rda'))
     mu_alpha_sum = true_par[par_index$delta[1]] + true_par[par_index$delta[2]]
     mu_beta_sum = true_par[par_index$delta[1]] + true_par[par_index$delta[3]]
     
