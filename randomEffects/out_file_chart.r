@@ -6,14 +6,16 @@ library(plotrix)
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 2
+covariate_struct = 3
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
 simulation = T
 case_b = T
+interm = T
+it_num = 4
 if(simulation) {
-    trial_num = covariate_struct
+    trial_num = covariate_struct + 3
 } else {
     trial_num = 10
 }
@@ -39,13 +41,21 @@ if(covariate_struct == 1) {
 file_name = NULL
 if(simulation) {
     if(case_b) {
-        file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30b.rda')   
+        if(interm) {
+            file_name = paste0(Dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '_sim.rda')   
+        } else {
+            file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30b.rda')   
+        }
     } else {
         file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')      
     }
 } else {
     if(case_b) {
-        file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
+        if(interm) {
+            file_name = paste0(Dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '.rda')   
+        } else {
+            file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
+        }   
     } else {
         file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')      
     }
@@ -73,19 +83,27 @@ if(simulation) {
 # New patients ---------------------------------------------------------------
 if(simulation) {
     if(case_b) {
-        pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b.pdf')
+        if(interm) {
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b_it', it_num, '.pdf')
+        } else {
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b.pdf')
+        }
     } else {
         pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30.pdf')
     }
 } else {
     if(case_b) {
-        pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1.pdf')
+        if(interm) {
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1_it', it_num, '.pdf')
+        } else {
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1.pdf')
+        }
     } else {
         pdf_title = paste0('Plots/chart_plot_', trial_num, '_30.pdf')
     }
 }
 
-b_chain_ind = 1:195000
+b_chain_ind = 1:100000
 
 pdf(pdf_title)
 panels = c(4, 1)

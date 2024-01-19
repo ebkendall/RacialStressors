@@ -8,25 +8,28 @@ dir = 'Model_out/'
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 2
+covariate_struct = 3
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
 simulation = T
 case_b = T
+interm = F
+it_num = 1
 if(simulation) {
-    trial_num = covariate_struct
+    trial_num = covariate_struct + 3
 } else {
-    trial_num = 10
+    trial_num = covariate_struct
 }
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-n_post = 195000
-# Step number at which the adaptive tuning scheme was frozen
-burnin = 5000
-# Total number of steps the mcmc algorithm is computed for
-steps = 200000
+if(interm) {
+    n_post = 95000; burnin = 5000; steps = 100000
+} else {
+    n_post = 99500; burnin = 0; steps = 99500
+}
+
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
 
@@ -140,15 +143,23 @@ for(seed in index_seeds){
     
     if(simulation) {
         if(case_b) {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30b.rda')   
+            if(interm) {
+                file_name = paste0(dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '_sim.rda')   
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30b.rda')   
+            }
         } else {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')      
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')
         }
     } else {
         if(case_b) {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
+            if(interm) {
+                file_name = paste0(dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '.rda')   
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
+            }
         } else {
-            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')      
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')
         }
     }
     
@@ -156,18 +167,11 @@ for(seed in index_seeds){
         load(file_name)
         ind = ind + 1
 
-        print(mcmc_out$accept)
+        print(file_name)
 
         # Thinning the chain
         main_chain = mcmc_out$chain[index_post,]
         ind_keep = seq(1, nrow(main_chain), by=10)
-        
-        # # Un-doing the centering
-        # main_chain[,par_index$zeta[1:6]] = main_chain[,par_index$zeta[1:6]] +
-        #     mean_age * main_chain[,par_index$zeta[7:12]]
-        # main_chain[,par_index$delta[1]] = main_chain[,par_index$delta[1]] +
-        #     mean_age * main_chain[,par_index$gamma[1]]
-        
         
         mu_alpha_sum = main_chain[,par_index$delta[1]] + main_chain[,par_index$delta[2]]
         mu_beta_sum = main_chain[,par_index$delta[1]] + main_chain[,par_index$delta[3]]
@@ -185,8 +189,13 @@ for(seed in index_seeds){
                            tau_sig1_sum, tau_sig2_sum, tau_sig3_sum,tau2,
                            sig1, sig2, sig3)
 
-      	chain_list[[ind]] = main_chain[ind_keep, ]
-    	post_means[ind,] <- colMeans(main_chain[ind_keep, ])
+        if(interm) {
+            chain_list[[ind]] = main_chain[ind_keep, ]
+    	    post_means[ind,] <- colMeans(main_chain[ind_keep, ])
+        } else {
+            chain_list[[ind]] = main_chain
+    	    post_means[ind,] <- colMeans(main_chain)
+        }
     }
 }
 
@@ -197,13 +206,21 @@ print(ncol(main_chain))
 pdf_title = NULL
 if(simulation) {
     if(case_b) {
-        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30b.pdf')
+        if(interm) {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30b_it', it_num, '.pdf')
+        } else {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30b.pdf')
+        }
     } else {
         pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30.pdf')   
     }
 } else {
     if(case_b) {
-        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30b.pdf')
+        if(interm) {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30b_it', it_num, '.pdf')
+        } else {
+            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30b.pdf')
+        }
     } else {
         pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30.pdf')   
     }
