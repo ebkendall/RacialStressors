@@ -6,18 +6,18 @@ library(plotrix)
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 3
+covariate_struct = 1
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
-simulation = T
+simulation = F
 case_b = T
-interm = T
+interm = F
 it_num = 4
 if(simulation) {
     trial_num = covariate_struct + 3
 } else {
-    trial_num = 10
+    trial_num = covariate_struct
 }
 
 args = commandArgs(TRUE)
@@ -25,7 +25,6 @@ seed = as.numeric(args[1])
 # ------------------------------------------------------------------------------
 
 Dir = 'Model_out/'
-load(paste0('Model_out/par_median', trial_num, '.rda'))
 
 if(covariate_struct == 1) {
     par_index = list(zeta=1:6, misclass=14:17, delta = 7:9, tau2 = 10, 
@@ -84,26 +83,31 @@ if(simulation) {
 if(simulation) {
     if(case_b) {
         if(interm) {
-            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b_it', it_num, '.pdf')
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b_it', it_num, '_seed', seed, '.pdf')
         } else {
-            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b.pdf')
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b', '_seed', seed, '.pdf')
         }
     } else {
-        pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30.pdf')
+        pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30', '_seed', seed, '.pdf')
     }
 } else {
     if(case_b) {
         if(interm) {
-            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1_it', it_num, '.pdf')
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1_it', it_num, '_seed', seed, '.pdf')
         } else {
-            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1.pdf')
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1', '_seed', seed, '.pdf')
         }
     } else {
-        pdf_title = paste0('Plots/chart_plot_', trial_num, '_30.pdf')
+        pdf_title = paste0('Plots/chart_plot_', trial_num, '_30', '_seed', seed, '.pdf')
     }
 }
 
-b_chain_ind = 1:100000
+if(interm) {
+    b_chain_ind = 1:100000
+} else {
+    b_chain_ind = 1:99500
+}
+
 
 pdf(pdf_title)
 panels = c(4, 1)
@@ -115,9 +119,7 @@ for(i in EIDs){
 	n_i = sum(indices_i)
 
     if(covariate_struct == 1) {
-        baseline_mean = par_median[par_index$delta[1]]
-        baseline_mean = round(baseline_mean, digits = 3)
-        plot_title = paste0('Participant: ', i, ', mean: ', baseline_mean)
+        plot_title = paste0('Participant: ', i)
     } else if(covariate_struct == 2) {
         
         dler_val = NULL
@@ -129,12 +131,9 @@ for(i in EIDs){
         cov_value = c(sub_dat[1,"DLER_avg"])
         cov_value = as.numeric(cov_value)
         cov_value[1] = cov_value[1] - mean_dler
-        baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
-        baseline_mean = round(baseline_mean, digits = 3)
         cov_value[1] = round(cov_value[1], digits = 3)
 
-        plot_title = paste0('Participant: ', i, ', DLER: ', cov_value[1],
-                            ', mean: ', baseline_mean)
+        plot_title = paste0('Participant: ', i, ', DLER: ', cov_value[1])
     } else {
         
         ages = NULL
@@ -150,14 +149,12 @@ for(i in EIDs){
         cov_value = as.numeric(cov_value)
         cov_value[1] = cov_value[1] - mean_age
         cov_value[4] = cov_value[4] - mean_dler
-        baseline_mean = par_median[par_index$delta[1]] + sum(par_median[par_index$gamma] * cov_value)
-        baseline_mean = round(baseline_mean, digits = 3)
         cov_value[1] = round(cov_value[1], digits = 3)
         cov_value[4] = round(cov_value[4], digits = 3)
 
         plot_title = paste0('Participant: ', i, ', sex: ', cov_value[2], 
                           ', pEdu: ', cov_value[3], ', DLER: ', cov_value[4],
-                          ', age: ', cov_value[1], ', mean: ', baseline_mean)
+                          ', age: ', cov_value[1])
     }
 
 	t_grid = t_grid_bar = 1:n_i

@@ -30,10 +30,12 @@ if(covariate_struct == 1) {
     
     cov_info = matrix(0, nrow=nrow(data_format), ncol = 1)
     
-    load('Model_out/mcmc_out_2_8_30b.rda')
-    true_par = apply(mcmc_out$chain[1:195001, ], 2, median)
-    true_par[par_index$zeta] = c(-3, -3, -3, -1, -5, -5)
-    true_par[par_index$delta][2:3] = c(-4, -1)
+    load('Model_out/mcmc_out_2_1_30b.rda')
+    true_par = apply(mcmc_out$chain[1:99500, ], 2, median)
+    true_par[par_index$zeta] = c(-3, -3, -3, -3, -3, -3)
+    true_par[par_index$delta][2:3] = c(-4, -2)
+    true_par[par_index$tau2] = -2
+    true_par[par_index$sigma2] = c(-0.5, -0.5, -0.5)
     save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
     
     gamma = matrix(0, nrow = 1, ncol = 1)
@@ -54,11 +56,14 @@ if(covariate_struct == 1) {
     mean_dler = mean(dler_val)
     cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler
     
-    load('Model_out/mcmc_out_4_9_30b.rda')
-    true_par = apply(mcmc_out$chain[1:195001, ], 2, median)
+    load('Model_out/mcmc_out_1_2_30b.rda')
+    true_par = apply(mcmc_out$chain[1:99500, ], 2, median)
 
-    true_par[par_index$zeta][1:6] = c(-3, -3, -3, -1, -5, -5)
-    true_par[par_index$delta][2:3] = c(-3,-1)
+    true_par[par_index$zeta][1:6] =  c(-3, -3, -3, -3, -3, -3)
+    true_par[par_index$delta][2:3] = c(-4, -2)
+    true_par[par_index$tau2] = -2
+    true_par[par_index$sigma2] = c(-0.5, -0.5, -0.5)
+    print(true_par)
     save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
     
     gamma = matrix(true_par[par_index$gamma], ncol = 1)
@@ -86,9 +91,10 @@ if(covariate_struct == 1) {
     cov_info[,'Age'] = cov_info[,'Age'] - mean_age
     cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler
     
-    load('Model_out/mcmc_out_5_5_30b.rda')
-    true_par = apply(mcmc_out$chain[1:200000, ], 2, median)
-    true_par[par_index$delta][2:3] = c(-3,-1)
+    load('Model_out/mcmc_out_1_3_30b.rda')
+    true_par = apply(mcmc_out$chain[1:99500, ], 2, median)
+    true_par[par_index$zeta][1:6] =  c(-3, -3, -3, -3, -3, -3)
+    true_par[par_index$delta][2:3] = c(-4, -2)
     save(true_par, file = paste0('Data/true_par_', ind, '_30.rda'))
     
     gamma = matrix(true_par[par_index$gamma], ncol = 1)
@@ -119,6 +125,7 @@ for(i in 1:N) {
 
     start_run = FALSE
     b_i = 1
+    s_i = rep(1, n_i)
     for(k in 2:n_i) {
         if(y_1_sub[k] != 1 && y_1_sub[k-1] == 1) start_run = TRUE
         if(start_run) {
@@ -137,17 +144,18 @@ for(i in 1:N) {
             
             # Sample the true, latent state sequence
             b_i = c( b_i, sample(1:3, size=1, prob=P_i[tail(b_i,1),]))
+            s_i[k] = 99
         } else {
             b_i = c(b_i, 1)
         }
     }
     
-    s_i = rep(99, length(b_i))
-    s_ind = 1
-    while(b_i[s_ind] == 1 & s_ind <= length(b_i)) {
-        s_i[s_ind] = 1
-        s_ind = s_ind + 1
-    }
+    # s_i = rep(99, length(b_i))
+    # s_ind = 1
+    # while(b_i[s_ind] == 1 & s_ind <= length(b_i)) {
+    #     s_i[s_ind] = 1
+    #     s_ind = s_ind + 1
+    # }
     
     rsa_i = rep(0, n_i)
     

@@ -517,61 +517,56 @@ arma::field<arma::vec> update_b_i(const arma::vec &EIDs, const arma::vec &pars,
         int n_i = sub_ind.n_elem; 
         arma::vec y_1_sub = y_1.elem(sub_ind);
         
-        arma::uvec no_s1 = arma::find(y_1_sub != 1);
+        // arma::uvec no_s1 = arma::find(y_1_sub != 1);
 
         bool start_run = false;
         
-        if(no_s1.n_elem > 0) {
-            // Initial state is always 1 (so can start k == 1, not k == 0)
-            for (int k = 0; k < n_i - 1; k++) {
-                // keeping state 1 fixed without error
-                if((y_1_sub(k) == 1) && (y_1_sub(k+1) != 1)) start_run = true;
-                
-                if(start_run) {
-                    arma::vec t_pts;
-                    if (k == n_i - 2) {
-                        t_pts = arma::linspace(k, k+1, 2);
-                    } else {
-                        t_pts = arma::linspace(k, k+2, 3);
-                    }
-                    
-                    arma::vec pr_B = b_i;
-                    
-                    // First time point always has state 1 as the first state
-                    if((y_1_sub(k) == 1) && (y_1_sub(k+1) != 1)) {
-                        double sampled_index = arma::randi(arma::distr_param(1, 3));
-                        arma::colvec os = {1, sampled_index};
-                        pr_B.rows(k, k+1) = os;
-                    } else {
-                        // Sample and update the two neighboring states
-                        arma::mat Omega_set = Omega_fun_cpp_new(k + 1, n_i, b_i);
-                        
-                        int sampled_index = arma::randi(arma::distr_param(1, Omega_set.n_rows));
-                        
-                        pr_B.rows(k, k+1) = Omega_set.row(sampled_index-1).t();
-                    }
-                    
-                    double log_target_prev = log_f_i_cpp_no_label(i, ii, pars, par_index,
-                                                                  t_pts, id, b_i, y_2,
-                                                                  EIDs.n_elem, cov_info,
-                                                                  case_b, y_1, covariate_struct);
-                    
-                    double log_target = log_f_i_cpp_no_label(i, ii, pars, par_index,
-                                                             t_pts, id, pr_B, y_2,
-                                                             EIDs.n_elem, cov_info,
-                                                             case_b, y_1, covariate_struct);
-                    
-                    // Note that the proposal probs cancel in the MH ratio
-                    double diff_check = log_target - log_target_prev;
-                    double min_log = log(arma::randu(arma::distr_param(0,1)));
-                    if(diff_check > min_log){
-                        b_i = pr_B;
-                    }   
+        // Initial state is always 1 (so can start k == 1, not k == 0)
+        for (int k = 0; k < n_i - 1; k++) {
+            // keeping state 1 fixed without error
+            if((y_1_sub(k) == 1) && (y_1_sub(k+1) != 1)) start_run = true;
+            
+            if(start_run) {
+                arma::vec t_pts;
+                if (k == n_i - 2) {
+                    t_pts = arma::linspace(k, k+1, 2);
+                } else {
+                    t_pts = arma::linspace(k, k+2, 3);
                 }
+                
+                arma::vec pr_B = b_i;
+                
+                // First time point always has state 1 as the first state
+                if((y_1_sub(k) == 1) && (y_1_sub(k+1) != 1)) {
+                    double sampled_index = arma::randi(arma::distr_param(1, 3));
+                    arma::colvec os = {1, sampled_index};
+                    pr_B.rows(k, k+1) = os;
+                } else {
+                    // Sample and update the two neighboring states
+                    arma::mat Omega_set = Omega_fun_cpp_new(k + 1, n_i, b_i);
+                    
+                    int sampled_index = arma::randi(arma::distr_param(1, Omega_set.n_rows));
+                    
+                    pr_B.rows(k, k+1) = Omega_set.row(sampled_index-1).t();
+                }
+                
+                double log_target_prev = log_f_i_cpp_no_label(i, ii, pars, par_index,
+                                                              t_pts, id, b_i, y_2,
+                                                              EIDs.n_elem, cov_info,
+                                                              case_b, y_1, covariate_struct);
+                
+                double log_target = log_f_i_cpp_no_label(i, ii, pars, par_index,
+                                                         t_pts, id, pr_B, y_2,
+                                                         EIDs.n_elem, cov_info,
+                                                         case_b, y_1, covariate_struct);
+                
+                // Note that the proposal probs cancel in the MH ratio
+                double diff_check = log_target - log_target_prev;
+                double min_log = log(arma::randu(arma::distr_param(0,1)));
+                if(diff_check > min_log){
+                    b_i = pr_B;
+                }   
             }
-        } else {
-            // This means that there was no non-baseline period
-            b_i = y_1_sub;
         }
         
         B_return(ii) = b_i;

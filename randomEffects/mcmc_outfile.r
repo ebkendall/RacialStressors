@@ -8,11 +8,11 @@ dir = 'Model_out/'
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 3
+covariate_struct = 1
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
-simulation = T
+simulation = F
 case_b = T
 interm = F
 it_num = 1
@@ -298,7 +298,6 @@ for(r in 1:length(labels)){
 }
 
 print(par_median)
-save(par_median, file = paste0('Model_out/par_median', trial_num, '.rda'))
 
 dev.off()
 
