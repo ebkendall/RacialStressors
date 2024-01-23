@@ -575,6 +575,183 @@ arma::field<arma::vec> update_b_i(const arma::vec &EIDs, const arma::vec &pars,
     return B_return;
 }
 
+// [[Rcpp::export]]
+arma::vec brute_force_ss(const int i, const int ii, const arma::vec &pars,
+                         const arma::field<arma::uvec> &par_index,
+                         const arma::vec &id, const arma::vec &y_2, 
+                         const arma::vec &y_1, const arma::mat &cov_info, 
+                         const bool case_b, const int covariate_struct,
+                         const arma::field<arma::mat> state_combos,
+                         const arma::vec t_pts) {
+    // "i" is the numeric EID value
+    // "ii" is the index of the EID
+    
+    arma::vec eids = id;
+    arma::uvec sub_ind = arma::find(eids == i);
+    
+    int n_sub = 118;
+    
+    arma::vec y_1_sub = y_1.elem(sub_ind);
+    arma::mat y_2_sub = y_2.elem(sub_ind);
+    
+    arma::uvec non_baseline = arma::find(y_1_sub != 1);
+    
+    arma::vec curr_b(sub_ind.n_elem, arma::fill::ones);
+    arma::vec best_b(sub_ind.n_elem, arma::fill::ones);
+    
+    // Minimize the log-likelihood (i.e. maximize the negative log likelihood)
+    double best_like = -1 * log_f_i_cpp_no_label(i, ii, pars, par_index, t_pts, id, 
+                                            best_b, y_2, n_sub, cov_info, case_b, 
+                                            y_1, covariate_struct);
+    
+    double start_like = best_like;
+    
+    Rcpp::Rcout << "num nonbaseline = " << non_baseline.n_elem << std::endl;
+    
+    // Minimum 7 depth
+    for(int a = 1; a <= 3; a++) {
+        Rcpp::Rcout << a << std::endl;
+        curr_b(non_baseline(0)) = a;
+        for(int b = 1; b <= 3; b++) {
+            curr_b(non_baseline(1)) = b;
+            for(int c = 1; c <= 3; c++) {
+                curr_b(non_baseline(2)) = c;
+                for(int d = 1; d <= 3; d++) {
+                    curr_b(non_baseline(3)) = d;
+                    for(int e = 1; e <= 3; e++) {
+                        curr_b(non_baseline(4)) = e;
+                        for(int f = 1; f <= 3; f++) {
+                            curr_b(non_baseline(5)) = f;
+                            for(int g = 1; g <= 3; g++) {
+                                curr_b(non_baseline(6)) = g;
+                                
+                                if(non_baseline.n_elem == 8) {
+                                    // Indices more = 1
+                                    for(int h = 1; h <= 3; h++) {
+                                        curr_b(non_baseline(7)) = h;
+                                        
+                                        // Evaluate the likelihood to test
+                                        double curr_like = -1 * log_f_i_cpp_no_label(i, ii, pars, par_index, t_pts, id, 
+                                                                                curr_b, y_2, n_sub, cov_info, case_b, 
+                                                                                y_1, covariate_struct);
+                                        if(curr_like < best_like) {
+                                            best_b = curr_b;
+                                            best_like = curr_like;
+                                        }
+                                    }
+                                } else if(non_baseline.n_elem == 9){
+                                    // Indices more = 2
+                                    for(int h = 0; h < state_combos(1).n_rows; h++) {
+                                        curr_b.subvec(non_baseline(7),non_baseline(8)) = state_combos(1).row(h).t();
+                                        
+                                        // Evaluate the likelihood to test
+                                        double curr_like = -1 * log_f_i_cpp_no_label(i, ii, pars, par_index, t_pts, id, 
+                                                                                curr_b, y_2, n_sub, cov_info, case_b, 
+                                                                                y_1, covariate_struct);
+                                        if(curr_like < best_like) {
+                                            best_b = curr_b;
+                                            best_like = curr_like;
+                                        }
+                                    }
+                                    
+                                } else if(non_baseline.n_elem == 10){
+                                    // Indices more = 3
+                                    for(int h = 0; h < state_combos(2).n_rows; h++) {
+                                        curr_b.subvec(non_baseline(7),non_baseline(9)) = state_combos(2).row(h).t();
+                                        
+                                        // Evaluate the likelihood to test
+                                        double curr_like = -1 * log_f_i_cpp_no_label(i, ii, pars, par_index, t_pts, id, 
+                                                                                curr_b, y_2, n_sub, cov_info, case_b, 
+                                                                                y_1, covariate_struct);
+                                        if(curr_like < best_like) {
+                                            best_b = curr_b;
+                                            best_like = curr_like;
+                                        }
+                                    }
+                                    
+                                } else if(non_baseline.n_elem == 11){
+                                    // Indices more = 4
+                                    for(int h = 0; h < state_combos(3).n_rows; h++) {
+                                        curr_b.subvec(non_baseline(7),non_baseline(10)) = state_combos(3).row(h).t();
+                                        
+                                        // Evaluate the likelihood to test
+                                        double curr_like = -1 * log_f_i_cpp_no_label(i, ii, pars, par_index, t_pts, id, 
+                                                                                curr_b, y_2, n_sub, cov_info, case_b, 
+                                                                                y_1, covariate_struct);
+                                        if(curr_like < best_like) {
+                                            best_b = curr_b;
+                                            best_like = curr_like;
+                                        }
+                                    }
+                                    
+                                } else if(non_baseline.n_elem == 12){
+                                    // Indices more = 5
+                                    for(int h = 0; h < state_combos(4).n_rows; h++) {
+                                        curr_b.subvec(non_baseline(7),non_baseline(11)) = state_combos(4).row(h).t();
+                                        
+                                        // Evaluate the likelihood to test
+                                        double curr_like = -1 * log_f_i_cpp_no_label(i, ii, pars, par_index, t_pts, id, 
+                                                                                curr_b, y_2, n_sub, cov_info, case_b, 
+                                                                                y_1, covariate_struct);
+                                        if(curr_like < best_like) {
+                                            best_b = curr_b;
+                                            best_like = curr_like;
+                                        }
+                                    }
+                                    
+                                } else if(non_baseline.n_elem == 13){
+                                    // Indices more = 6
+                                    for(int h = 0; h < state_combos(5).n_rows; h++) {
+                                        curr_b.subvec(non_baseline(7),non_baseline(12)) = state_combos(5).row(h).t();
+                                        
+                                        // Evaluate the likelihood to test
+                                        double curr_like = -1 * log_f_i_cpp_no_label(i, ii, pars, par_index, t_pts, id, 
+                                                                                curr_b, y_2, n_sub, cov_info, case_b, 
+                                                                                y_1, covariate_struct);
+                                        if(curr_like < best_like) {
+                                            best_b = curr_b;
+                                            best_like = curr_like;
+                                        }
+                                    }
+                                    
+                                } else if(non_baseline.n_elem == 14){
+                                    // Indices more = 7
+                                    for(int h = 0; h < state_combos(6).n_rows; h++) {
+                                        curr_b.subvec(non_baseline(7),non_baseline(13)) = state_combos(6).row(h).t();
+                                        
+                                        // Evaluate the likelihood to test
+                                        double curr_like = -1 * log_f_i_cpp_no_label(i, ii, pars, par_index, t_pts, id, 
+                                                                                curr_b, y_2, n_sub, cov_info, case_b, 
+                                                                                y_1, covariate_struct);
+                                        if(curr_like < best_like) {
+                                            best_b = curr_b;
+                                            best_like = curr_like;
+                                        }
+                                    }
+                                    
+                                } else {
+                                    // Evaluate the likelihood to test
+                                    double curr_like = -1 * log_f_i_cpp_no_label(i, ii, pars, par_index, t_pts, id, 
+                                                                            curr_b, y_2, n_sub, cov_info, case_b, 
+                                                                            y_1, covariate_struct);
+                                    if(curr_like < best_like) {
+                                        best_b = curr_b;
+                                        best_like = curr_like;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    Rcpp::Rcout << "start likelihood = " << start_like << std::endl;
+    Rcpp::Rcout << "end likelihood = " << best_like << std::endl;
+    return best_b;
+    
+}
 // // [[Rcpp::export]]
 // arma::field<arma::vec> viterbi_alg(const arma::vec &EIDs, const arma::vec &pars,
 //                                    const arma::field<arma::uvec> &par_index,

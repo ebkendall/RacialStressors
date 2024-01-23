@@ -12,7 +12,7 @@ print(ind)
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 2
+covariate_struct = 1
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
@@ -29,8 +29,8 @@ covariate_struct = 2
 # trial 9 : run for 200,000 steps, started obs states, model 2
 # trial 10: run for 200,000 steps, started obs states, model 3
 
-trial_num = covariate_struct
-simulation = T
+trial_num = covariate_struct + 3
+simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
 
@@ -83,6 +83,7 @@ if(covariate_struct == 1) {
                      sigma2 = 11:13, gamma = -1)
 
     cov_info = matrix(0, nrow=nrow(temp_data), ncol = 1)
+    
 } else if(covariate_struct == 2) {
     # Baseline & DLER model
     init_par = c(c(matrix(c(-2, 0,
@@ -127,7 +128,7 @@ if(covariate_struct == 1) {
                      sigma2 = 35:37, gamma = 38:41)
 
     cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F] 
-
+    
     if(!simulation) {
         # Centering Age & DLER
         ages = NULL
@@ -219,6 +220,9 @@ if(simulation) {
     init_par[par_index$delta[2]] = s2_vars[3] - s1_vars[3]
     init_par[par_index$delta[3]] = s3_vars[3] - s1_vars[3]
 
+    # Load preview run
+    load(paste0('Model_out/mcmc_out_2_', covariate_struct, '_30b.rda'))
+    init_par = mcmc_out$chain[99500, ]
 }
 # ------------------------------------------------------------------------------
 
@@ -233,15 +237,20 @@ prior_par[[2]] = prior_sd
 
 B = list()
 for(i in 1:length(EIDs)) {
-    b_i = data_format[data_format[,"ID.."] == EIDs[i], "State"]
-    B[[i]] = matrix(b_i, ncol = 1)
-    
-    # B[[i]] = matrix(1, nrow = sum(data_format[,"ID.."] == EIDs[i]), ncol = 1)
+    if(simulation) {
+        b_i = data_format[data_format[,"ID.."] == EIDs[i], "State"]
+        B[[i]] = matrix(b_i, ncol = 1)
+    } else {
+        b_i = c(mcmc_out$B_chain[99500, data_format[,"ID.."] == EIDs[i]])
+        B[[i]] = matrix(b_i, ncol = 1)
+    }
 }
+
+if(!simulation) { rm(mcmc_out) }
 
 big_steps = 1000000
 steps     = 100000
-burnin    = 5000
+burnin    = 0
 
 s_time = Sys.time()
 

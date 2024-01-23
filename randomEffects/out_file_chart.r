@@ -6,7 +6,7 @@ library(plotrix)
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 1
+covariate_struct = 2
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
@@ -17,7 +17,7 @@ it_num = 4
 if(simulation) {
     trial_num = covariate_struct + 3
 } else {
-    trial_num = covariate_struct
+    trial_num = covariate_struct + 3
 }
 
 args = commandArgs(TRUE)
@@ -104,13 +104,19 @@ if(simulation) {
 
 if(interm) {
     b_chain_ind = 1:100000
+    panels = c(4, 1)
 } else {
     b_chain_ind = 1:99500
+    panels = c(3, 1)
+    if(simulation) {
+        load(paste0("Model_out/B_MLE_", trial_num, "_sim.rda"))
+    } else {
+        load(paste0("Model_out/B_MLE_", trial_num, ".rda"))   
+    }
 }
 
 
 pdf(pdf_title)
-panels = c(4, 1)
 par(mfrow=panels, mar=c(2,4,2,4))#, bg='black', fg='green')
 for(i in EIDs){
 	print(which(EIDs == i))
@@ -232,9 +238,63 @@ for(i in EIDs){
 	    abline( v=t_grid[to_s3]-0.5, col='darkgrey', lwd=2)
 	}
 	
+	if(!interm) {
+	    b_i_mle = as.numeric(c(B_MLE[[which(EIDs == i)]]))
+	    to_s1_mle = (2:n_i)[diff(b_i_mle)!=0 & b_i_mle[-1]==1]
+	    to_s2_mle = (2:n_i)[diff(b_i_mle)!=0 & b_i_mle[-1]==2]
+	    to_s3_mle = (2:n_i)[diff(b_i_mle)!=0 & b_i_mle[-1]==3]
+	    
+	    # Manually changing the y-axis for b_i_mle
+	    b_i_mle[b_i_mle == 1] = 0
+	    b_i_mle[b_i_mle == 2] = -2
+	    b_i_mle[b_i_mle == 3] = -1
+	    
+	    plot(x=pb, y=b_i_mle, type = 's', lwd = 4, main = 'Most likely state sequence',
+	         xlab='time', ylab = ' ', col.main=main_color, col.lab = main_color,
+	         xlim = range(pb) + c(-0.5,0.5),
+	         xaxt='n', yaxt='n', ylim = c(-2.2,0.2))
+	    axis( side=1, at=pb, col.axis=main_color, labels=t_grid)
+	    axis( side=2, at=-2:0, col.axis=main_color, labels = c("state 2", "state 3", "state 1"),
+	          cex.axis=1)
+	    
+	    if(simulation){
+	        abline( v=t_grid[to_s1]-0.5, col='dodgerblue', lwd=2, lty = 2)
+	        abline( v=t_grid[to_s2]-0.5, col='firebrick1', lwd=2, lty = 2)
+	        abline( v=t_grid[to_s3]-0.5, col='yellow2', lwd=2, lty = 2)
+	    } else {
+	        abline( v=t_grid[1]-0.5, col='dodgerblue', lwd=4)
+	        abline( v=t_grid[to_s1_mle]-0.5, col='dodgerblue', lwd=4)
+	        abline( v=t_grid[to_s2_mle]-0.5, col='firebrick1', lwd=4)
+	        abline( v=t_grid[to_s3_mle]-0.5, col='yellow2', lwd=4)
+	    }
+	}
+	
 }
 dev.off()
 
+count_transitions = matrix(0, nrow=3, ncol=3)
+total_trans = 0
+for(i in EIDs){
+    b_i_mle = as.numeric(c(B_MLE[[which(EIDs == i)]]))
+	indices_i = (data_format[,'ID..']==i)
+	sub_dat = data_format[data_format[,"ID.."] == i, ]
+    # Check
+    if(length(b_i_mle) != nrow(sub_dat)) print(paste0(i, " issue"))
+
+    for(t in 1:(length(b_i_mle) - 1)) {
+        count_transitions[b_i_mle[t], b_i_mle[t+1]] = 
+            count_transitions[b_i_mle[t], b_i_mle[t+1]] + 1
+        total_trans = total_trans + 1
+    }
+}
+
+print(paste0("Total transitions: ", total_trans))
+print(nrow(data_format) - length(EIDs))
+
+print("Transition distribution")
+print(count_transitions)
+print("Transition Proportions")
+print(round(count_transitions / total_trans, digits = 4))
 
 # # Most likely state sequence
 # num_non_s1 = matrix(nrow = length(EIDs), ncol = 2)

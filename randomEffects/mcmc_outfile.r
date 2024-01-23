@@ -8,24 +8,24 @@ dir = 'Model_out/'
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 1
+covariate_struct = 2
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
 simulation = F
 case_b = T
 interm = F
-it_num = 1
+it_num = 3
 if(simulation) {
-    trial_num = covariate_struct + 3
-} else {
     trial_num = covariate_struct
+} else {
+    trial_num = covariate_struct + 3
 }
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
 if(interm) {
-    n_post = 95000; burnin = 5000; steps = 100000
+    n_post = 100000; burnin = 0; steps = 100000
 } else {
     n_post = 99500; burnin = 0; steps = 99500
 }
@@ -301,170 +301,222 @@ print(par_median)
 
 dev.off()
 
-# if(!simulation) {
-#     # Probability of transitioning in 30s with certain covariate combinations -----
-#     load('../Data/data_format_30.rda')
-#     data_format = data_format_30
+if(!simulation) {
+    # Probability of transitioning in 30s with certain covariate combinations -----
+    load('../Data/data_format_30.rda')
+    data_format = data_format_30
     
-#     # Removing the participants with missing labels
-#     miss_info = c(26296, 29698, 30625, 401, 423, 419, 457)
-#     data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
+    # Removing the participants with missing labels
+    miss_info = c(26296, 29698, 30625, 401, 423, 419, 457)
+    data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
     
-#     ages = NULL
-#     dler_val = NULL
-#     for(a in unique(data_format[,"ID.."])) {
-#         ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-#         dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-#     }
-#     s_dler = sd(dler_val)
-#     print(paste0("Mean DLER: ", mean(dler_val)))
-#     print(paste0("Standard dev. DLER: ", s_dler))
+    ages = NULL
+    dler_val = NULL
+    for(a in unique(data_format[,"ID.."])) {
+        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+    }
+    s_dler = sd(dler_val)
+    print(paste0("Mean DLER: ", mean(dler_val)))
+    print(paste0("Standard dev. DLER: ", s_dler))
     
-#     sex = c(0,1)
-#     pEdu = c(0,1)
-#     dler = c(-s_dler,0,s_dler)
-#     zeta_est = matrix(par_median[par_index$zeta], nrow=6, ncol=5)
+    sex = c(0,1)
+    pEdu = c(0,1)
+    dler = c(-s_dler,0,s_dler)
     
-#     for(s in sex) {
-#         for(p in pEdu) {
-#             for(d in dler) {
-#                 print(paste0("sex: ", s, ", pEdu: ", p, ", DLER: ", d))
-#                 cov_val = matrix(c(1, 0, s, p, d), ncol = 1)
-#                 qs = zeta_est %*% cov_val
-#                 Q = matrix(c(         1, exp(qs[1]), exp(qs[2]),
-#                                       exp(qs[3]),          1, exp(qs[4]),
-#                                       exp(qs[5]), exp(qs[6]),          1), ncol = 3, byrow=T)
-#                 P = Q / rowSums(Q)
-#                 print(paste0('state 1 -> 2: ', round(P[1,2], digits=4)))
-#                 print(paste0('state 1 -> 3: ', round(P[1,3], digits=4)))
-#                 print(paste0('sum of probs: ', round(P[1,2] + P[1,3], digits=4)))
-#             }
-#         }
-#     }
+    if(covariate_struct == 1) {
+        zeta_est = matrix(par_median[par_index$zeta], nrow=6, ncol=1)
+    } else if(covariate_struct == 2) {
+        zeta_est = matrix(par_median[par_index$zeta], nrow=6, ncol=2)
+    } else {
+        zeta_est = matrix(par_median[par_index$zeta], nrow=6, ncol=5)   
+    }
     
-#     # Probability evolution curves ------------------------------------------------
-#     prob_evo <- function( par, par_index, t_i, cov_val){
+    # for(s in sex) {
+    #     for(p in pEdu) {
+    #         for(d in dler) {
+    #             print(paste0("sex: ", s, ", pEdu: ", p, ", DLER: ", d))
+    #             cov_val = matrix(c(1, 0, s, p, d), ncol = 1)
+    #             qs = zeta_est %*% cov_val
+    #             Q = matrix(c(         1, exp(qs[1]), exp(qs[2]),
+    #                                   exp(qs[3]),          1, exp(qs[4]),
+    #                                   exp(qs[5]), exp(qs[6]),          1), ncol = 3, byrow=T)
+    #             P = Q / rowSums(Q)
+    #             print(paste0('state 1 -> 2: ', round(P[1,2], digits=4)))
+    #             print(paste0('state 1 -> 3: ', round(P[1,3], digits=4)))
+    #             print(paste0('sum of probs: ', round(P[1,2] + P[1,3], digits=4)))
+    #         }
+    #     }
+    # }
+    
+    # Probability evolution curves ------------------------------------------------
+    prob_evo <- function( zeta_est, t_i, cov_val){
         
-#         zeta_est = matrix(par[par_index$zeta], nrow=6, ncol=5)
+        # Compute prob evolutions of transitioning 1->2, 1->3, 2->3
+        prob_evo_mat = matrix( 0, 3, length(t_i))
+        P_t = matrix(c(1,0,0), ncol = 3)
+        prob_evo_mat[,1] = c(P_t)
         
-#         # Compute prob evolutions of transitioning 1->2, 1->3, 2->3
-#         prob_evo_mat = matrix( 0, 3, length(t_i))
-#         P_t = matrix(c(1,0,0), ncol = 3)
-#         prob_evo_mat[,1] = c(P_t)
-        
-#         for(k in 2:length(t_i)){
+        for(k in 2:length(t_i)){
             
-#             qs = zeta_est %*% cov_val
-#             Q = matrix(c(         1, exp(qs[1]), exp(qs[2]),
-#                                   exp(qs[3]),          1, exp(qs[4]),
-#                                   exp(qs[5]), exp(qs[6]),          1), ncol = 3, byrow=T)
-#             P = Q / rowSums(Q)
+            qs = zeta_est %*% cov_val
+            Q = matrix(c(         1, exp(qs[1]), exp(qs[2]),
+                                  exp(qs[3]),          1, exp(qs[4]),
+                                  exp(qs[5]), exp(qs[6]),          1), ncol = 3, byrow=T)
+            P = Q / rowSums(Q)
             
-#             P_t = P_t %*% P
-#             prob_evo_mat[,k] = c(P_t)
-#         }
+            P_t = P_t %*% P
+            prob_evo_mat[,k] = c(P_t)
+        }
         
-#         return(prob_evo_mat)
-#     }
+        return(prob_evo_mat)
+    }
     
-#     # DLER range: -1.31355932 -> 2.56879362
-#     # Sex  = 0, 1
+    # DLER range: -1.31355932 -> 2.56879362
+    # Sex  = 0, 1
     
-#     # baseline, age, sex, pEdu, dler
-#     dler_vals = seq(2.6, -1.4, by = -0.2)
-#     t_i = 1:200
+    # baseline, age, sex, pEdu, dler
+    dler_vals = seq(2.6, -1.4, by = -0.2)
+    t_i = 1:200
     
-#     colfunc <- colorRampPalette(c("red", "green"))
-#     col_dler = colfunc(length(dler_vals))
+    colfunc <- colorRampPalette(c("red", "green"))
+    col_dler = colfunc(length(dler_vals))
     
-#     # Sex = 0
-#     case_0 = vector(mode = 'list', length = length(dler_vals))
-#     # Sex = 1
-#     case_1 = vector(mode = 'list', length = length(dler_vals))
-#     for(i in 1:length(dler_vals)) {
-#         cov_val_0 = matrix(c(1, 0, 0, 0, dler_vals[i]), ncol = 1)
-#         cov_val_1 = matrix(c(1, 0, 1, 0, dler_vals[i]), ncol = 1)
+    # Sex = 0
+    case_0 = vector(mode = 'list', length = length(dler_vals))
+    # Sex = 1
+    case_1 = vector(mode = 'list', length = length(dler_vals))
+    for(i in 1:length(dler_vals)) {
+        if(covariate_struct == 1) {
+            cov_val_0 = matrix(c(1), ncol = 1)
+            cov_val_1 = matrix(c(1), ncol = 1)
+        } else if(covariate_struct == 2) {
+            cov_val_0 = matrix(c(1, dler_vals[i]), ncol = 1)
+            cov_val_1 = matrix(c(1, dler_vals[i]), ncol = 1)
+        } else {
+            cov_val_0 = matrix(c(1, 0, 0, 0, dler_vals[i]), ncol = 1)
+            cov_val_1 = matrix(c(1, 0, 1, 0, dler_vals[i]), ncol = 1)
+        }
         
-#         case_0[[i]] = prob_evo(par_median, par_index, t_i, cov_val_0)
-#         case_1[[i]] = prob_evo(par_median, par_index, t_i, cov_val_1)
-#     }
+        
+        case_0[[i]] = prob_evo(zeta_est, t_i, cov_val_0)
+        case_1[[i]] = prob_evo(zeta_est, t_i, cov_val_1)
+    }
     
-#     png(filename = "Plots/probEvo1to2_0.png", width = 1500, height = 1000)
-#     par(mar=c(10,10,10,10))
-#     plot(x = t_i, y = case_0[[1]][2,], type = 'l', col = col_dler[1], lwd = 2,
-#          xlab = TeX(r'(Time post baseline (x30 sec) )'), 
-#          ylab = TeX(r'(Transition probability)'), ylim = c(0,1),
-#          cex.lab=4, cex.axis=3, mgp=c(6,2,0))
-#     mytitle = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )')
-#     mysubtitle = TeX(r'((sex $=$ 0) )')
-#     mtext(side=3, line=3.5, at=-0.07, adj=0, cex=5, mytitle)
-#     mtext(side=3, line=0.5, at=-0.07, adj=0, cex=4, mysubtitle)
-#     for(i in 2:length(dler_vals)) {
-#         lines(x = t_i, y = case_0[[i]][2,], col = col_dler[i], lwd = 2)
-#     }
-#     lines(x = t_i, y = case_0[[which(dler_vals == 0)]][2,], col = 'blue', lwd = 4)
-#     legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
-#             legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3, 
-#             col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
-#     dev.off()
+    png(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_0.png"), width = 1500, height = 1000)
+    par(mar=c(10,10,10,10))
+    plot(x = t_i, y = case_0[[1]][1,], type = 'l', col = col_dler[1], lwd = 2,
+         xlab = TeX(r'(Time post baseline (x30 sec) )'),
+         ylab = TeX(r'(Transition probability)'), ylim = c(0,1),
+         cex.lab=4, cex.axis=3, mgp=c(6,2,0))
+    mytitle = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )')
+    mysubtitle = TeX(r'((sex $=$ 0) )')
+    mtext(side=3, line=3.5, at=-0.07, adj=0, cex=5, mytitle)
+    mtext(side=3, line=0.5, at=-0.07, adj=0, cex=4, mysubtitle)
+    for(i in 2:length(dler_vals)) {
+        lines(x = t_i, y = case_0[[i]][1,], col = col_dler[i], lwd = 2)
+    }
+    lines(x = t_i, y = case_0[[which(dler_vals == 0)]][1,], col = 'blue', lwd = 4)
+    legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
+            legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3,
+            col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
+    dev.off()
     
-#     png(filename = "Plots/probEvo1to2_1.png", width = 1500, height = 1000)
-#     par(mar=c(10,10,10,10))
-#     plot(x = t_i, y = case_1[[1]][2,], type = 'l', col = col_dler[1], lwd = 2,
-#          xlab = TeX(r'(Time post baseline (x30 sec) )'), 
-#          ylab = TeX(r'(Transition probability)'), ylim = c(0,1),
-#          cex.lab=4, cex.axis=3, mgp=c(6,2,0))
-#     mytitle = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )')
-#     mysubtitle = TeX(r'((sex $=$ 1) )')
-#     mtext(side=3, line=3.5, at=-0.07, adj=0, cex=5, mytitle)
-#     mtext(side=3, line=0.5, at=-0.07, adj=0, cex=4, mysubtitle)
-#     for(i in 2:length(dler_vals)) {
-#         lines(x = t_i, y = case_1[[i]][2,], col = col_dler[i], lwd = 2)
-#     }
-#     lines(x = t_i, y = case_1[[which(dler_vals == 0)]][2,], col = 'blue', lwd = 4)
-#     legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
-#             legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3, 
-#             col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
-#     dev.off()
+    png(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_1.png"), width = 1500, height = 1000)
+    par(mar=c(10,10,10,10))
+    plot(x = t_i, y = case_1[[1]][1,], type = 'l', col = col_dler[1], lwd = 2,
+         xlab = TeX(r'(Time post baseline (x30 sec) )'),
+         ylab = TeX(r'(Transition probability)'), ylim = c(0,1),
+         cex.lab=4, cex.axis=3, mgp=c(6,2,0))
+    mytitle = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )')
+    mysubtitle = TeX(r'((sex $=$ 1) )')
+    mtext(side=3, line=3.5, at=-0.07, adj=0, cex=5, mytitle)
+    mtext(side=3, line=0.5, at=-0.07, adj=0, cex=4, mysubtitle)
+    for(i in 2:length(dler_vals)) {
+        lines(x = t_i, y = case_1[[i]][1,], col = col_dler[i], lwd = 2)
+    }
+    lines(x = t_i, y = case_1[[which(dler_vals == 0)]][1,], col = 'blue', lwd = 4)
+    legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
+            legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3,
+            col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
+    dev.off()
+
+    png(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_0.png"), width = 1500, height = 1000)
+    par(mar=c(10,10,10,10))
+    plot(x = t_i, y = case_0[[1]][2,], type = 'l', col = col_dler[1], lwd = 2,
+         xlab = TeX(r'(Time post baseline (x30 sec) )'),
+         ylab = TeX(r'(Transition probability)'), ylim = c(0,1),
+         cex.lab=4, cex.axis=3, mgp=c(6,2,0))
+    mytitle = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )')
+    mysubtitle = TeX(r'((sex $=$ 0) )')
+    mtext(side=3, line=3.5, at=-0.07, adj=0, cex=5, mytitle)
+    mtext(side=3, line=0.5, at=-0.07, adj=0, cex=4, mysubtitle)
+    for(i in 2:length(dler_vals)) {
+        lines(x = t_i, y = case_0[[i]][2,], col = col_dler[i], lwd = 2)
+    }
+    lines(x = t_i, y = case_0[[which(dler_vals == 0)]][2,], col = 'blue', lwd = 4)
+    legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
+            legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3,
+            col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
+    dev.off()
     
-#     png(filename = "Plots/probEvo1to3_0.png", width = 1500, height = 1000)
-#     par(mar=c(10,10,10,10))
-#     plot(x = t_i, y = case_0[[1]][3,], type = 'l', col = col_dler[1], lwd = 2,
-#          xlab = TeX(r'(Time post baseline (x30 sec) )'), 
-#          ylab = TeX(r'(Transition probability)'), ylim = c(0,1),
-#          cex.lab=4, cex.axis=3, mgp=c(6,2,0))
-#     mytitle = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )')
-#     mysubtitle = TeX(r'((sex $=$ 0) )')
-#     mtext(side=3, line=3.5, at=-0.07, adj=0, cex=5, mytitle)
-#     mtext(side=3, line=0.5, at=-0.07, adj=0, cex=4, mysubtitle)
-#     for(i in 2:length(dler_vals)) {
-#         lines(x = t_i, y = case_0[[i]][3,], col = col_dler[i], lwd = 2)
-#     }
-#     lines(x = t_i, y = case_0[[which(dler_vals == 0)]][3,], col = 'blue', lwd = 4)
-#     legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
-#             legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3, 
-#             col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
-#     dev.off()
+    png(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_1.png"), width = 1500, height = 1000)
+    par(mar=c(10,10,10,10))
+    plot(x = t_i, y = case_1[[1]][2,], type = 'l', col = col_dler[1], lwd = 2,
+         xlab = TeX(r'(Time post baseline (x30 sec) )'),
+         ylab = TeX(r'(Transition probability)'), ylim = c(0,1),
+         cex.lab=4, cex.axis=3, mgp=c(6,2,0))
+    mytitle = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )')
+    mysubtitle = TeX(r'((sex $=$ 1) )')
+    mtext(side=3, line=3.5, at=-0.07, adj=0, cex=5, mytitle)
+    mtext(side=3, line=0.5, at=-0.07, adj=0, cex=4, mysubtitle)
+    for(i in 2:length(dler_vals)) {
+        lines(x = t_i, y = case_1[[i]][2,], col = col_dler[i], lwd = 2)
+    }
+    lines(x = t_i, y = case_1[[which(dler_vals == 0)]][2,], col = 'blue', lwd = 4)
+    legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
+            legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3,
+            col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
+    dev.off()
     
-#     png(filename = "Plots/probEvo1to3_1.png", width = 1500, height = 1000)
-#     par(mar=c(10,10,10,10))
-#     plot(x = t_i, y = case_1[[1]][3,], type = 'l', col = col_dler[1], lwd = 2,
-#          xlab = TeX(r'(Time post baseline (x30 sec) )'), 
-#          ylab = TeX(r'(Transition probability)'), ylim = c(0,1),
-#          cex.lab=4, cex.axis=3, mgp=c(6,2,0))
-#     mytitle = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )')
-#     mysubtitle = TeX(r'((sex $=$ 1) )')
-#     mtext(side=3, line=3.5, at=-0.07, adj=0, cex=5, mytitle)
-#     mtext(side=3, line=0.5, at=-0.07, adj=0, cex=4, mysubtitle)
-#     for(i in 2:length(dler_vals)) {
-#         lines(x = t_i, y = case_1[[i]][3,], col = col_dler[i], lwd = 2)
-#     }
-#     lines(x = t_i, y = case_1[[which(dler_vals == 0)]][3,], col = 'blue', lwd = 4)
-#     legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
-#             legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3, 
-#             col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
-#     dev.off()
+    png(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_0.png"), width = 1500, height = 1000)
+    par(mar=c(10,10,10,10))
+    plot(x = t_i, y = case_0[[1]][3,], type = 'l', col = col_dler[1], lwd = 2,
+         xlab = TeX(r'(Time post baseline (x30 sec) )'),
+         ylab = TeX(r'(Transition probability)'), ylim = c(0,1),
+         cex.lab=4, cex.axis=3, mgp=c(6,2,0))
+    mytitle = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )')
+    mysubtitle = TeX(r'((sex $=$ 0) )')
+    mtext(side=3, line=3.5, at=-0.07, adj=0, cex=5, mytitle)
+    mtext(side=3, line=0.5, at=-0.07, adj=0, cex=4, mysubtitle)
+    for(i in 2:length(dler_vals)) {
+        lines(x = t_i, y = case_0[[i]][3,], col = col_dler[i], lwd = 2)
+    }
+    lines(x = t_i, y = case_0[[which(dler_vals == 0)]][3,], col = 'blue', lwd = 4)
+    legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
+            legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3,
+            col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
+    dev.off()
     
-# }
+    png(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_1.png"), width = 1500, height = 1000)
+    par(mar=c(10,10,10,10))
+    plot(x = t_i, y = case_1[[1]][3,], type = 'l', col = col_dler[1], lwd = 2,
+         xlab = TeX(r'(Time post baseline (x30 sec) )'),
+         ylab = TeX(r'(Transition probability)'), ylim = c(0,1),
+         cex.lab=4, cex.axis=3, mgp=c(6,2,0))
+    mytitle = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )')
+    mysubtitle = TeX(r'((sex $=$ 1) )')
+    mtext(side=3, line=3.5, at=-0.07, adj=0, cex=5, mytitle)
+    mtext(side=3, line=0.5, at=-0.07, adj=0, cex=4, mysubtitle)
+    for(i in 2:length(dler_vals)) {
+        lines(x = t_i, y = case_1[[i]][3,], col = col_dler[i], lwd = 2)
+    }
+    lines(x = t_i, y = case_1[[which(dler_vals == 0)]][3,], col = 'blue', lwd = 4)
+    legend( 'topleft', horiz=F, bty='n', x.intersp=.75,
+            legend=c( 'DLER = +2.6', 'DLER =   0.0', 'DLER =  -1.4'), pch=15, pt.cex=3,
+            col=c(col_dler[1], 'blue', col_dler[length(col_dler)]), cex = 3)
+    dev.off()
+    
+}
 
 
