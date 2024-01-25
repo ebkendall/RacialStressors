@@ -12,7 +12,7 @@ print(ind)
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 1
+covariate_struct = 3
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
@@ -29,8 +29,8 @@ covariate_struct = 1
 # trial 9 : run for 200,000 steps, started obs states, model 2
 # trial 10: run for 200,000 steps, started obs states, model 3
 
-trial_num = covariate_struct + 3
-simulation = F
+trial_num = 4
+simulation = T
 case_b = T
 # ------------------------------------------------------------------------------
 
@@ -39,7 +39,7 @@ init_par = NULL
 if(simulation) {
     # Simulation
     # 30s epochs
-    load(paste0('Data/sim_data_', covariate_struct, '_30.rda'))
+    load(paste0('Data/sim_data_', covariate_struct, '_', ind, '.rda'))
     load(paste0('Data/true_par_', covariate_struct, '_30.rda'))
     data_format = sim_data
 } else {
@@ -250,7 +250,7 @@ if(!simulation) { rm(mcmc_out) }
 
 big_steps = 1000000
 steps     = 100000
-burnin    = 0
+burnin    = 5000
 
 s_time = Sys.time()
 

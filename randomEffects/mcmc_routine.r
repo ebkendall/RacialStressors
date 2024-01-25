@@ -219,12 +219,14 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
             }
 
             # Save intermediary chain
-            if(simulation) {
-                save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
-                                            trial_num, 'it', ttt/steps, '_sim.rda'))
-            } else {
-                save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
-                                            trial_num, 'it', ttt/steps, '.rda'))
+            if(ttt/steps == 5) {
+                if(simulation) {
+                    save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
+                                                trial_num, 'it', ttt/steps, '_sim.rda'))
+                } else {
+                    save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
+                                                trial_num, 'it', ttt/steps, '.rda'))
+                }
             }
 
             # Reset the chains

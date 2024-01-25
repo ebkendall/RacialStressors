@@ -1,5 +1,7 @@
 # This script file produces trace plots and histograms of the mcmc output files
 library(latex2exp)
+library(tidyverse)
+library(gridExtra)
 
 dir = 'Model_out/' 
 
@@ -8,18 +10,20 @@ dir = 'Model_out/'
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 2
+covariate_struct = 3
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
-simulation = F
+simulation = T
 case_b = T
 interm = F
 it_num = 3
 if(simulation) {
-    trial_num = covariate_struct
+    trial_num = 4
+    index_seeds = c(1:100)
 } else {
     trial_num = covariate_struct + 3
+    index_seeds = c(1:5)
 }
 # ------------------------------------------------------------------------------
 
@@ -32,8 +36,6 @@ if(interm) {
 
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
-
-index_seeds = c(1:5)
 
 if(covariate_struct == 1) {
     par_index = list(zeta=1:6, misclass=14:17, delta = 7:9, tau2 = 10, 
@@ -137,6 +139,9 @@ post_means = matrix(nrow = length(index_seeds), ncol = length(labels))
 
 ind = 0
 
+cred_set = vector(mode = 'list', length = length(labels))
+for(i in 1:length(cred_set)) cred_set[[i]] = matrix(nrow = 100, ncol = 2)
+
 for(seed in index_seeds){
     
     file_name = NULL
@@ -189,9 +194,16 @@ for(seed in index_seeds){
                            tau_sig1_sum, tau_sig2_sum, tau_sig3_sum,tau2,
                            sig1, sig2, sig3)
 
-        if(interm) {
+        if(simulation) {
             chain_list[[ind]] = main_chain[ind_keep, ]
     	    post_means[ind,] <- colMeans(main_chain[ind_keep, ])
+
+            for(j in 1:ncol(main_chain)) {
+                cred_set[[j]][seed, 1] = round(quantile( main_chain[ind_keep,j],
+                                                    prob=.025), 4)
+                cred_set[[j]][seed, 2] = round(quantile( main_chain[ind_keep,j],
+                                                    prob=.975), 4)
+            }
         } else {
             chain_list[[ind]] = main_chain
     	    post_means[ind,] <- colMeans(main_chain)
@@ -199,8 +211,34 @@ for(seed in index_seeds){
     }
 }
 
-print(length(labels))
-print(ncol(main_chain))
+# True parameter values if the simulation
+if(simulation) {
+    load(paste0('Data/true_par_', covariate_struct, '_30.rda'))
+    mu_alpha_sum = true_par[par_index$delta[1]] + true_par[par_index$delta[2]]
+    mu_beta_sum = true_par[par_index$delta[1]] + true_par[par_index$delta[3]]
+    
+    tau_sig1_sum = exp(true_par[par_index$tau2]) + exp(true_par[par_index$sigma2[1]])
+    tau_sig2_sum = exp(true_par[par_index$tau2]) + exp(true_par[par_index$sigma2[2]])
+    tau_sig3_sum = exp(true_par[par_index$tau2]) + exp(true_par[par_index$sigma2[3]])
+    
+    tau2 = exp(true_par[par_index$tau2])
+    sig1 = exp(true_par[par_index$sigma2[1]])
+    sig2 = exp(true_par[par_index$sigma2[2]])
+    sig3 = exp(true_par[par_index$sigma2[3]])
+    true_par = c(true_par, mu_alpha_sum, mu_beta_sum, 
+                 tau_sig1_sum, tau_sig2_sum, tau_sig3_sum,tau2,
+                 sig1, sig2, sig3)
+} 
+
+
+# Calculate the coverage in the simulation
+if(simulation) {
+    cov_df = rep(NA, length(labels))
+    for(i in 1:length(labels)) {
+        val = true_par[i]
+        cov_df[i] = mean(cred_set[[i]][,1] <= val & val <= cred_set[[i]][,2], na.rm=T)
+    }
+}
 
 # Plot and save the mcmc trace plots and histograms.
 pdf_title = NULL
@@ -233,26 +271,6 @@ par(mfrow=c(4, 2))
 stacked_chains = do.call( rbind, chain_list)
 par_mean = par_median = upper = lower = rep( NA, length(labels))
 
-if(simulation) {
-    load(paste0('Data/true_par_', covariate_struct, '_30.rda'))
-    mu_alpha_sum = true_par[par_index$delta[1]] + true_par[par_index$delta[2]]
-    mu_beta_sum = true_par[par_index$delta[1]] + true_par[par_index$delta[3]]
-    
-    tau_sig1_sum = exp(true_par[par_index$tau2]) + exp(true_par[par_index$sigma2[1]])
-    tau_sig2_sum = exp(true_par[par_index$tau2]) + exp(true_par[par_index$sigma2[2]])
-    tau_sig3_sum = exp(true_par[par_index$tau2]) + exp(true_par[par_index$sigma2[3]])
-    
-    tau2 = exp(true_par[par_index$tau2])
-    sig1 = exp(true_par[par_index$sigma2[1]])
-    sig2 = exp(true_par[par_index$sigma2[2]])
-    sig3 = exp(true_par[par_index$sigma2[3]])
-    true_par = c(true_par, mu_alpha_sum, mu_beta_sum, 
-                 tau_sig1_sum, tau_sig2_sum, tau_sig3_sum,tau2,
-                 sig1, sig2, sig3)
-} 
-
-# tau2_hat   = 0.3395152
-# sigma2_hat = 1.227959
 mle_ind = 1
 
 for(r in 1:length(labels)){
@@ -262,12 +280,14 @@ for(r in 1:length(labels)){
     upper[r] = round( quantile( stacked_chains[,r], prob=.975), 4)
     lower[r] = round( quantile( stacked_chains[,r], prob=.025), 4)
 
-    if (simulation) {
-        plot( NULL, xlab=paste0("true val: ", round(true_par[r], 3)), ylab=NA, main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
+    if(simulation) {
+        plot( NULL, xlab=paste0("true val: ", round(true_par[r], 3)), ylab=NA, 
+              main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
               ylim=range(stacked_chains[,r]) )
     } else {
         
-        plot( NULL, xlab=paste0("[", lower[r], ", ", upper[r], "]"), ylab=NA, main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
+        plot( NULL, xlab=paste0("[", lower[r], ", ", upper[r], "]"), ylab=NA, 
+              main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
               ylim=range(stacked_chains[,r]) )
     }
 
@@ -280,7 +300,7 @@ for(r in 1:length(labels)){
     abline( v=lower[r], col='purple', lwd=2, lty=2)
     
     if(!simulation) {
-        if(r == par_index$delta[1]) abline( v=6.46408805031447, col='blue', lwd=2, lty=2)
+        if(r == par_index$delta[1]) abline( v=  6.464088, col='blue', lwd=2, lty=2)
         if(r == par_index$delta[2]) abline( v= -0.2681087, col='blue', lwd=2, lty=2)
         if(r == par_index$delta[3]) abline( v= -0.1132974, col='blue', lwd=2, lty=2)   
     }
@@ -297,8 +317,36 @@ for(r in 1:length(labels)){
     }
 }
 
-print(par_median)
+if(simulation) {
+    for(r in 1:length(labels)) {
+        # Adding the boxplots
+        yVar = post_means[,r]
+        x_label = paste0("Coverage is: ", round(cov_df[r], digits=3))
 
+        plot_df = data.frame(yVar = yVar, disc_type = disc_type)
+        VP[[r]] = ggplot(plot_df, aes(x=disc_type, y = yVar)) +
+        geom_violin(trim=FALSE) +
+        geom_boxplot(width=0.1) +
+        ggtitle(labels[r]) +
+        ylab(paste0("Parameter Value: ", round(true_par[r], 3))) +
+        xlab(x_label) +
+        geom_hline(yintercept=true_par[r], linetype="dashed", color = "red") +
+        theme(text = element_text(size = 7))
+    }
+
+    grid.arrange(VP[[1]], VP[[2]], VP[[3]], VP[[4]], VP[[5]],
+                VP[[6]], VP[[7]], VP[[8]], VP[[9]], ncol=3, nrow =3)
+    grid.arrange(VP[[10]], VP[[11]], VP[[12]], VP[[13]], VP[[14]],
+                VP[[15]], VP[[16]], VP[[17]], VP[[18]], ncol=3, nrow =3)
+    grid.arrange(VP[[19]], VP[[20]], VP[[21]], VP[[22]], VP[[23]],
+                VP[[24]], VP[[25]], VP[[26]], VP[[27]], ncol=3, nrow =3)
+    grid.arrange(VP[[28]], VP[[29]], VP[[30]], VP[[31]], VP[[32]],
+                VP[[33]], VP[[34]], VP[[35]], VP[[36]], ncol=3, nrow =3)
+    grid.arrange(VP[[37]], VP[[38]], VP[[39]], VP[[40]], VP[[41]], 
+                VP[[42]], VP[[43]], VP[[44]], VP[[45]], ncol=3, nrow =3) 
+    grid.arrange(VP[[46]], VP[[47]], VP[[48]], VP[[49]], VP[[50]], 
+                VP[[51]], VP[[52]], VP[[53]], VP[[54]], ncol=3, nrow =3) 
+}
 dev.off()
 
 if(!simulation) {
