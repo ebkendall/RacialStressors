@@ -5,7 +5,7 @@ library(mvtnorm)
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 3
+covariate_struct = 1
 # ------------------------------------------------------------------------------
 
 # Load the current data ------------------------------------------------------
@@ -28,11 +28,11 @@ if(covariate_struct == 1) {
     
     load('Model_out/mcmc_out_2_1_30b.rda')
     true_par = apply(mcmc_out$chain[1:99500, ], 2, median)
-    true_par[par_index$zeta] = c(-3, -3, -3, -3, -3, -3)
+    true_par[par_index$zeta] = c(-2, -2, -3, -3, -3, -3)
     true_par[par_index$delta][2:3] = c(-4, -2)
     true_par[par_index$tau2] = -2
     true_par[par_index$sigma2] = c(-0.5, -0.5, -0.5)
-    save(true_par, file = paste0('Data/true_par_', covariate_struct, '.rda'))
+    save(true_par, file = paste0('Data/true_par_', covariate_struct, '_30.rda'))
     
     gamma = matrix(0, nrow = 1, ncol = 1)
     

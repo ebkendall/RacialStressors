@@ -12,7 +12,7 @@ print(ind)
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 3
+covariate_struct = 1
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
@@ -29,7 +29,7 @@ covariate_struct = 3
 # trial 9 : run for 200,000 steps, started obs states, model 2
 # trial 10: run for 200,000 steps, started obs states, model 3
 
-trial_num = 4
+trial_num = 5
 simulation = T
 case_b = T
 # ------------------------------------------------------------------------------

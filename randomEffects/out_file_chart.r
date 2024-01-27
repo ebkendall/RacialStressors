@@ -6,7 +6,7 @@ library(plotrix)
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 2
+covariate_struct = 3
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
@@ -278,13 +278,19 @@ for(i in EIDs){
     b_i_mle = as.numeric(c(B_MLE[[which(EIDs == i)]]))
 	indices_i = (data_format[,'ID..']==i)
 	sub_dat = data_format[data_format[,"ID.."] == i, ]
+    y_1_sub = sub_dat[,"State"]
+
     # Check
     if(length(b_i_mle) != nrow(sub_dat)) print(paste0(i, " issue"))
 
+    start_run = FALSE
     for(t in 1:(length(b_i_mle) - 1)) {
-        count_transitions[b_i_mle[t], b_i_mle[t+1]] = 
-            count_transitions[b_i_mle[t], b_i_mle[t+1]] + 1
-        total_trans = total_trans + 1
+        if(y_1_sub[t+1] != 1 && y_1_sub[t] == 1) start_run = TRUE
+        if(start_run) {
+            count_transitions[b_i_mle[t], b_i_mle[t+1]] = 
+                count_transitions[b_i_mle[t], b_i_mle[t+1]] + 1
+            total_trans = total_trans + 1
+        }
     }
 }
 
@@ -296,13 +302,13 @@ print(count_transitions)
 print("Transition Proportions")
 print(round(count_transitions / total_trans, digits = 4))
 
-# # Most likely state sequence
-# num_non_s1 = matrix(nrow = length(EIDs), ncol = 2)
-# num_non_s1[,1] = EIDs
-# colnames(num_non_s1) = c('EIDs', 'num_non_s1')
-# for(i in EIDs) {
-#     state_i = data_format[data_format$ID.. == i, "State"]
-#     num_non_s1[num_non_s1[,"EIDs"] == i, 2] = sum(state_i != 1)
-# }
-# 
-# num_non_s1 = num_non_s1[order(num_non_s1[,2]),]
+# No transition:
+no_trans = NULL
+for(i in EIDs) {
+    if(sum(B_MLE[[which(EIDs == i)]] != 1) == 0) { no_trans = c(no_trans, i) }
+}
+
+print("No transition out of baseline: ")
+print(no_trans)
+print("Yes, transitioned out of baseline: ")
+print(EIDs[!(EIDs %in% no_trans)])

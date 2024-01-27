@@ -6,6 +6,7 @@ sourceCpp("mcmc_routine_c.cpp")
 
 set.seed(2023)
 
+dir = 'Model_out/' 
 # Model type -------------------------------------------------------------------
 # 1: baseline only
 # 2: baseline & DLER
@@ -13,10 +14,11 @@ set.seed(2023)
 
 covariate_struct = 3
 # ------------------------------------------------------------------------------
-
+index_seeds = c(1:5)
 trial_num = covariate_struct + 3
 simulation = F
 case_b = T
+interm = F
 # ------------------------------------------------------------------------------
 
 init_par = NULL
@@ -128,9 +130,50 @@ if(covariate_struct == 1) {
     }
 }
 
-load(paste0('Model_out/mcmc_out_2_', covariate_struct, '_30b.rda'))
-init_par = apply(mcmc_out$chain[89500:99500,], 2, median)
-rm(mcmc_out)
+ind = 0
+chain_list = vector(mode = "list", length = length(index_seeds))
+for(seed in index_seeds){
+    
+    file_name = NULL
+    
+    if(simulation) {
+        if(case_b) {
+            if(interm) {
+                file_name = paste0(dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '_sim.rda')   
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30b.rda')   
+            }
+        } else {
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')
+        }
+    } else {
+        if(case_b) {
+            if(interm) {
+                file_name = paste0(dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '.rda')   
+            } else {
+                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
+            }
+        } else {
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')
+        }
+    }
+    
+    if (file.exists(file_name)) {
+        load(file_name)
+        ind = ind + 1
+
+        print(file_name)
+
+        # Thinning the chain
+        main_chain = mcmc_out$chain
+        ind_keep = seq(1, nrow(main_chain), by=10)
+        
+        chain_list[[ind]] = main_chain[ind_keep, ]
+    }
+}
+
+stacked_chains = do.call( rbind, chain_list)
+init_par = apply(stacked_chains, 2, median)
 
 # Understanding the states of interest:
 non_baseline = matrix(nrow = length(EIDs), ncol = 2)
