@@ -11,16 +11,16 @@ dir = 'Model_out/'
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 3
+covariate_struct = 1
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
-simulation = T
+simulation = F
 case_b = T
 interm = F
 it_num = 3
 if(simulation) {
-    trial_num = 4
+    trial_num = 5
     index_seeds = c(1:100)
 } else {
     trial_num = covariate_struct + 3
@@ -337,14 +337,16 @@ if(simulation) {
                 VP[[6]], VP[[7]], VP[[8]], VP[[9]], ncol=3, nrow =3)
     grid.arrange(VP[[10]], VP[[11]], VP[[12]], VP[[13]], VP[[14]],
                 VP[[15]], VP[[16]], VP[[17]], VP[[18]], ncol=3, nrow =3)
-    grid.arrange(VP[[19]], VP[[20]], VP[[21]], VP[[22]], VP[[23]],
-                VP[[24]], VP[[25]], VP[[26]], VP[[27]], ncol=3, nrow =3)
-    grid.arrange(VP[[28]], VP[[29]], VP[[30]], VP[[31]], VP[[32]],
-                VP[[33]], VP[[34]], VP[[35]], VP[[36]], ncol=3, nrow =3)
-    grid.arrange(VP[[37]], VP[[38]], VP[[39]], VP[[40]], VP[[41]], 
-                VP[[42]], VP[[43]], VP[[44]], VP[[45]], ncol=3, nrow =3) 
-    grid.arrange(VP[[46]], VP[[47]], VP[[48]], VP[[49]], VP[[50]], 
-                VP[[51]], VP[[52]], VP[[53]], VP[[54]], ncol=3, nrow =3) 
+    if(covariate_struct > 1) {
+        grid.arrange(VP[[19]], VP[[20]], VP[[21]], VP[[22]], VP[[23]],
+                     VP[[24]], VP[[25]], VP[[26]], VP[[27]], ncol=3, nrow =3)
+        grid.arrange(VP[[28]], VP[[29]], VP[[30]], VP[[31]], VP[[32]],
+                     VP[[33]], VP[[34]], VP[[35]], VP[[36]], ncol=3, nrow =3)
+        grid.arrange(VP[[37]], VP[[38]], VP[[39]], VP[[40]], VP[[41]], 
+                     VP[[42]], VP[[43]], VP[[44]], VP[[45]], ncol=3, nrow =3) 
+        grid.arrange(VP[[46]], VP[[47]], VP[[48]], VP[[49]], VP[[50]], 
+                     VP[[51]], VP[[52]], VP[[53]], VP[[54]], ncol=3, nrow =3)    
+    }
 }
 dev.off()
 
@@ -432,6 +434,18 @@ if(!simulation) {
         case_0[[i]] = prob_evo(zeta_est, t_i, cov_val_0)
         case_1[[i]] = prob_evo(zeta_est, t_i, cov_val_1)
     }
+
+    if(covariate_struct == 1) {
+        qs = zeta_est %*% cov_val_0
+        print(cbind(zeta_est, qs))
+        Q = matrix(c( 1,          exp(qs[1]), exp(qs[2]),
+                        exp(qs[3]),          1, exp(qs[4]),
+                        exp(qs[5]), exp(qs[6]),          1), ncol = 3, byrow=T)
+        P = Q / rowSums(Q)
+        print("Transition Probability matrix: ")
+        print(P)
+    }
+
     if(covariate_struct != 1) {
         
         prob0_1_to_1 = cbind(t_i, case_0[[1]][1,], dler_vals[1])
@@ -476,12 +490,12 @@ if(!simulation) {
                                                        color = as.integer(dler),
                                                        group = dler)) +
             geom_line() +
+            ylim(c(0,1)) + 
             scale_colour_gradient(name = "DLER value", 
                                   low = "blue", high = "red") +
             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-                 y = TeX(r'(Transition probability)'), 
-                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 1) )'),
-                 subtitle = TeX(r'((sex $=$ 0) )')) +
+                 y = TeX(r'(Probability of baseline state)'), 
+                 title = TeX(r'(Probability evolution curve from baseline state)')) +
             theme(legend.position = "bottom",
                   legend.key.height = unit(0.25, 'cm'), #change legend key height
                   legend.key.width = unit(1, 'cm'), #change legend key width
@@ -497,11 +511,12 @@ if(!simulation) {
                                                            color = as.integer(dler), 
                                                            group = dler)) +
                 geom_line() +
+                ylim(c(0,1)) + 
                 scale_colour_gradient(name = "DLER value", 
                                       low = "blue", high = "red") +
                 labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-                     y = TeX(r'(Transition probability)'), 
-                     title = TeX(r'(Probability evolution curve (state 1 $\to$ 1) )'),
+                     y = TeX(r'(Probability of baseline state)'), 
+                     title = TeX(r'(Probability evolution curve from baseline state)'),
                      subtitle = TeX(r'((sex $=$ 1) )')) +
                 theme(legend.position = "bottom",
                       legend.key.height = unit(0.25, 'cm'), #change legend key height
@@ -519,12 +534,12 @@ if(!simulation) {
                                                        color = as.integer(dler),
                                                        group = dler)) +
             geom_line() +
+            ylim(c(0,1)) + 
             scale_colour_gradient(name = "DLER value", 
                                   low = "blue", high = "red") +
             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
                  y = TeX(r'(Transition probability)'), 
-                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )'),
-                 subtitle = TeX(r'((sex $=$ 0) )')) +
+                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )')) +
             theme(legend.position = "bottom",
                   legend.key.height = unit(0.25, 'cm'), #change legend key height
                   legend.key.width = unit(1, 'cm'), #change legend key width
@@ -540,6 +555,7 @@ if(!simulation) {
                                                            color = as.integer(dler), 
                                                            group = dler)) +
                 geom_line() +
+                ylim(c(0,1)) + 
                 scale_colour_gradient(name = "DLER value", 
                                       low = "blue", high = "red") +
                 labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
@@ -562,12 +578,12 @@ if(!simulation) {
                                                        color = as.integer(dler),
                                                        group = dler)) +
             geom_line() +
+            ylim(c(0,1)) + 
             scale_colour_gradient(name = "DLER value", 
                                   low = "blue", high = "red") +
             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
                  y = TeX(r'(Transition probability)'), 
-                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )'),
-                 subtitle = TeX(r'((sex $=$ 0) )')) +
+                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )')) +
             theme(legend.position = "bottom",
                   legend.key.height = unit(0.25, 'cm'), #change legend key height
                   legend.key.width = unit(1, 'cm'), #change legend key width
@@ -583,6 +599,7 @@ if(!simulation) {
                                                            color = as.integer(dler), 
                                                            group = dler)) +
                 geom_line() +
+                ylim(c(0,1)) + 
                 scale_colour_gradient(name = "DLER value", 
                                       low = "blue", high = "red") +
                 labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
@@ -603,22 +620,19 @@ if(!simulation) {
         app0 = ggarrange(plot0_1_to_1 + 
                              labs(title = TeX(r'(state 1 $\to$ 1)')) +
                              theme(axis.title.x = element_blank(),
-                                   legend.position="none") +
-                             ylim(c(0,1)), 
+                                   legend.position="none"), 
                          plot0_1_to_2 + 
                              labs(title = TeX(r'(state 1 $\to$ 2)')) +
                              theme(axis.text.y = element_blank(),
                                    axis.ticks.y = element_blank(),
-                                   axis.title.y = element_blank()) +
-                             ylim(c(0,1)),
+                                   axis.title.y = element_blank()),
                          plot0_1_to_3 + 
                              labs(title = TeX(r'(state 1 $\to$ 3)')) +
                              theme(axis.text.y = element_blank(),
                                    axis.ticks.y = element_blank(),
                                    axis.title.y = element_blank(),
                                    axis.title.x = element_blank(),
-                                   legend.position="none") +
-                             ylim(c(0,1)),
+                                   legend.position="none"),
                          nrow = 1, ncol = 3)
         
         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_0.png"), 
@@ -628,22 +642,19 @@ if(!simulation) {
             app1 = ggarrange(plot1_1_to_1 + 
                                  labs(title = TeX(r'(state 1 $\to$ 1)'))+
                                  theme(axis.title.x = element_blank(),
-                                       legend.position="none") +
-                                 ylim(c(0,1)), 
+                                       legend.position="none"), 
                              plot1_1_to_2 + 
                                  labs(title = TeX(r'(state 1 $\to$ 2)')) +
                                  theme(axis.text.y = element_blank(),
                                        axis.ticks.y = element_blank(),
-                                       axis.title.y = element_blank()) +
-                                 ylim(c(0,1)),
+                                       axis.title.y = element_blank()),
                              plot1_1_to_3 + 
                                  labs(title = TeX(r'(state 1 $\to$ 3)')) +
                                  theme(axis.text.y = element_blank(),
                                        axis.ticks.y = element_blank(),
                                        axis.title.y = element_blank(),
                                        axis.title.x = element_blank(),
-                                       legend.position="none") +
-                                 ylim(c(0,1)),
+                                       legend.position="none"),
                              nrow = 1, ncol = 3)   
             
             ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_1.png"), 
@@ -653,13 +664,15 @@ if(!simulation) {
     } else {
         prob0_1_to_1 = data.frame('t' = t_i, 'prob' = case_0[[1]][1,])
         plot0_1_to_1 = ggplot(data = prob0_1_to_1, aes(x = t, y = prob)) +
+            ylim(c(0,1)) + 
             geom_line(linewidth=1) +
             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-                 y = TeX(r'(Transition probability)'), 
-                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 1) )'))
+                 y = TeX(r'(Probability of baseline state)'), 
+                 title = TeX(r'(Probability evolution curve from baseline state)'))
         
         prob0_1_to_2 = data.frame('t' = t_i, 'prob' = case_0[[1]][2,])
         plot0_1_to_2 = ggplot(data = prob0_1_to_2, aes(x = t, y = prob)) +
+            ylim(c(0,1)) + 
             geom_line(linewidth=1) +
             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
                  y = TeX(r'(Transition probability)'), 
@@ -667,6 +680,7 @@ if(!simulation) {
         
         prob0_1_to_3 = data.frame('t' = t_i, 'prob' = case_0[[1]][3,])
         plot0_1_to_3 = ggplot(data = prob0_1_to_3, aes(x = t, y = prob)) +
+            ylim(c(0,1)) + 
             geom_line(linewidth=1) +
             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
                  y = TeX(r'(Transition probability)'), 
@@ -681,21 +695,18 @@ if(!simulation) {
         
         app0 = ggarrange(plot0_1_to_1 + 
                              labs(title = TeX(r'(state 1 $\to$ 1)')) +
-                             theme(axis.title.x = element_blank()) +
-                             ylim(c(0, 1)), 
+                             theme(axis.title.x = element_blank()), 
                          plot0_1_to_2 + 
                              labs(title = TeX(r'(state 1 $\to$ 2)')) +
                              theme(axis.text.y = element_blank(),
                                    axis.ticks.y = element_blank(),
-                                   axis.title.y = element_blank()) +
-                             ylim(c(0, 1)),
+                                   axis.title.y = element_blank()),
                          plot0_1_to_3 + 
                              labs(title = TeX(r'(state 1 $\to$ 3)')) +
                              theme(axis.text.y = element_blank(),
                                    axis.ticks.y = element_blank(),
                                    axis.title.y = element_blank(),
-                                   axis.title.x = element_blank()) +
-                             ylim(c(0, 1)),
+                                   axis.title.x = element_blank()),
                          nrow = 1, ncol = 3)
         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_0.png"), 
                plot = app0, width = 1500, height = 1000, units = "px")

@@ -16,12 +16,11 @@ interm = F
 it_num = 4
 if(simulation) {
     trial_num = covariate_struct + 3
+    index_seeds = c(1:5)
 } else {
     trial_num = covariate_struct + 3
+    index_seeds = c(1:5)
 }
-
-args = commandArgs(TRUE)
-seed = as.numeric(args[1])
 # ------------------------------------------------------------------------------
 
 Dir = 'Model_out/'
@@ -37,30 +36,46 @@ if(covariate_struct == 1) {
                      sigma2 = 35:37, gamma = 38:41)
 }
 
-file_name = NULL
-if(simulation) {
-    if(case_b) {
-        if(interm) {
-            file_name = paste0(Dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '_sim.rda')   
+for(seed in index_seeds) {
+    file_name = NULL
+    if(simulation) {
+        if(case_b) {
+            if(interm) {
+                file_name = paste0(Dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '_sim.rda')   
+            } else {
+                file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30b.rda')   
+            }
         } else {
-            file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30b.rda')   
+            file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')      
         }
     } else {
-        file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')      
-    }
-} else {
-    if(case_b) {
-        if(interm) {
-            file_name = paste0(Dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '.rda')   
+        if(case_b) {
+            if(interm) {
+                file_name = paste0(Dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '.rda')   
+            } else {
+                file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
+            }   
         } else {
-            file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b.rda')   
-        }   
+            file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')      
+        }
+    }
+    
+    print(file_name)
+    
+    load(file_name)
+    b_chain_ind = 1:nrow(mcmc_out$B_chain)
+    ind_keep = seq(1, nrow(mcmc_out$B_chain), by=10)
+    
+    if(seed == 1) {
+        post_B_chain = mcmc_out$B_chain[ind_keep, ]
     } else {
-        file_name = paste0(Dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')      
+        post_B_chain = rbind(post_B_chain, mcmc_out$B_chain[ind_keep, ])
     }
 }
 
-load(file_name)
+print("Dimension of posterior state sequence")
+print(dim(post_B_chain))
+
 
 if(simulation) {
     # Simulation
@@ -83,30 +98,28 @@ if(simulation) {
 if(simulation) {
     if(case_b) {
         if(interm) {
-            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b_it', it_num, '_seed', seed, '.pdf')
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b_it', it_num,'.pdf')
         } else {
-            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b', '_seed', seed, '.pdf')
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30b', '.pdf')
         }
     } else {
-        pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30', '_seed', seed, '.pdf')
+        pdf_title = paste0('Plots/chart_plot_', trial_num, '_sim_30', '.pdf')
     }
 } else {
     if(case_b) {
         if(interm) {
-            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1_it', it_num, '_seed', seed, '.pdf')
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1_it', it_num, '.pdf')
         } else {
-            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1', '_seed', seed, '.pdf')
+            pdf_title = paste0('Plots/chart_plot_', trial_num, '_30b_s1', '.pdf')
         }
     } else {
-        pdf_title = paste0('Plots/chart_plot_', trial_num, '_30', '_seed', seed, '.pdf')
+        pdf_title = paste0('Plots/chart_plot_', trial_num, '_30', '.pdf')
     }
 }
 
 if(interm) {
-    b_chain_ind = 1:100000
     panels = c(4, 1)
 } else {
-    b_chain_ind = 1:99500
     panels = c(3, 1)
     if(simulation) {
         load(paste0("Model_out/B_MLE_", trial_num, "_sim.rda"))
@@ -182,9 +195,9 @@ for(i in EIDs){
 	to_s3 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==3]
 
     # Plot the "ghost plot" to make everything line up
-    pb = barplot(rbind( colMeans(mcmc_out$B_chain[b_chain_ind, indices_i] == 1),
-			            colMeans(mcmc_out$B_chain[b_chain_ind, indices_i] == 2),
-				        colMeans(mcmc_out$B_chain[b_chain_ind, indices_i] == 3)), 
+    pb = barplot(rbind( colMeans(post_B_chain[, indices_i] == 1),
+			            colMeans(post_B_chain[, indices_i] == 2),
+				        colMeans(post_B_chain[, indices_i] == 3)), 
             col=c( 'dodgerblue', 'firebrick1', 'yellow2'),
 			xlab='time', space=0, col.main=main_color, border=NA, axes = F, plot = F) 
 
@@ -213,15 +226,15 @@ for(i in EIDs){
 
     points(x=pb, y=data_format[indices_i, "RSA"])
 
-	barplot(rbind(  colMeans(mcmc_out$B_chain[b_chain_ind, indices_i] == 1),
-			        colMeans(mcmc_out$B_chain[b_chain_ind, indices_i] == 2),
-				    colMeans(mcmc_out$B_chain[b_chain_ind, indices_i] == 3)), 
+	barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1),
+			        colMeans(post_B_chain[, indices_i] == 2),
+				    colMeans(post_B_chain[, indices_i] == 3)), 
             col=c( 'dodgerblue', 'firebrick1', 'yellow2'), 
 			xlab='time', space=0, col.main=main_color, border=NA, 
 			ylab = "Posterior probability",
             xlim=range(pb) + c(-0.5,0.5), xaxt = 'n', yaxt = 'n', col.lab = main_color) 
 	legend( 'topleft', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
-	        legend=c( 'Start of event', 'End of event'), pch=15, pt.cex=1.5, 
+	        legend=c( 'Start of stressor', 'End of stressor'), pch=15, pt.cex=1.5, 
 	        col=c( 'darkorchid4', 'darkgrey'))
 	legend( 'topright', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
 	        legend=c( 'Baseline', 'State 2', 'State 3'), pch=15, pt.cex=1.5, 
@@ -254,7 +267,7 @@ for(i in EIDs){
 	         xlim = range(pb) + c(-0.5,0.5),
 	         xaxt='n', yaxt='n', ylim = c(-2.2,0.2))
 	    axis( side=1, at=pb, col.axis=main_color, labels=t_grid)
-	    axis( side=2, at=-2:0, col.axis=main_color, labels = c("state 2", "state 3", "state 1"),
+	    axis( side=2, at=-2:0, col.axis=main_color, labels = c("state 2", "state 3", "baseline"),
 	          cex.axis=1)
 	    
 	    if(simulation){
@@ -312,3 +325,389 @@ print("No transition out of baseline: ")
 print(no_trans)
 print("Yes, transitioned out of baseline: ")
 print(EIDs[!(EIDs %in% no_trans)])
+
+# -----------------------------------------------------------------------------
+# Blunted responses -----------------------------------------------------------
+# -----------------------------------------------------------------------------
+if(covariate_struct == 1) {
+    id_indiv = c(302, 33103)
+} else {
+    id_indiv = c(302, 33103)
+}
+pdf(paste0("Plots/blunted_resp_", trial_num, ".pdf"))
+par(mfrow=c(4,1), mar=c(2,4,2,4))#, bg='black', fg='green')
+for(i in id_indiv){
+	print(which(EIDs == i))
+	indices_i = (data_format[,'ID..']==i)
+	sub_dat = data_format[data_format[,"ID.."] == i, ]
+	n_i = sum(indices_i)
+
+    if(covariate_struct == 1) {
+        plot_title = paste0('Participant: ', i)
+    } else if(covariate_struct == 2) {
+        
+        dler_val = NULL
+        for(a in EIDs) {
+            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+        }
+        mean_dler = mean(dler_val)
+        
+        cov_value = c(sub_dat[1,"DLER_avg"])
+        cov_value = as.numeric(cov_value)
+        cov_value[1] = cov_value[1] - mean_dler
+        cov_value[1] = round(cov_value[1], digits = 3)
+
+        plot_title = paste0('Participant: ', i, ', DLER: ', cov_value[1])
+    } else {
+        
+        ages = NULL
+        dler_val = NULL
+        for(a in EIDs) {
+            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+        }
+        mean_age = mean(ages)
+        mean_dler = mean(dler_val)
+        
+        cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+        cov_value = as.numeric(cov_value)
+        cov_value[1] = cov_value[1] - mean_age
+        cov_value[4] = cov_value[4] - mean_dler
+        cov_value[1] = round(cov_value[1], digits = 3)
+        cov_value[4] = round(cov_value[4], digits = 3)
+
+        plot_title = paste0('Participant: ', i, ', sex: ', cov_value[2], 
+                          ', pEdu: ', cov_value[3], ', DLER: ', cov_value[4],
+                          ', age: ', cov_value[1])
+    }
+
+	t_grid = t_grid_bar = 1:n_i
+	main_color = 'black'
+	
+	if(!simulation) {
+	    x_mean_1 = c(min(which(sub_dat$State == 1)), max(which(sub_dat$State == 1))+1)
+	    x_mean_2 = c(min(which(sub_dat$State == 2)), max(which(sub_dat$State == 2))+1)
+	    x_mean_3 = c(min(which(sub_dat$State == 3)), max(which(sub_dat$State == 3)))
+	    
+	    y_mean_1 = mean(sub_dat$RSA[sub_dat$State == 1])
+	    y_mean_2 = mean(sub_dat$RSA[sub_dat$State == 2])
+	    y_mean_3 = mean(sub_dat$RSA[sub_dat$State == 3])   
+	}
+	
+	b_i = as.numeric(data_format[ indices_i,"State"])
+	to_s1 = c(1,(2:n_i)[diff(b_i)!=0 & b_i[-1]==1])
+	to_s2 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==2]
+	to_s3 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==3]
+
+    # Plot the "ghost plot" to make everything line up
+    pb = barplot(rbind( colMeans(post_B_chain[, indices_i] == 1),
+			            colMeans(post_B_chain[, indices_i] == 2),
+				        colMeans(post_B_chain[, indices_i] == 3)), 
+            col=c( 'dodgerblue', 'firebrick1', 'yellow2'),
+			xlab='time', space=0, col.main=main_color, border=NA, axes = F, plot = F) 
+
+	plot(x=pb, y=data_format[indices_i, "RSA"], 
+            xlab='time', ylab = 'RSA', col.main=main_color, 
+            main = plot_title, xlim = range(pb) + c(-0.5,0.5),
+	        xaxt='n', yaxt='n', col.lab = main_color)
+	axis( side=1, at=pb, col.axis=main_color, labels=t_grid)
+	axis( side=2, at=seq(min(data_format[indices_i, "RSA"]), 
+                         max(data_format[indices_i, "RSA"])), col.axis=main_color)
+	
+    if(!simulation) {
+	    segments(x0 = x_mean_1[1]-0.5, x1 = x_mean_1[2]-0.5, y0 = y_mean_1, y1 = y_mean_1, col = 'azure2', lwd = 3)
+	}
+
+	if(simulation){
+	    abline( v=t_grid[to_s1]-0.5, col='dodgerblue', lwd=2)
+	    abline( v=t_grid[to_s2]-0.5, col='firebrick1', lwd=2)
+	    abline( v=t_grid[to_s3]-0.5, col='yellow2', lwd=2)
+	} else {
+	    abline( v=t_grid[to_s2]-0.5, col='darkorchid4', lwd=2)
+	    abline( v=t_grid[to_s3]-0.5, col='darkgrey', lwd=2)
+	}
+
+    points(x=pb, y=data_format[indices_i, "RSA"])
+
+	barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1),
+			        colMeans(post_B_chain[, indices_i] == 2),
+				    colMeans(post_B_chain[, indices_i] == 3)), 
+            col=c( 'dodgerblue', 'firebrick1', 'yellow2'), 
+			xlab='time', space=0, col.main=main_color, border=NA, 
+			ylab = "Posterior probability",
+            xlim=range(pb) + c(-0.5,0.5), xaxt = 'n', yaxt = 'n', col.lab = main_color) 
+	legend( 'topleft', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+	        legend=c( 'Start of stressor', 'End of stressor'), pch=15, pt.cex=1.5, 
+	        col=c( 'darkorchid4', 'darkgrey'))
+	legend( 'topright', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+	        legend=c( 'Baseline', 'State 2', 'State 3'), pch=15, pt.cex=1.5, 
+	        col=c( 'dodgerblue', 'firebrick1', 'yellow2'))
+    axis( side=1, at=t_grid_bar-0.5, col.axis=main_color, labels = t_grid)
+	axis( side=2, at=seq(0,1,by=0.25), col.axis=main_color)
+
+    if(simulation){
+        abline( v=t_grid[to_s1]-0.5, col='dodgerblue', lwd=2)
+        abline( v=t_grid[to_s2]-0.5, col='firebrick1', lwd=2)
+        abline( v=t_grid[to_s3]-0.5, col='yellow2', lwd=2)
+	} else {
+	    abline( v=t_grid[to_s2]-0.5, col='darkorchid4', lwd=2)
+	    abline( v=t_grid[to_s3]-0.5, col='darkgrey', lwd=2)
+	}
+	
+}
+dev.off()
+
+# -----------------------------------------------------------------------------
+# React/recover responses -----------------------------------------------------
+# -----------------------------------------------------------------------------
+
+id_indiv = c(414, 26275)
+pdf(paste0("Plots/react_recover_resp_", trial_num, ".pdf"))
+par(mfrow=c(4,1), mar=c(2,4,2,4))#, bg='black', fg='green')
+for(i in id_indiv){
+	print(which(EIDs == i))
+	indices_i = (data_format[,'ID..']==i)
+	sub_dat = data_format[data_format[,"ID.."] == i, ]
+	n_i = sum(indices_i)
+
+    if(covariate_struct == 1) {
+        plot_title = paste0('Participant: ', i)
+    } else if(covariate_struct == 2) {
+        
+        dler_val = NULL
+        for(a in EIDs) {
+            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+        }
+        mean_dler = mean(dler_val)
+        
+        cov_value = c(sub_dat[1,"DLER_avg"])
+        cov_value = as.numeric(cov_value)
+        cov_value[1] = cov_value[1] - mean_dler
+        cov_value[1] = round(cov_value[1], digits = 3)
+
+        plot_title = paste0('Participant: ', i, ', DLER: ', cov_value[1])
+    } else {
+        
+        ages = NULL
+        dler_val = NULL
+        for(a in EIDs) {
+            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+        }
+        mean_age = mean(ages)
+        mean_dler = mean(dler_val)
+        
+        cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+        cov_value = as.numeric(cov_value)
+        cov_value[1] = cov_value[1] - mean_age
+        cov_value[4] = cov_value[4] - mean_dler
+        cov_value[1] = round(cov_value[1], digits = 3)
+        cov_value[4] = round(cov_value[4], digits = 3)
+
+        plot_title = paste0('Participant: ', i, ', sex: ', cov_value[2], 
+                          ', pEdu: ', cov_value[3], ', DLER: ', cov_value[4],
+                          ', age: ', cov_value[1])
+    }
+
+	t_grid = t_grid_bar = 1:n_i
+	main_color = 'black'
+	
+	if(!simulation) {
+	    x_mean_1 = c(min(which(sub_dat$State == 1)), max(which(sub_dat$State == 1))+1)
+	    x_mean_2 = c(min(which(sub_dat$State == 2)), max(which(sub_dat$State == 2))+1)
+	    x_mean_3 = c(min(which(sub_dat$State == 3)), max(which(sub_dat$State == 3)))
+	    
+	    y_mean_1 = mean(sub_dat$RSA[sub_dat$State == 1])
+	    y_mean_2 = mean(sub_dat$RSA[sub_dat$State == 2])
+	    y_mean_3 = mean(sub_dat$RSA[sub_dat$State == 3])   
+	}
+	
+	b_i = as.numeric(data_format[ indices_i,"State"])
+	to_s1 = c(1,(2:n_i)[diff(b_i)!=0 & b_i[-1]==1])
+	to_s2 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==2]
+	to_s3 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==3]
+
+    # Plot the "ghost plot" to make everything line up
+    pb = barplot(rbind( colMeans(post_B_chain[, indices_i] == 1),
+			            colMeans(post_B_chain[, indices_i] == 2),
+				        colMeans(post_B_chain[, indices_i] == 3)), 
+            col=c( 'dodgerblue', 'firebrick1', 'yellow2'),
+			xlab='time', space=0, col.main=main_color, border=NA, axes = F, plot = F) 
+
+	plot(x=pb, y=data_format[indices_i, "RSA"], 
+            xlab='time', ylab = 'RSA', col.main=main_color, 
+            main = plot_title, xlim = range(pb) + c(-0.5,0.5),
+	        xaxt='n', yaxt='n', col.lab = main_color)
+	axis( side=1, at=pb, col.axis=main_color, labels=t_grid)
+	axis( side=2, at=seq(min(data_format[indices_i, "RSA"]), 
+                         max(data_format[indices_i, "RSA"])), col.axis=main_color)
+	
+    if(!simulation) {
+	    segments(x0 = x_mean_1[1]-0.5, x1 = x_mean_1[2]-0.5, y0 = y_mean_1, y1 = y_mean_1, col = 'azure2', lwd = 3)
+	}
+
+	if(simulation){
+	    abline( v=t_grid[to_s1]-0.5, col='dodgerblue', lwd=2)
+	    abline( v=t_grid[to_s2]-0.5, col='firebrick1', lwd=2)
+	    abline( v=t_grid[to_s3]-0.5, col='yellow2', lwd=2)
+	} else {
+	    abline( v=t_grid[to_s2]-0.5, col='darkorchid4', lwd=2)
+	    abline( v=t_grid[to_s3]-0.5, col='darkgrey', lwd=2)
+	}
+
+    points(x=pb, y=data_format[indices_i, "RSA"])
+
+	barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1),
+			        colMeans(post_B_chain[, indices_i] == 2),
+				    colMeans(post_B_chain[, indices_i] == 3)), 
+            col=c( 'dodgerblue', 'firebrick1', 'yellow2'), 
+			xlab='time', space=0, col.main=main_color, border=NA, 
+			ylab = "Posterior probability",
+            xlim=range(pb) + c(-0.5,0.5), xaxt = 'n', yaxt = 'n', col.lab = main_color) 
+	legend( 'topleft', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+	        legend=c( 'Start of stressor', 'End of stressor'), pch=15, pt.cex=1.5, 
+	        col=c( 'darkorchid4', 'darkgrey'))
+	legend( 'topright', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+	        legend=c( 'Baseline', 'State 2', 'State 3'), pch=15, pt.cex=1.5, 
+	        col=c( 'dodgerblue', 'firebrick1', 'yellow2'))
+    axis( side=1, at=t_grid_bar-0.5, col.axis=main_color, labels = t_grid)
+	axis( side=2, at=seq(0,1,by=0.25), col.axis=main_color)
+
+    if(simulation){
+        abline( v=t_grid[to_s1]-0.5, col='dodgerblue', lwd=2)
+        abline( v=t_grid[to_s2]-0.5, col='firebrick1', lwd=2)
+        abline( v=t_grid[to_s3]-0.5, col='yellow2', lwd=2)
+	} else {
+	    abline( v=t_grid[to_s2]-0.5, col='darkorchid4', lwd=2)
+	    abline( v=t_grid[to_s3]-0.5, col='darkgrey', lwd=2)
+	}
+	
+}
+dev.off()
+
+# -----------------------------------------------------------------------------
+# React responses -------------------------------------------------------------
+# -----------------------------------------------------------------------------
+id_indiv = c(29014,416) #26104,
+pdf(paste0("Plots/react_resp_", trial_num, ".pdf"))
+par(mfrow=c(4,1), mar=c(2,4,2,4))#, bg='black', fg='green')
+for(i in id_indiv){
+	print(which(EIDs == i))
+	indices_i = (data_format[,'ID..']==i)
+	sub_dat = data_format[data_format[,"ID.."] == i, ]
+	n_i = sum(indices_i)
+
+    if(covariate_struct == 1) {
+        plot_title = paste0('Participant: ', i)
+    } else if(covariate_struct == 2) {
+        
+        dler_val = NULL
+        for(a in EIDs) {
+            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+        }
+        mean_dler = mean(dler_val)
+        
+        cov_value = c(sub_dat[1,"DLER_avg"])
+        cov_value = as.numeric(cov_value)
+        cov_value[1] = cov_value[1] - mean_dler
+        cov_value[1] = round(cov_value[1], digits = 3)
+
+        plot_title = paste0('Participant: ', i, ', DLER: ', cov_value[1])
+    } else {
+        
+        ages = NULL
+        dler_val = NULL
+        for(a in EIDs) {
+            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+        }
+        mean_age = mean(ages)
+        mean_dler = mean(dler_val)
+        
+        cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+        cov_value = as.numeric(cov_value)
+        cov_value[1] = cov_value[1] - mean_age
+        cov_value[4] = cov_value[4] - mean_dler
+        cov_value[1] = round(cov_value[1], digits = 3)
+        cov_value[4] = round(cov_value[4], digits = 3)
+
+        plot_title = paste0('Participant: ', i, ', sex: ', cov_value[2], 
+                          ', pEdu: ', cov_value[3], ', DLER: ', cov_value[4],
+                          ', age: ', cov_value[1])
+    }
+
+	t_grid = t_grid_bar = 1:n_i
+	main_color = 'black'
+	
+	if(!simulation) {
+	    x_mean_1 = c(min(which(sub_dat$State == 1)), max(which(sub_dat$State == 1))+1)
+	    x_mean_2 = c(min(which(sub_dat$State == 2)), max(which(sub_dat$State == 2))+1)
+	    x_mean_3 = c(min(which(sub_dat$State == 3)), max(which(sub_dat$State == 3)))
+	    
+	    y_mean_1 = mean(sub_dat$RSA[sub_dat$State == 1])
+	    y_mean_2 = mean(sub_dat$RSA[sub_dat$State == 2])
+	    y_mean_3 = mean(sub_dat$RSA[sub_dat$State == 3])   
+	}
+	
+	b_i = as.numeric(data_format[ indices_i,"State"])
+	to_s1 = c(1,(2:n_i)[diff(b_i)!=0 & b_i[-1]==1])
+	to_s2 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==2]
+	to_s3 = (2:n_i)[diff(b_i)!=0 & b_i[-1]==3]
+
+    # Plot the "ghost plot" to make everything line up
+    pb = barplot(rbind( colMeans(post_B_chain[, indices_i] == 1),
+			            colMeans(post_B_chain[, indices_i] == 2),
+				        colMeans(post_B_chain[, indices_i] == 3)), 
+            col=c( 'dodgerblue', 'firebrick1', 'yellow2'),
+			xlab='time', space=0, col.main=main_color, border=NA, axes = F, plot = F) 
+
+	plot(x=pb, y=data_format[indices_i, "RSA"], 
+            xlab='time', ylab = 'RSA', col.main=main_color, 
+            main = plot_title, xlim = range(pb) + c(-0.5,0.5),
+	        xaxt='n', yaxt='n', col.lab = main_color)
+	axis( side=1, at=pb, col.axis=main_color, labels=t_grid)
+	axis( side=2, at=seq(min(data_format[indices_i, "RSA"]), 
+                         max(data_format[indices_i, "RSA"])), col.axis=main_color)
+	
+    if(!simulation) {
+	    segments(x0 = x_mean_1[1]-0.5, x1 = x_mean_1[2]-0.5, y0 = y_mean_1, y1 = y_mean_1, col = 'azure2', lwd = 3)
+	}
+
+	if(simulation){
+	    abline( v=t_grid[to_s1]-0.5, col='dodgerblue', lwd=2)
+	    abline( v=t_grid[to_s2]-0.5, col='firebrick1', lwd=2)
+	    abline( v=t_grid[to_s3]-0.5, col='yellow2', lwd=2)
+	} else {
+	    abline( v=t_grid[to_s2]-0.5, col='darkorchid4', lwd=2)
+	    abline( v=t_grid[to_s3]-0.5, col='darkgrey', lwd=2)
+	}
+
+    points(x=pb, y=data_format[indices_i, "RSA"])
+
+	barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1),
+			        colMeans(post_B_chain[, indices_i] == 2),
+				    colMeans(post_B_chain[, indices_i] == 3)), 
+            col=c( 'dodgerblue', 'firebrick1', 'yellow2'), 
+			xlab='time', space=0, col.main=main_color, border=NA, 
+			ylab = "Posterior probability",
+            xlim=range(pb) + c(-0.5,0.5), xaxt = 'n', yaxt = 'n', col.lab = main_color) 
+	legend( 'topleft', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+	        legend=c( 'Start of stressor', 'End of stressor'), pch=15, pt.cex=1.5, 
+	        col=c( 'darkorchid4', 'darkgrey'))
+	legend( 'topright', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+	        legend=c( 'Baseline', 'State 2', 'State 3'), pch=15, pt.cex=1.5, 
+	        col=c( 'dodgerblue', 'firebrick1', 'yellow2'))
+    axis( side=1, at=t_grid_bar-0.5, col.axis=main_color, labels = t_grid)
+	axis( side=2, at=seq(0,1,by=0.25), col.axis=main_color)
+
+    if(simulation){
+        abline( v=t_grid[to_s1]-0.5, col='dodgerblue', lwd=2)
+        abline( v=t_grid[to_s2]-0.5, col='firebrick1', lwd=2)
+        abline( v=t_grid[to_s3]-0.5, col='yellow2', lwd=2)
+	} else {
+	    abline( v=t_grid[to_s2]-0.5, col='darkorchid4', lwd=2)
+	    abline( v=t_grid[to_s3]-0.5, col='darkgrey', lwd=2)
+	}
+	
+}
+dev.off()

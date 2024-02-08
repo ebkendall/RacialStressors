@@ -7,10 +7,6 @@ library(RcppArmadillo, quietly = T)
 library(RcppDist, quietly = T)
 sourceCpp("mcmc_routine_c.cpp")
 
-# Needed for OpenMP C++ parallel
-Sys.setenv("PKG_CXXFLAGS" = "-fopenmp")
-Sys.setenv("PKG_LIBS" = "-fopenmp")
-
 # -----------------------------------------------------------------------------
 # The mcmc routine for samping the parameters
 # -----------------------------------------------------------------------------
@@ -26,35 +22,38 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
 
     if(case_b) {
         if(covariate_struct == 1) {
-            group = list(c(par_index$zeta[1:6]), c(par_index$delta), 
-                         c(par_index$tau2, par_index$sigma2))
+            group = list(c(par_index$zeta[1:6]), c(par_index$zeta[7:12]),
+                         c(par_index$zeta[13:18]), c(par_index$zeta[19:24]),
+                         c(par_index$delta), c(par_index$tau2,par_index$sigma2),
+                         c(par_index$gamma))
         } else if(covariate_struct == 2) {
             group = list(c(par_index$zeta[1:6]), c(par_index$zeta[7:12]),
                          c(par_index$delta, par_index$gamma), 
                          c(par_index$tau2, par_index$sigma2))
         } else {
-            group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
-                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
-                    c(par_index$zeta[21:25]), c(par_index$zeta[26:30]),
-                    c(par_index$delta), c(par_index$tau2, par_index$sigma2),
-                    c(par_index$gamma))
+            group = list(c(par_index$zeta[1:6]), c(par_index$zeta[7:12]),
+                         c(par_index$zeta[13:18]), c(par_index$zeta[19:24]),
+                         c(par_index$zeta[25:30]),
+                         c(par_index$delta), c(par_index$tau2,par_index$sigma2),
+                         c(par_index$gamma))
         }
     } else {
         if(covariate_struct == 1) {
-            group = list(c(par_index$zeta[1:6]), c(par_index$delta), 
-                         c(par_index$tau2, par_index$sigma2), 
-                         c(par_index$misclass))
+            group = list(c(par_index$zeta[1:6]), c(par_index$zeta[7:12]),
+                         c(par_index$zeta[13:18]), c(par_index$zeta[19:24]),
+                         c(par_index$delta), c(par_index$tau2,par_index$sigma2),
+                         c(par_index$gamma), c(par_index$misclass))
         } else if(covariate_struct == 2) {
             group = list(c(par_index$zeta[1:6]), c(par_index$zeta[7:12]),
                          c(par_index$delta, par_index$gamma), 
                          c(par_index$tau2, par_index$sigma2),
                          c(par_index$misclass))
         } else {
-            group = list(c(par_index$zeta[1:5]), c(par_index$zeta[6:10]),
-                    c(par_index$zeta[11:15]), c(par_index$zeta[16:20]),
-                    c(par_index$zeta[21:25]), c(par_index$zeta[26:30]),
-                    c(par_index$delta), c(par_index$tau2, par_index$sigma2),
-                    c(par_index$gamma), c(par_index$misclass))
+            group = list(c(par_index$zeta[1:6]), c(par_index$zeta[7:12]),
+                         c(par_index$zeta[13:18]), c(par_index$zeta[19:24]),
+                         c(par_index$zeta[25:30]),
+                         c(par_index$delta), c(par_index$tau2,par_index$sigma2),
+                         c(par_index$gamma), c(par_index$misclass))
         }
     }
 
@@ -62,15 +61,15 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
     n_group = length(group)
 
     # proposal covariance and scale parameter for Metropolis step
-    if(simulation) {
+    # if(simulation) {
         pcov = list(); for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
         pscale = rep( 1, n_group)
-    } else {
-        load(paste0('Model_out/mcmc_out_2_', covariate_struct, '_30b.rda'))
-        pcov = mcmc_out$pcov
-        pscale = mcmc_out$pscale
-        rm(mcmc_out)
-    }
+    # } else {
+    #     load(paste0('Model_out/mcmc_out_2_', covariate_struct, '_30b.rda'))
+    #     pcov = mcmc_out$pcov
+    #     pscale = mcmc_out$pscale
+    #     rm(mcmc_out)
+    # }
     
     
     accept = rep( 0, n_group)

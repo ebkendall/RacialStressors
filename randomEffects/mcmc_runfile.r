@@ -8,29 +8,15 @@ set.seed(ind)
 print(ind)
 
 # Model type -------------------------------------------------------------------
-# 1: baseline only
-# 2: baseline & DLER
+# 1: baseline model (age, sex, pEdu)
+# 2: DLER
 # 3: all covariates
 
 covariate_struct = 1
 # ------------------------------------------------------------------------------
 
-# Information defining which approach to take ----------------------------------
-# trial 1: run for 100,000 steps, started everything in state 1
-# trial 2: run for 200,000 steps, started everything in state 1
-# trial 3: run for 200,000 steps, started everything at observed states
-# trial 4: run for 200,000 steps, started everything at observed states, misclass
-
-# trial 5: run for 200,000 steps, start at last run of ind 1, trial 3 (model 3)
-# trial 6: run for 200,000 steps, started everything in state 1, baseline only (model 1)
-# trial 7: run for 200,000 steps, started everything in state 1, baseline & DLER (model 2)
-
-# trial 8 : run for 200,000 steps, started obs states, model 1
-# trial 9 : run for 200,000 steps, started obs states, model 2
-# trial 10: run for 200,000 steps, started obs states, model 3
-
-trial_num = 5
-simulation = T
+trial_num = covariate_struct
+simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
 
@@ -69,20 +55,31 @@ if(simulation & case_b) {
 # Defining the parameter and covariance structure
 if(covariate_struct == 1) {
     # Baseline only model
-    init_par = c(c(matrix(c(-2,
-                            -2,
-                            -2,
-                            -2,
-                            -2,
-                            -2), ncol=1, byrow = T)),
+    init_par = c(c(matrix(c(-2, 0, 0, 0,
+                            -2, 0, 0, 0,
+                            -2, 0, 0, 0,
+                            -2, 0, 0, 0,
+                            -2, 0, 0, 0,
+                            -2, 0, 0, 0), ncol=4, byrow = T)),
              c(6.411967, 0, 0), 
              log(0.51^2),  
              c(log(0.8^2), 0, 0),
+             0, 0, 0,
              -1, -1, -1, -1)
-    par_index = list(zeta=1:6, misclass=14:17, delta = 7:9, tau2 = 10, 
-                     sigma2 = 11:13, gamma = -1)
+    par_index = list(zeta=1:24, misclass=35:38, delta = 25:27, tau2 = 28, 
+                     sigma2 = 29:31, gamma = 32:34)
 
-    cov_info = matrix(0, nrow=nrow(temp_data), ncol = 1)
+    cov_info = temp_data[,c("Age", "sex1", "edu_yes"), drop=F] 
+    
+    if(!simulation) {
+        # Centering Age
+        ages = NULL
+        for(a in EIDs) {
+            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+        }
+        mean_age = mean(ages)
+        cov_info[,'Age'] = cov_info[,'Age'] - mean_age
+    }
     
 } else if(covariate_struct == 2) {
     # Baseline & DLER model
@@ -220,9 +217,9 @@ if(simulation) {
     init_par[par_index$delta[2]] = s2_vars[3] - s1_vars[3]
     init_par[par_index$delta[3]] = s3_vars[3] - s1_vars[3]
 
-    # Load preview run
-    load(paste0('Model_out/mcmc_out_2_', covariate_struct, '_30b.rda'))
-    init_par = mcmc_out$chain[99500, ]
+    # # Load preview run
+    # load(paste0('Model_out/mcmc_out_2_', covariate_struct, '_30b.rda'))
+    # init_par = mcmc_out$chain[99500, ]
 }
 # ------------------------------------------------------------------------------
 
@@ -241,12 +238,13 @@ for(i in 1:length(EIDs)) {
         b_i = data_format[data_format[,"ID.."] == EIDs[i], "State"]
         B[[i]] = matrix(b_i, ncol = 1)
     } else {
-        b_i = c(mcmc_out$B_chain[99500, data_format[,"ID.."] == EIDs[i]])
+        # b_i = c(mcmc_out$B_chain[99500, data_format[,"ID.."] == EIDs[i]])
+        b_i = rep(1, sum(data_format[,"ID.."] == EIDs[i]))
         B[[i]] = matrix(b_i, ncol = 1)
     }
 }
 
-if(!simulation) { rm(mcmc_out) }
+# if(!simulation) { rm(mcmc_out) }
 
 big_steps = 1000000
 steps     = 100000

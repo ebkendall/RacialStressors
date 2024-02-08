@@ -63,7 +63,7 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
                               const int covariate_struct) {
     
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
-    //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
+    //                (5) gamma
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     arma::vec in_vals(EIDs.n_elem, arma::fill::zeros);
@@ -74,16 +74,13 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
     // Populate the parameters dependent on the covariate structure: zeta & gamma
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
     arma::mat zeta;
-    arma::vec gamma;
+    arma::vec gamma = pars.elem(par_index(5) - 1);
     
     if(covariate_struct == 1) {
-        gamma = {0}; 
-        zeta = arma::reshape(vec_zeta_content, 6, 1); 
+        zeta = arma::reshape(vec_zeta_content, 6, 4); 
     } else if(covariate_struct == 2) {
-        gamma = pars.elem(par_index(5) - 1);
         zeta = arma::reshape(vec_zeta_content, 6, 2); 
     } else {
-        gamma = pars.elem(par_index(5) - 1);
         zeta = arma::reshape(vec_zeta_content, 6, 5); 
     }
     
@@ -122,8 +119,8 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         arma::colvec x_i;
         
         if(covariate_struct == 1) {
-            z_i = {1};
-            x_i = {0};
+            z_i = {1, cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2)};
+            x_i = {cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2)};
         } else if(covariate_struct == 2) {
             z_i = {1, cov_info_i(0,0)};
             x_i = {cov_info_i(0,0)};
@@ -355,7 +352,7 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
                             const bool case_b, const arma::vec &y_1, 
                             const int covariate_struct) {
     // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
-    //                (5) gamma, (6) zeta_tilde, (7) sigma2_zeta
+    //                (5) gamma
     // "i" is the numeric EID number
     // "ii" is the index of the EID
     double in_value = 0;
@@ -375,16 +372,13 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
     // Populate the parameters dependent on the covariate structure: zeta & gamma
     arma::vec vec_zeta_content = pars.elem(par_index(0) - 1);
     arma::mat zeta;
-    arma::vec gamma;
+    arma::vec gamma = pars.elem(par_index(5) - 1);
     
     if(covariate_struct == 1) {
-        gamma = {0}; 
-        zeta = arma::reshape(vec_zeta_content, 6, 1); 
+        zeta = arma::reshape(vec_zeta_content, 6, 4); 
     } else if(covariate_struct == 2) {
-        gamma = pars.elem(par_index(5) - 1);
         zeta = arma::reshape(vec_zeta_content, 6, 2); 
     } else {
-        gamma = pars.elem(par_index(5) - 1);
         zeta = arma::reshape(vec_zeta_content, 6, 5); 
     }
 
@@ -394,8 +388,8 @@ double log_f_i_cpp_no_label(const int i, const int ii, const arma::vec &pars,
     arma::colvec x_i;
     
     if(covariate_struct == 1) {
-        z_i = {1};
-        x_i = {0};
+        z_i = {1, cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2)};
+        x_i = {cov_info_i(0,0), cov_info_i(0,1), cov_info_i(0,2)};
     } else if(covariate_struct == 2) {
         z_i = {1, cov_info_i(0,0)};
         x_i = {cov_info_i(0,0)};
@@ -516,8 +510,6 @@ arma::field<arma::vec> update_b_i(const arma::vec &EIDs, const arma::vec &pars,
         
         int n_i = sub_ind.n_elem; 
         arma::vec y_1_sub = y_1.elem(sub_ind);
-        
-        // arma::uvec no_s1 = arma::find(y_1_sub != 1);
 
         bool start_run = false;
         
@@ -583,6 +575,8 @@ arma::vec brute_force_ss(const int i, const int ii, const arma::vec &pars,
                          const bool case_b, const int covariate_struct,
                          const arma::field<arma::mat> state_combos,
                          const arma::vec t_pts) {
+    // par_index KEY: (0) zeta, (1) misclass, (2) delta, (3) tau2, (4) sigma2, 
+    //                (5) gamma
     // "i" is the numeric EID value
     // "ii" is the index of the EID
     
