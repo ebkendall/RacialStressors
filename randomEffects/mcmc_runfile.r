@@ -216,10 +216,6 @@ if(simulation) {
     init_par[par_index$delta[1]] = s1_vars[3]
     init_par[par_index$delta[2]] = s2_vars[3] - s1_vars[3]
     init_par[par_index$delta[3]] = s3_vars[3] - s1_vars[3]
-
-    # # Load preview run
-    # load(paste0('Model_out/mcmc_out_2_', covariate_struct, '_30b.rda'))
-    # init_par = mcmc_out$chain[99500, ]
 }
 # ------------------------------------------------------------------------------
 
@@ -238,13 +234,11 @@ for(i in 1:length(EIDs)) {
         b_i = data_format[data_format[,"ID.."] == EIDs[i], "State"]
         B[[i]] = matrix(b_i, ncol = 1)
     } else {
-        # b_i = c(mcmc_out$B_chain[99500, data_format[,"ID.."] == EIDs[i]])
+        # Initializing state sequence to be S1 ("baseline") for all time points
         b_i = rep(1, sum(data_format[,"ID.."] == EIDs[i]))
         B[[i]] = matrix(b_i, ncol = 1)
     }
 }
-
-# if(!simulation) { rm(mcmc_out) }
 
 big_steps = 1000000
 steps     = 100000
