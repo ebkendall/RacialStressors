@@ -13,7 +13,7 @@ print(ind)
 covariate_struct = 1
 # ------------------------------------------------------------------------------
 
-trial_num = covariate_struct
+trial_num = covariate_struct + 3
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -205,6 +205,13 @@ prior_par[[1]] = prior_mean
 prior_par[[2]] = prior_sd
 # ------------------------------------------------------------------------------
 
+# Load previous run and continue the iterations --------------------------------
+load(paste0("Model_out/mcmc_out_", ind, "_", covariate_struct, "_30b.rda"))
+init_par = mcmc_out$chain[99500, ]
+b_main = mcmc_out$B_chain[99500, ]
+rm(mcmc_out)
+# ------------------------------------------------------------------------------
+
 B = list()
 for(i in 1:length(EIDs)) {
     if(simulation) {
@@ -212,14 +219,15 @@ for(i in 1:length(EIDs)) {
         B[[i]] = matrix(b_i, ncol = 1)
     } else {
         # Initializing state sequence to be S1 ("baseline") for all time points
-        b_i = rep(1, sum(data_format[,"ID.."] == EIDs[i]))
+        # b_i = rep(1, sum(data_format[,"ID.."] == EIDs[i]))
+        b_i = b_main[data_format[,"ID.."] == EIDs[i]]
         B[[i]] = matrix(b_i, ncol = 1)
     }
 }
 
-big_steps = 1000000
+big_steps = 2000000
 steps     = 100000
-burnin    = 5000
+burnin    = 0
 
 s_time = Sys.time()
 

@@ -11,7 +11,7 @@ dir = 'Model_out/'
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 1
+covariate_struct = 3
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
@@ -36,6 +36,7 @@ if(interm) {
 if(interm) {
     n_post = 100000; burnin = 0; steps = 100000
 } else {
+    # n_post = 99500; burnin = 500; steps = 100000
     n_post = 10000; burnin = 500; steps = 100000
 }
 
@@ -213,7 +214,8 @@ for(seed in index_seeds){
 
         # Thinning the chain
         main_chain = mcmc_out$chain[index_post,]
-        ind_keep = seq(1, nrow(main_chain), by=10)
+        # ind_keep = seq(1, nrow(main_chain), by=10)
+        ind_keep = seq(1, nrow(main_chain), by=1)
         
         mu_alpha_sum = main_chain[,par_index$delta[1]] + main_chain[,par_index$delta[2]]
         mu_beta_sum = main_chain[,par_index$delta[1]] + main_chain[,par_index$delta[3]]
@@ -592,8 +594,8 @@ if(!simulation) {
                   legend.text = element_text(size=7)) +
             guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))
         
-        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_0.png"), 
-               plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_0.png"), 
+        #        plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
         
         if(covariate_struct == 3) {
             plot1_1_to_2 = ggplot(data = prob1_1_to_2, aes(x = t, y = prob, 
@@ -614,8 +616,8 @@ if(!simulation) {
                       legend.text = element_text(size=7)) +
                 guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))
             
-            ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_1.png"), 
-                   plot = plot1_1_to_2, width = 1500, height = 1000, units = "px")
+            # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_1.png"), 
+            #        plot = plot1_1_to_2, width = 1500, height = 1000, units = "px")
         }
         
         # 1 -> 3 transition ----------------------------------------------------
@@ -637,8 +639,8 @@ if(!simulation) {
                   legend.text = element_text(size=7)) +
             guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))
         
-        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_0.png"), 
-               plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_0.png"), 
+        #        plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
         
         if(covariate_struct == 3) {
             plot1_1_to_3 = ggplot(data = prob1_1_to_3, aes(x = t, y = prob, 
@@ -659,8 +661,8 @@ if(!simulation) {
                       legend.text = element_text(size=7)) +
                 guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))   
             
-            ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_1.png"), 
-                   plot = plot1_1_to_3, width = 1500, height = 1000, units = "px")
+            # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_1.png"), 
+            #        plot = plot1_1_to_3, width = 1500, height = 1000, units = "px")
         }
         
         app0 = ggarrange(plot0_1_to_2 + 
@@ -728,26 +730,21 @@ if(!simulation) {
         
         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_0.png"), 
                plot = plot0_1_to_1, width = 1500, height = 1000, units = "px")
-        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_0.png"), 
-               plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
-        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_0.png"), 
-               plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_0.png"), 
+        #        plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_0.png"), 
+        #        plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
         
-        app0 = ggarrange(plot0_1_to_1 + 
-                             labs(title = TeX(r'(state 1 $\to$ 1)')) +
-                             theme(axis.title.x = element_blank()), 
-                         plot0_1_to_2 + 
+        app0 = ggarrange(plot0_1_to_2 + 
                              labs(title = TeX(r'(state 1 $\to$ 2)')) +
-                             theme(axis.text.y = element_blank(),
-                                   axis.ticks.y = element_blank(),
-                                   axis.title.y = element_blank()),
+                             theme(axis.title.x = element_blank()), 
                          plot0_1_to_3 + 
                              labs(title = TeX(r'(state 1 $\to$ 3)')) +
                              theme(axis.text.y = element_blank(),
                                    axis.ticks.y = element_blank(),
                                    axis.title.y = element_blank(),
                                    axis.title.x = element_blank()),
-                         nrow = 1, ncol = 3)
+                         nrow = 1, ncol = 2)
         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_0.png"), 
                plot = app0, width = 1500, height = 1000, units = "px")
 
@@ -782,26 +779,21 @@ if(!simulation) {
         
         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_1.png"), 
                plot = plot0_1_to_1, width = 1500, height = 1000, units = "px")
-        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_1.png"), 
-               plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
-        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_1.png"), 
-               plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_1.png"), 
+        #        plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_1.png"), 
+        #        plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
         
-        app0 = ggarrange(plot0_1_to_1 + 
-                             labs(title = TeX(r'(state 1 $\to$ 1)')) +
-                             theme(axis.title.x = element_blank()), 
-                         plot0_1_to_2 + 
+        app0 = ggarrange(plot0_1_to_2 + 
                              labs(title = TeX(r'(state 1 $\to$ 2)')) +
-                             theme(axis.text.y = element_blank(),
-                                   axis.ticks.y = element_blank(),
-                                   axis.title.y = element_blank()),
+                             theme(axis.title.x = element_blank()), 
                          plot0_1_to_3 + 
                              labs(title = TeX(r'(state 1 $\to$ 3)')) +
                              theme(axis.text.y = element_blank(),
                                    axis.ticks.y = element_blank(),
                                    axis.title.y = element_blank(),
                                    axis.title.x = element_blank()),
-                         nrow = 1, ncol = 3)
+                         nrow = 1, ncol = 2)
         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_1.png"), 
                plot = app0, width = 1500, height = 1000, units = "px")
     }
@@ -826,10 +818,14 @@ baseline_distr = dnorm(x_vals, mean = mu_alpha_beta[1], sd = sigma_1_2_3[1])
 state_2_distr  = dnorm(x_vals, mean = sum(mu_alpha_beta[c(1,2)]), sd = sigma_1_2_3[2])
 state_3_distr  = dnorm(x_vals, mean = sum(mu_alpha_beta[c(1,3)]), sd = sigma_1_2_3[3])
 
+y_max = max(c(baseline_distr, state_2_distr, state_3_distr))
+y_min = min(c(baseline_distr, state_2_distr, state_3_distr))
+
 pdf(paste0("Plots/randomEffects_", trial_num, ".pdf"))
-plot( x = x_vals, y = baseline_distr, type = 'l', col = 'blue', xlim = c(x_min, x_max), lwd = 2)
+plot( x = x_vals, y = baseline_distr, type = 'l', col = 'blue', 
+        xlim = c(x_min, x_max), ylim = c(y_min, y_max), lwd = 2)
 lines(x = x_vals, y = state_2_distr, col = 'red', lwd = 2)
-lines(x = x_vals, y = state_3_distr, col = 'green' lwd = 2)
+lines(x = x_vals, y = state_3_distr, col = 'green', lwd = 2)
 
 abline(v = mu_alpha_beta[1], lwd = 2, col = 'blue')
 abline(v = sum(mu_alpha_beta[c(1,2)]), lwd = 2, col = 'red')
