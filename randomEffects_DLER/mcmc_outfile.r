@@ -11,7 +11,7 @@ dir = 'Model_out/'
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 3
+covariate_struct = 1
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
@@ -23,7 +23,7 @@ if(simulation) {
     trial_num = 5
     index_seeds = c(1:100)
 } else {
-    trial_num = covariate_struct
+    trial_num = covariate_struct + 3
     index_seeds = c(1:5)
 }
 
@@ -37,7 +37,7 @@ if(interm) {
     n_post = 100000; burnin = 0; steps = 100000
 } else {
     # n_post = 99500; burnin = 500; steps = 100000
-    n_post = 10000; burnin = 500; steps = 100000
+    n_post = 200000; burnin = 0; steps = 200000
 }
 
 # Matrix row indices for the posterior sample to use
@@ -214,8 +214,8 @@ for(seed in index_seeds){
 
         # Thinning the chain
         main_chain = mcmc_out$chain[index_post,]
-        # ind_keep = seq(1, nrow(main_chain), by=10)
-        ind_keep = seq(1, nrow(main_chain), by=1)
+        ind_keep = seq(1, nrow(main_chain), by=10)
+        # ind_keep = seq(1, nrow(main_chain), by=1)
         
         mu_alpha_sum = main_chain[,par_index$delta[1]] + main_chain[,par_index$delta[2]]
         mu_beta_sum = main_chain[,par_index$delta[1]] + main_chain[,par_index$delta[3]]
@@ -818,19 +818,38 @@ baseline_distr = dnorm(x_vals, mean = mu_alpha_beta[1], sd = sigma_1_2_3[1])
 state_2_distr  = dnorm(x_vals, mean = sum(mu_alpha_beta[c(1,2)]), sd = sigma_1_2_3[2])
 state_3_distr  = dnorm(x_vals, mean = sum(mu_alpha_beta[c(1,3)]), sd = sigma_1_2_3[3])
 
-y_max = max(c(baseline_distr, state_2_distr, state_3_distr))
-y_min = min(c(baseline_distr, state_2_distr, state_3_distr))
+dat <- data.frame(dens = c(baseline_distr, state_2_distr, state_3_distr), 
+                  lines = rep(c("baseline", "state 2", "state 3"), 
+                              each = length(x_vals)),
+                  x = rep(x_vals, 3))
+dat$lines = as.factor(dat$lines)
 
-pdf(paste0("Plots/randomEffects_", trial_num, ".pdf"))
-plot( x = x_vals, y = baseline_distr, type = 'l', col = 'blue', 
-        xlim = c(x_min, x_max), ylim = c(y_min, y_max), lwd = 2)
-lines(x = x_vals, y = state_2_distr, col = 'red', lwd = 2)
-lines(x = x_vals, y = state_3_distr, col = 'green', lwd = 2)
+y_end_base = dnorm(mu_alpha_beta[1], 
+                   mean = mu_alpha_beta[1], 
+                   sd = sigma_1_2_3[1])
+y_end_s2   = dnorm(sum(mu_alpha_beta[c(1,2)]), 
+                   mean = sum(mu_alpha_beta[c(1,2)]), 
+                   sd = sigma_1_2_3[2])
+y_end_s3   = dnorm(sum(mu_alpha_beta[c(1,3)]), 
+                   mean = sum(mu_alpha_beta[c(1,3)]), 
+                   sd = sigma_1_2_3[3])
 
-abline(v = mu_alpha_beta[1], lwd = 2, col = 'blue')
-abline(v = sum(mu_alpha_beta[c(1,2)]), lwd = 2, col = 'red')
-abline(v = sum(mu_alpha_beta[c(1,3)]), lwd = 2, col = 'green')
-dev.off()
+re_dist = ggplot(dat, aes(x=x, y=dens, group=lines, fill=lines)) +
+    geom_line(size=.5) + 
+    geom_segment(aes(x = mu_alpha_beta[1], xend = mu_alpha_beta[1], 
+                     y = 0, yend = y_end_base), color = "blue") + 
+    geom_segment(aes(x = sum(mu_alpha_beta[c(1,2)]), xend = sum(mu_alpha_beta[c(1,2)]), 
+                     y = 0, yend = y_end_s2), color = "red") + 
+    geom_segment(aes(x = sum(mu_alpha_beta[c(1,3)]), xend = sum(mu_alpha_beta[c(1,3)]), 
+                     y = 0, yend = y_end_s3), color = "green") +
+    geom_ribbon(data=subset(dat,x>2.466 & x<11.354),aes(x=x,ymax=dens),ymin=0,alpha=0.3) +
+    scale_fill_manual(name='', values=c("baseline" = "blue", "state 2" = "red",
+                                        "state 3" = "green")) +
+    labs(x = "", 
+         y = "Density", 
+         title = "Random effect distributions for each state")
+ggsave(filename = paste0("Plots/randomEffects_", trial_num, ".png"), 
+       plot = re_dist, width = 1500, height = 1000, units = "px")
 
 # Remove empty plot created
 file.remove("Rplots.pdf")

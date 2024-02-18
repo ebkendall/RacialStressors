@@ -13,7 +13,7 @@ print(ind)
 covariate_struct = 1
 # ------------------------------------------------------------------------------
 
-trial_num = covariate_struct + 3
+trial_num = covariate_struct + 6
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -206,9 +206,9 @@ prior_par[[2]] = prior_sd
 # ------------------------------------------------------------------------------
 
 # Load previous run and continue the iterations --------------------------------
-load(paste0("Model_out/mcmc_out_", ind, "_", covariate_struct, "_30b.rda"))
-init_par = mcmc_out$chain[99500, ]
-b_main = mcmc_out$B_chain[99500, ]
+load(paste0("Model_out/mcmc_out_", ind, "_", trial_num - 3, "_30b.rda"))
+init_par = mcmc_out$chain[nrow(mcmc_out$chain), ]
+b_main = mcmc_out$B_chain[nrow(mcmc_out$B_chain), ]
 rm(mcmc_out)
 # ------------------------------------------------------------------------------
 
