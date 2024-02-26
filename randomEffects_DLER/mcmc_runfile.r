@@ -13,7 +13,7 @@ print(ind)
 covariate_struct = 1
 # ------------------------------------------------------------------------------
 
-trial_num = covariate_struct + 6
+trial_num = covariate_struct
 simulation = F
 case_b = T
 # ------------------------------------------------------------------------------
@@ -198,7 +198,7 @@ if(simulation) {
 
 # Specifying the priors --------------------------------------------------------
 prior_mean = rep(0, length(init_par))
-prior_sd = rep(20, length(init_par))
+prior_sd = rep(10000, length(init_par))
 
 prior_par = list()
 prior_par[[1]] = prior_mean
@@ -206,10 +206,10 @@ prior_par[[2]] = prior_sd
 # ------------------------------------------------------------------------------
 
 # Load previous run and continue the iterations --------------------------------
-load(paste0("Model_out/mcmc_out_", ind, "_", trial_num - 3, "_30b.rda"))
-init_par = mcmc_out$chain[nrow(mcmc_out$chain), ]
-b_main = mcmc_out$B_chain[nrow(mcmc_out$B_chain), ]
-rm(mcmc_out)
+# load(paste0("Model_out/mcmc_out_", ind, "_", trial_num - 3, "_30b.rda"))
+# init_par = mcmc_out$chain[nrow(mcmc_out$chain), ]
+# b_main = mcmc_out$B_chain[nrow(mcmc_out$B_chain), ]
+# rm(mcmc_out)
 # ------------------------------------------------------------------------------
 
 B = list()
@@ -219,15 +219,15 @@ for(i in 1:length(EIDs)) {
         B[[i]] = matrix(b_i, ncol = 1)
     } else {
         # Initializing state sequence to be S1 ("baseline") for all time points
-        # b_i = rep(1, sum(data_format[,"ID.."] == EIDs[i]))
-        b_i = b_main[data_format[,"ID.."] == EIDs[i]]
+        b_i = rep(1, sum(data_format[,"ID.."] == EIDs[i]))
+        # b_i = b_main[data_format[,"ID.."] == EIDs[i]]
         B[[i]] = matrix(b_i, ncol = 1)
     }
 }
 
 big_steps = 2000000
 steps     = 100000
-burnin    = 0
+burnin    = 5000
 
 s_time = Sys.time()
 
@@ -241,17 +241,17 @@ e_time = Sys.time() - s_time; print(e_time)
 if(simulation) {
     if(case_b) {
         save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", 
-                trial_num, "_sim_30b.rda"))  
+                trial_num, "_sim_30b_check.rda"))  
     } else {
         save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", 
-                trial_num, "_sim_30.rda"))     
+                trial_num, "_sim_30_check.rda"))     
     }
 } else {
     if(case_b) {
         save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", 
-                trial_num, "_30b.rda"))
+                trial_num, "_30b_check.rda"))
     } else {
         save(mcmc_out, file = paste0("Model_out/mcmc_out_", ind, "_", 
-                trial_num, "_30.rda"))   
+                trial_num, "_30_check.rda"))   
     }
 }

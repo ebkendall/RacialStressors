@@ -15,7 +15,7 @@ dir = 'Model_out/'
 covariate_struct = 3
 # ------------------------------------------------------------------------------
 index_seeds = c(1:5)
-trial_num = covariate_struct
+trial_num = covariate_struct + 6
 simulation = F
 case_b = T
 interm = F
@@ -24,7 +24,7 @@ interm = F
 if(interm) {
     n_post = 100000; burnin = 0; steps = 100000
 } else {
-    n_post = 10000; burnin = 500; steps = 100000
+    n_post = 20000; burnin = 0; steps = 200000
 }
 
 # Matrix row indices for the posterior sample to use
@@ -76,48 +76,27 @@ if(covariate_struct == 1) {
              log(0.51^2),  
              c(log(0.8^2), 0, 0),
              0, 0, 0,
+             0, 0, 0,
              -1, -1, -1, -1)
-    par_index = list(zeta=1:24, misclass=35:38, delta = 25:27, tau2 = 28, 
-                     sigma2 = 29:31, gamma = 32:34)
+    par_index = list(zeta=1:24, misclass=38:41, delta = 25:27, tau2 = 28, 
+                     sigma2 = 29:31, gamma = 32:34, delta_new = 35:37)
     
-    cov_info = temp_data[,c("Age", "sex1", "edu_yes"), drop=F] 
-    
-    if(!simulation) {
-        # Centering Age
-        ages = NULL
-        for(a in EIDs) {
-            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-        }
-        mean_age = mean(ages)
-        cov_info[,'Age'] = cov_info[,'Age'] - mean_age
-    }
 } else if(covariate_struct == 2) {
-    # Baseline & DLER model
+    # DLER only model
     init_par = c(c(matrix(c(-2, 0,
                             -2, 0,
                             -2, 0,
                             -2, 0,
                             -2, 0,
                             -2, 0), ncol=2, byrow = T)),
-                 c(6.411967, 0, 0), 
-                 log(0.51^2),  
-                 c(log(0.8^2), 0, 0),
-                 0,
-                 -1, -1, -1, -1)
-    par_index = list(zeta=1:12, misclass=21:24, delta = 13:15, tau2 = 16, 
-                     sigma2 = 17:19, gamma = 20)
-    
-    cov_info = temp_data[,c("DLER_avg"), drop=F]
-    
-    if(!simulation) {
-        # Centering DLER
-        dler_val = NULL
-        for(a in EIDs) {
-            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-        }
-        mean_dler = mean(dler_val)
-        cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler   
-    }
+             c(6.411967, 0, 0), 
+             log(0.51^2),  
+             c(log(0.8^2), 0, 0),
+             0, 0, 0,
+             0, 0, 0,
+             -1, -1, -1, -1)
+    par_index = list(zeta=1:12, misclass=26:29, delta = 13:15, tau2 = 16, 
+                     sigma2 = 17:19, gamma = 20:22, delta_new = 23:25)
 } else {
     #  All covariates
     init_par = c(c(matrix(c(-2, 0, 0, 0, 0,
@@ -126,30 +105,32 @@ if(covariate_struct == 1) {
                             -2, 0, 0, 0, 0,
                             -2, 0, 0, 0, 0,
                             -2, 0, 0, 0, 0), ncol=5, byrow = T)),
-                 c(6.411967, 0, 0), 
-                 log(0.51^2),  
-                 c(log(0.8^2), 0, 0),
-                 0, 0, 0, 0,
-                 -1, -1, -1, -1)
-    par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, 
-                     sigma2 = 35:37, gamma = 38:41)
-    
-    cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F] 
-    
-    if(!simulation) {
-        # Centering Age & DLER
-        ages = NULL
-        dler_val = NULL
-        for(a in EIDs) {
-            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-        }
-        mean_age = mean(ages)
-        mean_dler = mean(dler_val)
-        cov_info[,'Age'] = cov_info[,'Age'] - mean_age
-        cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler    
-    }
+             c(6.411967, 0, 0), 
+             log(0.51^2),  
+             c(log(0.8^2), 0, 0),
+             0, 0, 0,
+             0, 0, 0,
+             -1, -1, -1, -1)
+    par_index = list(zeta=1:30, misclass=44:47, delta = 31:33, tau2 = 34, 
+                     sigma2 = 35:37, gamma = 38:40, delta_new = 41:43)
 }
+
+cov_info = temp_data[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F] 
+    
+if(!simulation) {
+    # Centering Age & DLER
+    ages = NULL
+    dler_val = NULL
+    for(a in EIDs) {
+        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+    }
+    mean_age = mean(ages)
+    mean_dler = mean(dler_val)
+    cov_info[,'Age'] = cov_info[,'Age'] - mean_age
+    cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler    
+}
+
 
 ind = 0
 chain_list = vector(mode = "list", length = length(index_seeds))
@@ -186,7 +167,7 @@ for(seed in index_seeds){
         print(file_name)
 
         # Thinning the chain
-        main_chain = mcmc_out$chain
+        main_chain = mcmc_out$chain[index_post,]
         ind_keep = seq(1, nrow(main_chain), by=10)
         
         chain_list[[ind]] = main_chain[ind_keep, ]

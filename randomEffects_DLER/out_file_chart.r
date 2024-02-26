@@ -6,7 +6,7 @@ library(plotrix)
 # 2: baseline & DLER
 # 3: all covariates
 
-covariate_struct = 2
+covariate_struct = 3
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
@@ -18,22 +18,26 @@ if(simulation) {
     trial_num = covariate_struct
     index_seeds = c(1:5)
 } else {
-    trial_num = covariate_struct
+    trial_num = covariate_struct + 6
     index_seeds = c(1:5)
 }
 # ------------------------------------------------------------------------------
 
+n_post = 20000; burnin = 0; steps = 200000
+# Matrix row indices for the posterior sample to use
+index_post = (steps - burnin - n_post + 1):(steps - burnin)
+
 Dir = 'Model_out/'
 
 if(covariate_struct == 1) {
-    par_index = list(zeta=1:24, misclass=35:38, delta = 25:27, tau2 = 28, 
-                     sigma2 = 29:31, gamma = 32:34)
+    par_index = list(zeta=1:24, misclass=38:41, delta = 25:27, tau2 = 28, 
+                     sigma2 = 29:31, gamma = 32:34, delta_new = 35:37)
 } else if(covariate_struct) {
-    par_index = list(zeta=1:12, misclass=21:24, delta = 13:15, tau2 = 16, 
-                     sigma2 = 17:19, gamma = 20)
+    par_index = list(zeta=1:12, misclass=26:29, delta = 13:15, tau2 = 16, 
+                     sigma2 = 17:19, gamma = 20:22, delta_new = 23:25)
 } else {
-    par_index = list(zeta=1:30, misclass=42:45, delta = 31:33, tau2 = 34, 
-                     sigma2 = 35:37, gamma = 38:41)
+    par_index = list(zeta=1:30, misclass=44:47, delta = 31:33, tau2 = 34, 
+                     sigma2 = 35:37, gamma = 38:40, delta_new = 41:43)
 }
 
 for(seed in index_seeds) {
@@ -64,12 +68,12 @@ for(seed in index_seeds) {
     
     load(file_name)
     b_chain_ind = 1:nrow(mcmc_out$B_chain)
-    ind_keep = seq(1, nrow(mcmc_out$B_chain), by=10)
+    ind_B_chain = seq(1, length(b_chain_ind), by=10)
     
     if(seed == 1) {
-        post_B_chain = mcmc_out$B_chain[ind_keep, ]
+        post_B_chain = mcmc_out$B_chain[ind_B_chain, ]
     } else {
-        post_B_chain = rbind(post_B_chain, mcmc_out$B_chain[ind_keep, ])
+        post_B_chain = rbind(post_B_chain, mcmc_out$B_chain[ind_B_chain, ])
     }
 }
 
@@ -329,11 +333,7 @@ print(EIDs[!(EIDs %in% no_trans)])
 # -----------------------------------------------------------------------------
 # Blunted responses -----------------------------------------------------------
 # -----------------------------------------------------------------------------
-if(covariate_struct == 1) {
-    id_indiv = c(302, 33103)
-} else {
-    id_indiv = c(302, 33103)
-}
+id_indiv = c(302, 33103)
 pdf(paste0("Plots/blunted_resp_", trial_num, ".pdf"))
 par(mfrow=c(4,1), mar=c(2,4,2,4))#, bg='black', fg='green')
 for(i in id_indiv){

@@ -23,7 +23,7 @@ if(simulation) {
     trial_num = 5
     index_seeds = c(1:100)
 } else {
-    trial_num = covariate_struct + 3
+    trial_num = covariate_struct + 6
     index_seeds = c(1:5)
 }
 
@@ -37,7 +37,7 @@ if(interm) {
     n_post = 100000; burnin = 0; steps = 100000
 } else {
     # n_post = 99500; burnin = 500; steps = 100000
-    n_post = 200000; burnin = 0; steps = 200000
+    n_post = 20000; burnin = 0; steps = 200000
 }
 
 # Matrix row indices for the posterior sample to use
@@ -305,7 +305,7 @@ pdf(pdf_title)
 par(mfrow=c(4, 2))
 
 stacked_chains = do.call( rbind, chain_list)
-par_mean = par_median = upper = lower = rep( NA, length(labels))
+par_mean = par_median = upper = lower = max_confidence_set = rep( NA, length(labels))
 
 mle_ind = 1
 
@@ -316,14 +316,25 @@ for(r in 1:length(labels)){
     upper[r] = round( quantile( stacked_chains[,r], prob=.975), 4)
     lower[r] = round( quantile( stacked_chains[,r], prob=.025), 4)
 
+    # Determining the max confidence set
+    for(ci in seq(0.001, 0.499, by = 0.001)) {
+        upp_ci = quantile( stacked_chains[,r], prob=1-ci)
+        low_ci = quantile( stacked_chains[,r], prob=ci)
+        if(0 < low_ci | 0 > upp_ci) {
+            max_confidence_set[r] = round(1 - ci - ci, 3)
+            break
+        }
+    }
+
     if(simulation) {
         plot( NULL, xlab=paste0("true val: ", round(true_par[r], 3)), ylab=NA, 
               main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
               ylim=range(stacked_chains[,r]) )
     } else {
         
-        plot( NULL, xlab=paste0("[", lower[r], ", ", upper[r], "]"), ylab=NA, 
-              main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
+        plot( NULL, xlab=paste0("[", lower[r], ", ", upper[r], 
+                                "], max conf. = ", 100*max_confidence_set[r], "%"), 
+              ylab=NA, main=labels[r], xlim=c(1,nrow(chain_list[[1]])),
               ylim=range(stacked_chains[,r]) )
     }
 
@@ -666,16 +677,19 @@ if(!simulation) {
         }
         
         app0 = ggarrange(plot0_1_to_2 + 
-                             labs(title = TeX(r'(state 1 $\to$ 2)')) +
+                             labs(title = TeX(r'(Probability evolution: baseline to state 2)')) +
                              theme(axis.title.x = element_blank(),
-                                   legend.position="none"), 
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)), 
                          plot0_1_to_3 + 
-                             labs(title = TeX(r'(state 1 $\to$ 3)')) +
+                             labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
                              theme(axis.text.y = element_blank(),
                                    axis.ticks.y = element_blank(),
                                    axis.title.y = element_blank(),
                                    axis.title.x = element_blank(),
-                                   legend.position="none"),
+                                   legend.position="none",
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)),
                          nrow = 1, ncol = 2)
         
         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_0.png"), 
@@ -683,16 +697,19 @@ if(!simulation) {
         
         if(covariate_struct == 3) {
             app1 = ggarrange(plot1_1_to_2 + 
-                                 labs(title = TeX(r'(state 1 $\to$ 2)'))+
+                                 labs(title = TeX(r'(Probability evolution: baseline to state 2)'))+
                                  theme(axis.title.x = element_blank(),
-                                       legend.position="none"), 
+                                       plot.title = element_text(size = 8, face = "bold"),
+                                       plot.subtitle = element_text(size = 7)), 
                              plot1_1_to_3 + 
-                                 labs(title = TeX(r'(state 1 $\to$ 3)')) +
+                                 labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
                                  theme(axis.text.y = element_blank(),
                                        axis.ticks.y = element_blank(),
                                        axis.title.y = element_blank(),
                                        axis.title.x = element_blank(),
-                                       legend.position="none"),
+                                       legend.position="none",
+                                       plot.title = element_text(size = 8, face = "bold"),
+                                       plot.subtitle = element_text(size = 7)),
                              nrow = 1, ncol = 2)   
             
             ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_1.png"), 
@@ -736,14 +753,19 @@ if(!simulation) {
         #        plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
         
         app0 = ggarrange(plot0_1_to_2 + 
-                             labs(title = TeX(r'(state 1 $\to$ 2)')) +
-                             theme(axis.title.x = element_blank()), 
+                             labs(title = TeX(r'(Probability evolution: baseline to state 2)')) +
+                             theme(axis.title.x = element_blank(),
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)), 
                          plot0_1_to_3 + 
-                             labs(title = TeX(r'(state 1 $\to$ 3)')) +
+                             labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
                              theme(axis.text.y = element_blank(),
                                    axis.ticks.y = element_blank(),
                                    axis.title.y = element_blank(),
-                                   axis.title.x = element_blank()),
+                                   axis.title.x = element_blank(),
+                                   legend.position="none",
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)),
                          nrow = 1, ncol = 2)
         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_0.png"), 
                plot = app0, width = 1500, height = 1000, units = "px")
@@ -785,14 +807,19 @@ if(!simulation) {
         #        plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
         
         app0 = ggarrange(plot0_1_to_2 + 
-                             labs(title = TeX(r'(state 1 $\to$ 2)')) +
-                             theme(axis.title.x = element_blank()), 
+                             labs(title = TeX(r'(Probability evolution: baseline to state 2)')) +
+                             theme(axis.title.x = element_blank(),
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)), 
                          plot0_1_to_3 + 
-                             labs(title = TeX(r'(state 1 $\to$ 3)')) +
+                             labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
                              theme(axis.text.y = element_blank(),
                                    axis.ticks.y = element_blank(),
                                    axis.title.y = element_blank(),
-                                   axis.title.x = element_blank()),
+                                   axis.title.x = element_blank(),
+                                   legend.position="none",
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)),
                          nrow = 1, ncol = 2)
         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_1.png"), 
                plot = app0, width = 1500, height = 1000, units = "px")
@@ -834,8 +861,18 @@ y_end_s3   = dnorm(sum(mu_alpha_beta[c(1,3)]),
                    mean = sum(mu_alpha_beta[c(1,3)]), 
                    sd = sigma_1_2_3[3])
 
+subtitle_text = ""
+if(covariate_struct == 1) {
+    subtitle_text = "All covariates (no DLER)"
+} else if(covariate_struct == 2) {
+    subtitle_text = "Only DLER"
+} else {
+    subtitle_text = "All covariates (including DLER)"
+}
 re_dist = ggplot(dat, aes(x=x, y=dens, group=lines, fill=lines)) +
-    geom_line(size=.5) + 
+    xlim(0,12) +
+    ylim(0, 1) + 
+    geom_line(linewidth=.5) + 
     geom_segment(aes(x = mu_alpha_beta[1], xend = mu_alpha_beta[1], 
                      y = 0, yend = y_end_base), color = "blue") + 
     geom_segment(aes(x = sum(mu_alpha_beta[c(1,2)]), xend = sum(mu_alpha_beta[c(1,2)]), 
@@ -847,7 +884,8 @@ re_dist = ggplot(dat, aes(x=x, y=dens, group=lines, fill=lines)) +
                                         "state 3" = "green")) +
     labs(x = "", 
          y = "Density", 
-         title = "Random effect distributions for each state")
+         title = "Random effect distributions for each state",
+         subtitle = subtitle_text)
 ggsave(filename = paste0("Plots/randomEffects_", trial_num, ".png"), 
        plot = re_dist, width = 1500, height = 1000, units = "px")
 

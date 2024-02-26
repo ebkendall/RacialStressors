@@ -61,12 +61,12 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
     n_group = length(group)
 
     # proposal covariance and scale parameter for Metropolis step
-    load(paste0("Model_out/mcmc_out_", ind, "_", trial_num - 3, "_30b.rda"))
-    pcov = mcmc_out$pcov
-    pscale = mcmc_out$pscale
-    # pcov = list(); for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
-    # pscale = rep( 1, n_group)
-    rm(mcmc_out)
+    # load(paste0("Model_out/mcmc_out_", ind, "_", trial_num - 3, "_30b.rda"))
+    # pcov = mcmc_out$pcov
+    # pscale = mcmc_out$pscale
+    # rm(mcmc_out)
+    pcov = list(); for(j in 1:n_group)  pcov[[j]] = diag(length(group[[j]]))*0.001
+    pscale = rep( 1, n_group)
     
     accept = rep( 0, n_group)
     EIDs = unique(id)
@@ -217,10 +217,10 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
             if(ttt/steps == 5) {
                 if(simulation) {
                     save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
-                                                trial_num, 'it', ttt/steps, '_sim.rda'))
+                                                trial_num, 'it', ttt/steps, '_sim_check.rda'))
                 } else {
                     save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
-                                                trial_num, 'it', ttt/steps, '.rda'))
+                                                trial_num, 'it', ttt/steps, '_check.rda'))
                 }
             }
 
