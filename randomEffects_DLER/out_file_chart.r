@@ -2,11 +2,11 @@
 library(plotrix)
 
 # Model type -------------------------------------------------------------------
-# 1: baseline only
-# 2: baseline & DLER
+# 1: baseline model (age, sex, pEdu)
+# 2: DLER
 # 3: all covariates
 
-covariate_struct = 3
+covariate_struct = 1
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
@@ -141,44 +141,60 @@ for(i in EIDs){
 	sub_dat = data_format[data_format[,"ID.."] == i, ]
 	n_i = sum(indices_i)
 
-    if(covariate_struct == 1) {
-        plot_title = paste0('Participant: ', i)
-    } else if(covariate_struct == 2) {
-        
-        dler_val = NULL
-        for(a in EIDs) {
-            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-        }
-        mean_dler = mean(dler_val)
-        
-        cov_value = c(sub_dat[1,"DLER_avg"])
-        cov_value = as.numeric(cov_value)
-        cov_value[1] = cov_value[1] - mean_dler
-        cov_value[1] = round(cov_value[1], digits = 3)
-
-        plot_title = paste0('Participant: ', i, ', DLER: ', cov_value[1])
-    } else {
-        
-        ages = NULL
-        dler_val = NULL
-        for(a in EIDs) {
-            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-        }
-        mean_age = mean(ages)
-        mean_dler = mean(dler_val)
-        
-        cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
-        cov_value = as.numeric(cov_value)
-        cov_value[1] = cov_value[1] - mean_age
-        cov_value[4] = cov_value[4] - mean_dler
-        cov_value[1] = round(cov_value[1], digits = 3)
-        cov_value[4] = round(cov_value[4], digits = 3)
-
-        plot_title = paste0('Participant: ', i, ', sex: ', cov_value[2], 
-                          ', pEdu: ', cov_value[3], ', DLER: ', cov_value[4],
-                          ', age: ', cov_value[1])
-    }
+	if(covariate_struct == 1) {
+	    ages = NULL
+	    for(a in EIDs) {
+	        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+	    }
+	    mean_age = mean(ages)
+	    
+	    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_age
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, ', age: ', round(cov_value[1] + mean_age, digits = 3), 
+	                        ', sex: ', cov_value[2], 
+	                        ', pEdu: ', cov_value[3])
+	} else if(covariate_struct == 2) {
+	    
+	    dler_val = NULL
+	    for(a in EIDs) {
+	        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+	    }
+	    mean_dler = mean(dler_val)
+	    
+	    cov_value = c(sub_dat[1,"DLER_avg"])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_dler
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, ', DLER: ', 
+	                        round(cov_value[1] + mean_dler, digits = 3))
+	} else {
+	    
+	    ages = NULL
+	    dler_val = NULL
+	    for(a in EIDs) {
+	        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+	        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+	    }
+	    mean_age = mean(ages)
+	    mean_dler = mean(dler_val)
+	    
+	    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_age
+	    cov_value[4] = cov_value[4] - mean_dler
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    cov_value[4] = round(cov_value[4], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, 
+	                        ', age: ' , round(cov_value[1] + mean_age, digits = 3),
+	                        ', sex: ' , cov_value[2], 
+	                        ', pEdu: ', cov_value[3], 
+	                        ', DLER: ', round(cov_value[4] + mean_dler, digits = 3))
+	}
 
 	t_grid = t_grid_bar = 1:n_i
 	main_color = 'black'
@@ -230,10 +246,9 @@ for(i in EIDs){
 
     points(x=pb, y=data_format[indices_i, "RSA"])
 
-	barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1),
-			        colMeans(post_B_chain[, indices_i] == 2),
-				    colMeans(post_B_chain[, indices_i] == 3)), 
-            col=c( 'dodgerblue', 'firebrick1', 'yellow2'), 
+	barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1 | post_B_chain[, indices_i] == 3),
+			        colMeans(post_B_chain[, indices_i] == 2)), 
+            col=c( 'dodgerblue', 'firebrick1'), 
 			xlab='time', space=0, col.main=main_color, border=NA, 
 			ylab = "Posterior probability",
             xlim=range(pb) + c(-0.5,0.5), xaxt = 'n', yaxt = 'n', col.lab = main_color) 
@@ -241,8 +256,8 @@ for(i in EIDs){
 	        legend=c( 'Start of stressor', 'End of stressor'), pch=15, pt.cex=1.5, 
 	        col=c( 'darkorchid4', 'darkgrey'))
 	legend( 'topright', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
-	        legend=c( 'Baseline', 'State 2', 'State 3'), pch=15, pt.cex=1.5, 
-	        col=c( 'dodgerblue', 'firebrick1', 'yellow2'))
+	        legend=c( 'Baseline & State 3', 'State 2'), pch=15, pt.cex=1.5, 
+	        col=c( 'dodgerblue', 'firebrick1'))
     axis( side=1, at=t_grid_bar-0.5, col.axis=main_color, labels = t_grid)
 	axis( side=2, at=seq(0,1,by=0.25), col.axis=main_color)
 
@@ -321,14 +336,27 @@ print(round(count_transitions / total_trans, digits = 4))
 
 # No transition:
 no_trans = NULL
+state_2_trans = NULL
+state_3_trans = NULL
 for(i in EIDs) {
     if(sum(B_MLE[[which(EIDs == i)]] != 1) == 0) { no_trans = c(no_trans, i) }
+    if(sum(B_MLE[[which(EIDs == i)]] == 2) != 0) {state_2_trans = c(state_2_trans, i)}
+    if(sum(B_MLE[[which(EIDs == i)]] == 3) != 0) {state_3_trans = c(state_3_trans, i)}
 }
 
 print("No transition out of baseline: ")
 print(no_trans)
 print("Yes, transitioned out of baseline: ")
 print(EIDs[!(EIDs %in% no_trans)])
+
+print("Transitioned to state 2")
+print(state_2_trans)
+
+print("Transitioned to state 3")
+print(state_3_trans)
+
+print("Transitioned to both")
+print(EIDs[(EIDs %in% state_2_trans) & (EIDs %in% state_3_trans)])
 
 # -----------------------------------------------------------------------------
 # Blunted responses -----------------------------------------------------------
@@ -342,44 +370,60 @@ for(i in id_indiv){
 	sub_dat = data_format[data_format[,"ID.."] == i, ]
 	n_i = sum(indices_i)
 
-    if(covariate_struct == 1) {
-        plot_title = paste0('Participant: ', i)
-    } else if(covariate_struct == 2) {
-        
-        dler_val = NULL
-        for(a in EIDs) {
-            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-        }
-        mean_dler = mean(dler_val)
-        
-        cov_value = c(sub_dat[1,"DLER_avg"])
-        cov_value = as.numeric(cov_value)
-        cov_value[1] = cov_value[1] - mean_dler
-        cov_value[1] = round(cov_value[1], digits = 3)
-
-        plot_title = paste0('Participant: ', i, ', DLER: ', cov_value[1])
-    } else {
-        
-        ages = NULL
-        dler_val = NULL
-        for(a in EIDs) {
-            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-        }
-        mean_age = mean(ages)
-        mean_dler = mean(dler_val)
-        
-        cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
-        cov_value = as.numeric(cov_value)
-        cov_value[1] = cov_value[1] - mean_age
-        cov_value[4] = cov_value[4] - mean_dler
-        cov_value[1] = round(cov_value[1], digits = 3)
-        cov_value[4] = round(cov_value[4], digits = 3)
-
-        plot_title = paste0('Participant: ', i, ', sex: ', cov_value[2], 
-                          ', pEdu: ', cov_value[3], ', DLER: ', cov_value[4],
-                          ', age: ', cov_value[1])
-    }
+	if(covariate_struct == 1) {
+	    ages = NULL
+	    for(a in EIDs) {
+	        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+	    }
+	    mean_age = mean(ages)
+	    
+	    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_age
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, ', age: ', round(cov_value[1] + mean_age, digits = 3), 
+	                        ', sex: ', cov_value[2], 
+	                        ', pEdu: ', cov_value[3])
+	} else if(covariate_struct == 2) {
+	    
+	    dler_val = NULL
+	    for(a in EIDs) {
+	        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+	    }
+	    mean_dler = mean(dler_val)
+	    
+	    cov_value = c(sub_dat[1,"DLER_avg"])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_dler
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, ', DLER: ', 
+	                        round(cov_value[1] + mean_dler, digits = 3))
+	} else {
+	    
+	    ages = NULL
+	    dler_val = NULL
+	    for(a in EIDs) {
+	        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+	        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+	    }
+	    mean_age = mean(ages)
+	    mean_dler = mean(dler_val)
+	    
+	    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_age
+	    cov_value[4] = cov_value[4] - mean_dler
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    cov_value[4] = round(cov_value[4], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, 
+	                        ', age: ' , round(cov_value[1] + mean_age, digits = 3),
+	                        ', sex: ' , cov_value[2], 
+	                        ', pEdu: ', cov_value[3], 
+	                        ', DLER: ', round(cov_value[4] + mean_dler, digits = 3))
+	}
 
 	t_grid = t_grid_bar = 1:n_i
 	main_color = 'black'
@@ -429,19 +473,18 @@ for(i in id_indiv){
 
     points(x=pb, y=data_format[indices_i, "RSA"])
 
-	barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1),
-			        colMeans(post_B_chain[, indices_i] == 2),
-				    colMeans(post_B_chain[, indices_i] == 3)), 
-            col=c( 'dodgerblue', 'firebrick1', 'yellow2'), 
-			xlab='time', space=0, col.main=main_color, border=NA, 
-			ylab = "Posterior probability",
+    barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1 | post_B_chain[, indices_i] == 3),
+                    colMeans(post_B_chain[, indices_i] == 2)), 
+            col=c( 'dodgerblue', 'firebrick1'), 
+            xlab='time', space=0, col.main=main_color, border=NA, 
+            ylab = "Posterior probability",
             xlim=range(pb) + c(-0.5,0.5), xaxt = 'n', yaxt = 'n', col.lab = main_color) 
-	legend( 'topleft', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
-	        legend=c( 'Start of stressor', 'End of stressor'), pch=15, pt.cex=1.5, 
-	        col=c( 'darkorchid4', 'darkgrey'))
-	legend( 'topright', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
-	        legend=c( 'Baseline', 'State 2', 'State 3'), pch=15, pt.cex=1.5, 
-	        col=c( 'dodgerblue', 'firebrick1', 'yellow2'))
+    legend( 'topleft', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+            legend=c( 'Start of stressor', 'End of stressor'), pch=15, pt.cex=1.5, 
+            col=c( 'darkorchid4', 'darkgrey'))
+    legend( 'topright', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+            legend=c( 'Baseline & State 3', 'State 2'), pch=15, pt.cex=1.5, 
+            col=c( 'dodgerblue', 'firebrick1'))
     axis( side=1, at=t_grid_bar-0.5, col.axis=main_color, labels = t_grid)
 	axis( side=2, at=seq(0,1,by=0.25), col.axis=main_color)
 
@@ -461,7 +504,7 @@ dev.off()
 # React/recover responses -----------------------------------------------------
 # -----------------------------------------------------------------------------
 
-id_indiv = c(414, 26275)
+id_indiv = c(508, 414)
 pdf(paste0("Plots/react_recover_resp_", trial_num, ".pdf"))
 par(mfrow=c(4,1), mar=c(2,4,2,4))#, bg='black', fg='green')
 for(i in id_indiv){
@@ -470,44 +513,60 @@ for(i in id_indiv){
 	sub_dat = data_format[data_format[,"ID.."] == i, ]
 	n_i = sum(indices_i)
 
-    if(covariate_struct == 1) {
-        plot_title = paste0('Participant: ', i)
-    } else if(covariate_struct == 2) {
-        
-        dler_val = NULL
-        for(a in EIDs) {
-            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-        }
-        mean_dler = mean(dler_val)
-        
-        cov_value = c(sub_dat[1,"DLER_avg"])
-        cov_value = as.numeric(cov_value)
-        cov_value[1] = cov_value[1] - mean_dler
-        cov_value[1] = round(cov_value[1], digits = 3)
-
-        plot_title = paste0('Participant: ', i, ', DLER: ', cov_value[1])
-    } else {
-        
-        ages = NULL
-        dler_val = NULL
-        for(a in EIDs) {
-            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-        }
-        mean_age = mean(ages)
-        mean_dler = mean(dler_val)
-        
-        cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
-        cov_value = as.numeric(cov_value)
-        cov_value[1] = cov_value[1] - mean_age
-        cov_value[4] = cov_value[4] - mean_dler
-        cov_value[1] = round(cov_value[1], digits = 3)
-        cov_value[4] = round(cov_value[4], digits = 3)
-
-        plot_title = paste0('Participant: ', i, ', sex: ', cov_value[2], 
-                          ', pEdu: ', cov_value[3], ', DLER: ', cov_value[4],
-                          ', age: ', cov_value[1])
-    }
+	if(covariate_struct == 1) {
+	    ages = NULL
+	    for(a in EIDs) {
+	        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+	    }
+	    mean_age = mean(ages)
+	    
+	    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_age
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, ', age: ', round(cov_value[1] + mean_age, digits = 3), 
+	                        ', sex: ', cov_value[2], 
+	                        ', pEdu: ', cov_value[3])
+	} else if(covariate_struct == 2) {
+	    
+	    dler_val = NULL
+	    for(a in EIDs) {
+	        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+	    }
+	    mean_dler = mean(dler_val)
+	    
+	    cov_value = c(sub_dat[1,"DLER_avg"])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_dler
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, ', DLER: ', 
+	                        round(cov_value[1] + mean_dler, digits = 3))
+	} else {
+	    
+	    ages = NULL
+	    dler_val = NULL
+	    for(a in EIDs) {
+	        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+	        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+	    }
+	    mean_age = mean(ages)
+	    mean_dler = mean(dler_val)
+	    
+	    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_age
+	    cov_value[4] = cov_value[4] - mean_dler
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    cov_value[4] = round(cov_value[4], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, 
+	                        ', age: ' , round(cov_value[1] + mean_age, digits = 3),
+	                        ', sex: ' , cov_value[2], 
+	                        ', pEdu: ', cov_value[3], 
+	                        ', DLER: ', round(cov_value[4] + mean_dler, digits = 3))
+	}
 
 	t_grid = t_grid_bar = 1:n_i
 	main_color = 'black'
@@ -557,19 +616,18 @@ for(i in id_indiv){
 
     points(x=pb, y=data_format[indices_i, "RSA"])
 
-	barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1),
-			        colMeans(post_B_chain[, indices_i] == 2),
-				    colMeans(post_B_chain[, indices_i] == 3)), 
-            col=c( 'dodgerblue', 'firebrick1', 'yellow2'), 
-			xlab='time', space=0, col.main=main_color, border=NA, 
-			ylab = "Posterior probability",
+    barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1 | post_B_chain[, indices_i] == 3),
+                    colMeans(post_B_chain[, indices_i] == 2)), 
+            col=c( 'dodgerblue', 'firebrick1'), 
+            xlab='time', space=0, col.main=main_color, border=NA, 
+            ylab = "Posterior probability",
             xlim=range(pb) + c(-0.5,0.5), xaxt = 'n', yaxt = 'n', col.lab = main_color) 
-	legend( 'topleft', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
-	        legend=c( 'Start of stressor', 'End of stressor'), pch=15, pt.cex=1.5, 
-	        col=c( 'darkorchid4', 'darkgrey'))
-	legend( 'topright', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
-	        legend=c( 'Baseline', 'State 2', 'State 3'), pch=15, pt.cex=1.5, 
-	        col=c( 'dodgerblue', 'firebrick1', 'yellow2'))
+    legend( 'topleft', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+            legend=c( 'Start of stressor', 'End of stressor'), pch=15, pt.cex=1.5, 
+            col=c( 'darkorchid4', 'darkgrey'))
+    legend( 'topright', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+            legend=c( 'Baseline & State 3', 'State 2'), pch=15, pt.cex=1.5, 
+            col=c( 'dodgerblue', 'firebrick1'))
     axis( side=1, at=t_grid_bar-0.5, col.axis=main_color, labels = t_grid)
 	axis( side=2, at=seq(0,1,by=0.25), col.axis=main_color)
 
@@ -588,7 +646,7 @@ dev.off()
 # -----------------------------------------------------------------------------
 # React responses -------------------------------------------------------------
 # -----------------------------------------------------------------------------
-id_indiv = c(29014,416) #26104,
+id_indiv = c(29014,446) #26104,
 pdf(paste0("Plots/react_resp_", trial_num, ".pdf"))
 par(mfrow=c(4,1), mar=c(2,4,2,4))#, bg='black', fg='green')
 for(i in id_indiv){
@@ -597,44 +655,60 @@ for(i in id_indiv){
 	sub_dat = data_format[data_format[,"ID.."] == i, ]
 	n_i = sum(indices_i)
 
-    if(covariate_struct == 1) {
-        plot_title = paste0('Participant: ', i)
-    } else if(covariate_struct == 2) {
-        
-        dler_val = NULL
-        for(a in EIDs) {
-            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-        }
-        mean_dler = mean(dler_val)
-        
-        cov_value = c(sub_dat[1,"DLER_avg"])
-        cov_value = as.numeric(cov_value)
-        cov_value[1] = cov_value[1] - mean_dler
-        cov_value[1] = round(cov_value[1], digits = 3)
-
-        plot_title = paste0('Participant: ', i, ', DLER: ', cov_value[1])
-    } else {
-        
-        ages = NULL
-        dler_val = NULL
-        for(a in EIDs) {
-            ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-            dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-        }
-        mean_age = mean(ages)
-        mean_dler = mean(dler_val)
-        
-        cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
-        cov_value = as.numeric(cov_value)
-        cov_value[1] = cov_value[1] - mean_age
-        cov_value[4] = cov_value[4] - mean_dler
-        cov_value[1] = round(cov_value[1], digits = 3)
-        cov_value[4] = round(cov_value[4], digits = 3)
-
-        plot_title = paste0('Participant: ', i, ', sex: ', cov_value[2], 
-                          ', pEdu: ', cov_value[3], ', DLER: ', cov_value[4],
-                          ', age: ', cov_value[1])
-    }
+	if(covariate_struct == 1) {
+	    ages = NULL
+	    for(a in EIDs) {
+	        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+	    }
+	    mean_age = mean(ages)
+	    
+	    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_age
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, ', age: ', round(cov_value[1] + mean_age, digits = 3), 
+	                        ', sex: ', cov_value[2], 
+	                        ', pEdu: ', cov_value[3])
+	} else if(covariate_struct == 2) {
+	    
+	    dler_val = NULL
+	    for(a in EIDs) {
+	        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+	    }
+	    mean_dler = mean(dler_val)
+	    
+	    cov_value = c(sub_dat[1,"DLER_avg"])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_dler
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, ', DLER: ', 
+	                        round(cov_value[1] + mean_dler, digits = 3))
+	} else {
+	    
+	    ages = NULL
+	    dler_val = NULL
+	    for(a in EIDs) {
+	        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+	        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+	    }
+	    mean_age = mean(ages)
+	    mean_dler = mean(dler_val)
+	    
+	    cov_value = c(sub_dat[1,c("Age", "sex1", "edu_yes", "DLER_avg")])
+	    cov_value = as.numeric(cov_value)
+	    cov_value[1] = cov_value[1] - mean_age
+	    cov_value[4] = cov_value[4] - mean_dler
+	    cov_value[1] = round(cov_value[1], digits = 3)
+	    cov_value[4] = round(cov_value[4], digits = 3)
+	    
+	    plot_title = paste0('Participant: ', i, 
+	                        ', age: ' , round(cov_value[1] + mean_age, digits = 3),
+	                        ', sex: ' , cov_value[2], 
+	                        ', pEdu: ', cov_value[3], 
+	                        ', DLER: ', round(cov_value[4] + mean_dler, digits = 3))
+	}
 
 	t_grid = t_grid_bar = 1:n_i
 	main_color = 'black'
@@ -684,19 +758,18 @@ for(i in id_indiv){
 
     points(x=pb, y=data_format[indices_i, "RSA"])
 
-	barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1),
-			        colMeans(post_B_chain[, indices_i] == 2),
-				    colMeans(post_B_chain[, indices_i] == 3)), 
-            col=c( 'dodgerblue', 'firebrick1', 'yellow2'), 
-			xlab='time', space=0, col.main=main_color, border=NA, 
-			ylab = "Posterior probability",
+    barplot(rbind(  colMeans(post_B_chain[, indices_i] == 1 | post_B_chain[, indices_i] == 3),
+                    colMeans(post_B_chain[, indices_i] == 2)), 
+            col=c( 'dodgerblue', 'firebrick1'), 
+            xlab='time', space=0, col.main=main_color, border=NA, 
+            ylab = "Posterior probability",
             xlim=range(pb) + c(-0.5,0.5), xaxt = 'n', yaxt = 'n', col.lab = main_color) 
-	legend( 'topleft', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
-	        legend=c( 'Start of stressor', 'End of stressor'), pch=15, pt.cex=1.5, 
-	        col=c( 'darkorchid4', 'darkgrey'))
-	legend( 'topright', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
-	        legend=c( 'Baseline', 'State 2', 'State 3'), pch=15, pt.cex=1.5, 
-	        col=c( 'dodgerblue', 'firebrick1', 'yellow2'))
+    legend( 'topleft', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+            legend=c( 'Start of stressor', 'End of stressor'), pch=15, pt.cex=1.5, 
+            col=c( 'darkorchid4', 'darkgrey'))
+    legend( 'topright', inset=c(0,-.15), xpd=T, horiz=T, bty='n', x.intersp=.75,
+            legend=c( 'Baseline & State 3', 'State 2'), pch=15, pt.cex=1.5, 
+            col=c( 'dodgerblue', 'firebrick1'))
     axis( side=1, at=t_grid_bar-0.5, col.axis=main_color, labels = t_grid)
 	axis( side=2, at=seq(0,1,by=0.25), col.axis=main_color)
 

@@ -7,8 +7,8 @@ library(egg)
 dir = 'Model_out/' 
 
 # Model type -------------------------------------------------------------------
-# 1: baseline only
-# 2: baseline & DLER
+# 1: baseline model (age, sex, pEdu)
+# 2: DLER
 # 3: all covariates
 
 covariate_struct = 1
@@ -398,6 +398,30 @@ if(simulation) {
     }
 }
 dev.off()
+
+
+# # Calculate the 95% credible sets centered at the post. median of log(sigma_123)
+# log_sigmas = stacked_chains[,par_index$sigma2]
+# interval_width = matrix(nrow = 3, ncol = 2)
+# for(i in 1:ncol(log_sigmas)) {
+#     print(paste0("sigma", i))
+#     med_i = median(log_sigmas[,i])
+#     
+#     for(j in seq(0, 10, by = 0.00001)) {
+#         sum_j = sum((log_sigmas[,i] <= med_i + j) & (log_sigmas[,i] >= med_i - j))
+#         if(sum_j >= .95 * nrow(log_sigmas)) {
+#             interval_width[i, 1] = j
+#             interval_width[i, 2] = sum_j
+#             break
+#         }
+#     }
+# }
+# 
+# print("95% Credible Sets for log(sigma)")
+# print(cbind(apply(log_sigmas, 2, median) - interval_width[,1],
+#             apply(log_sigmas, 2, median) + interval_width[,1]))
+# print("95% Credible width")
+# print(interval_width)
 
 if(!simulation) {
     # Probability of transitioning in 30s with certain covariate combinations -----
