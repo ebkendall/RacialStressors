@@ -12,9 +12,7 @@ print(ind)
 
 covariate_struct = 1
 # ------------------------------------------------------------------------------
-
-trial_num = covariate_struct
-simulation = F
+simulation = T
 case_b = T
 # ------------------------------------------------------------------------------
 
@@ -26,6 +24,8 @@ if(simulation) {
     load(paste0('Data/sim_data_', covariate_struct, '_', ind, '.rda'))
     load(paste0('Data/true_par_', covariate_struct, '_30.rda'))
     data_format = sim_data
+    
+    trial_num = covariate_struct
 } else {
     # Real data analysis
     # 30s epochs
@@ -35,6 +35,8 @@ if(simulation) {
     # Removing the participants with missing labels
     miss_info = c(26296, 29698, 30625, 401, 423, 419, 457)
     data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
+    
+    trial_num = covariate_struct+3
 }
 
 EIDs = unique(data_format[,"ID.."])
@@ -198,7 +200,9 @@ if(simulation) {
 
 # Specifying the priors --------------------------------------------------------
 prior_mean = rep(0, length(init_par))
-prior_sd = rep(10000, length(init_par))
+prior_sd = rep(400, length(init_par))
+# prior_mean[par_index$delta] = c(6,0,0)
+# prior_sd[par_index$delta] = c(4,4,4)
 
 prior_par = list()
 prior_par[[1]] = prior_mean
@@ -206,10 +210,12 @@ prior_par[[2]] = prior_sd
 # ------------------------------------------------------------------------------
 
 # Load previous run and continue the iterations --------------------------------
-# load(paste0("Model_out/mcmc_out_", ind, "_", trial_num - 3, "_30b.rda"))
-# init_par = mcmc_out$chain[nrow(mcmc_out$chain), ]
-# b_main = mcmc_out$B_chain[nrow(mcmc_out$B_chain), ]
-# rm(mcmc_out)
+if(!simulation) {
+    load(paste0("Model_out/mcmc_out_", ind, "_", 4, "_30b.rda"))
+    init_par = mcmc_out$chain[nrow(mcmc_out$chain), ]
+    b_main = mcmc_out$B_chain[nrow(mcmc_out$B_chain), ]
+    rm(mcmc_out)   
+}
 # ------------------------------------------------------------------------------
 
 B = list()
@@ -219,13 +225,13 @@ for(i in 1:length(EIDs)) {
         B[[i]] = matrix(b_i, ncol = 1)
     } else {
         # Initializing state sequence to be S1 ("baseline") for all time points
-        b_i = rep(1, sum(data_format[,"ID.."] == EIDs[i]))
-        # b_i = b_main[data_format[,"ID.."] == EIDs[i]]
+        # b_i = rep(1, sum(data_format[,"ID.."] == EIDs[i]))
+        b_i = b_main[data_format[,"ID.."] == EIDs[i]]
         B[[i]] = matrix(b_i, ncol = 1)
     }
 }
 
-big_steps = 2000000
+big_steps = 1000000
 steps     = 100000
 burnin    = 5000
 

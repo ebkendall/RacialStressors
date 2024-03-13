@@ -32,9 +32,18 @@ double D_2_calc_fix(const int state_num, const arma::vec y_2_i_state,
         arma::mat var_ii = arma::mat(n_i, n_i, arma::fill::ones);
         var_ii = sigma_2_vec(0) * var_ii;
         var_ii.diag() += tau2;
+
+        // Checking whether variance is invertible based on the values given
+        arma::mat C;
+        bool success = arma::inv(C,var_ii);
+        if(!success) {
+            Rcpp::Rcout << "bad variance terms" << std::endl;
+            d_2_val = -1 * arma::datum::inf;
+        } else {
+            arma::vec log_d_2 = dmvnorm(y_2_i_state.t(), mean_ii, var_ii, true);
+            d_2_val = arma::as_scalar(log_d_2);
+        }
         
-        arma::vec log_d_2 = dmvnorm(y_2_i_state.t(), mean_ii, var_ii, true);
-        d_2_val = arma::as_scalar(log_d_2);
     } else if(state_num == 2) {
 
         double scalar_mean = arma::dot(x_i, gamma) + (dler_i * delta_new(1)) 
@@ -47,8 +56,16 @@ double D_2_calc_fix(const int state_num, const arma::vec y_2_i_state,
         var_ii = sigma_2_vec(1) * var_ii;
         var_ii.diag() += tau2;
         
-        arma::vec log_d_2 = dmvnorm(y_2_i_state.t(), mean_ii, var_ii, true);
-        d_2_val = arma::as_scalar(log_d_2);
+        // Checking whether variance is invertible based on the values given
+        arma::mat C;
+        bool success = arma::inv(C,var_ii);
+        if(!success) {
+            Rcpp::Rcout << "bad variance terms" << std::endl;
+            d_2_val = -1 * arma::datum::inf;
+        } else {
+            arma::vec log_d_2 = dmvnorm(y_2_i_state.t(), mean_ii, var_ii, true);
+            d_2_val = arma::as_scalar(log_d_2);
+        }
     } else {
 
         double scalar_mean = arma::dot(x_i, gamma) + (dler_i * delta_new(2)) 
@@ -61,8 +78,16 @@ double D_2_calc_fix(const int state_num, const arma::vec y_2_i_state,
         var_ii = sigma_2_vec(2) * var_ii;
         var_ii.diag() += tau2;
         
-        arma::vec log_d_2 = dmvnorm(y_2_i_state.t(), mean_ii, var_ii, true);
-        d_2_val = arma::as_scalar(log_d_2);
+        // Checking whether variance is invertible based on the values given
+        arma::mat C;
+        bool success = arma::inv(C,var_ii);
+        if(!success) {
+            Rcpp::Rcout << "bad variance terms" << std::endl;
+            d_2_val = -1 * arma::datum::inf;
+        } else {
+            arma::vec log_d_2 = dmvnorm(y_2_i_state.t(), mean_ii, var_ii, true);
+            d_2_val = arma::as_scalar(log_d_2);
+        }
     }
     
     return d_2_val;
@@ -188,23 +213,50 @@ double fn_log_post_continuous(const arma::vec &EIDs, const arma::vec &pars,
         if(s1.n_elem > 0) {
             int state_num = 1;
             arma::vec y_2_i_state = y_2_i.elem(s1);
-            log_y_val = log_y_val + D_2_calc_fix(state_num, y_2_i_state, tau2, 
-                                                 sigma_2_vec, delta, x_i, gamma,
-                                                 delta_new, dler_i);
+
+            double d_num = D_2_calc_fix(state_num, y_2_i_state, tau2, 
+                                        sigma_2_vec, delta, x_i, gamma,
+                                        delta_new, dler_i);
+
+            // Numerical stability check
+            arma::vec d_check = {d_num};
+            if(d_check.has_inf()) { 
+                log_y_val = -1 * arma::datum::inf;
+            } else {
+                log_y_val = log_y_val + d_num;
+            }
         }
         if(s2.n_elem > 0) {
             int state_num = 2;
             arma::vec y_2_i_state = y_2_i.elem(s2);
-            log_y_val = log_y_val + D_2_calc_fix(state_num, y_2_i_state, tau2, 
-                                                 sigma_2_vec, delta, x_i, gamma,
-                                                 delta_new, dler_i);
+
+            double d_num = D_2_calc_fix(state_num, y_2_i_state, tau2, 
+                                        sigma_2_vec, delta, x_i, gamma,
+                                        delta_new, dler_i);
+
+            // Numerical stability check
+            arma::vec d_check = {d_num};
+            if(d_check.has_inf()) { 
+                log_y_val = -1 * arma::datum::inf;
+            } else {
+                log_y_val = log_y_val + d_num;
+            }            
         }
         if(s3.n_elem > 0) {
             int state_num = 3;
             arma::vec y_2_i_state = y_2_i.elem(s3);
-            log_y_val = log_y_val + D_2_calc_fix(state_num, y_2_i_state, tau2, 
-                                                 sigma_2_vec, delta, x_i, gamma,
-                                                 delta_new, dler_i);
+
+            double d_num = D_2_calc_fix(state_num, y_2_i_state, tau2, 
+                                        sigma_2_vec, delta, x_i, gamma,
+                                        delta_new, dler_i);
+
+            // Numerical stability check
+            arma::vec d_check = {d_num};
+            if(d_check.has_inf()) { 
+                log_y_val = -1 * arma::datum::inf;
+            } else {
+                log_y_val = log_y_val + d_num;
+            }
         }
 
         // Check for numerical instability

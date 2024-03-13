@@ -6,7 +6,7 @@ library(plotrix)
 # 2: DLER
 # 3: all covariates
 
-covariate_struct = 1
+covariate_struct = 3
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
