@@ -15,30 +15,22 @@ covariate_struct = 1
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
-simulation = F
+simulation = T
 case_b = T
-interm = F
 
 if(simulation) {
-    trial_num = 5
+    trial_num = covariate_struct
     index_seeds = c(1:100)
 } else {
-    trial_num = covariate_struct+6
+    trial_num = covariate_struct+3
     index_seeds = c(1:5)
 }
 
-if(interm) {
-    it_num = 5
-}
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-if(interm) {
-    n_post = 100000; burnin = 0; steps = 100000
-} else {
-    # n_post = 99500; burnin = 500; steps = 100000
-    n_post = 10000; burnin = 0; steps = 10000
-}
+n_post = 25000; burnin = 500; steps = 50000
+# n_post = 20000; burnin = 500; steps = 100000
 
 # Matrix row indices for the posterior sample to use
 index_post = (steps - burnin - n_post + 1):(steps - burnin)
@@ -186,21 +178,13 @@ for(seed in index_seeds){
     
     if(simulation) {
         if(case_b) {
-            if(interm) {
-                file_name = paste0(dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '_sim.rda')   
-            } else {
-                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30b.rda')   
-            }
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30b_check.rda')  
         } else {
             file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_sim_30.rda')
         }
     } else {
         if(case_b) {
-            if(interm) {
-                file_name = paste0(dir,'mcmc_out_interm_',toString(seed),'_', trial_num, 'it', it_num, '.rda')   
-            } else {
-                file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b_check.rda')   
-            }
+            file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30b_check.rda')
         } else {
             file_name = paste0(dir,'mcmc_out_',toString(seed), '_', trial_num, '_30.rda')
         }
@@ -280,21 +264,13 @@ if(simulation) {
 pdf_title = NULL
 if(simulation) {
     if(case_b) {
-        if(interm) {
-            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30b_it', it_num, '.pdf')
-        } else {
-            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30b.pdf')
-        }
+        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30b_check.pdf')
     } else {
         pdf_title = paste0('Plots/mcmc_out_', trial_num, '_sim_30.pdf')   
     }
 } else {
     if(case_b) {
-        if(interm) {
-            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30b_it', it_num, '.pdf')
-        } else {
-            pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30b_check.pdf')
-        }
+        pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30b_check.pdf')
     } else {
         pdf_title = paste0('Plots/mcmc_out_', trial_num, '_30.pdf')   
     }
@@ -400,518 +376,453 @@ if(simulation) {
 dev.off()
 
 
-# # Calculate the 95% credible sets centered at the post. median of log(sigma_123)
-# log_sigmas = stacked_chains[,par_index$sigma2]
-# interval_width = matrix(nrow = 3, ncol = 2)
-# for(i in 1:ncol(log_sigmas)) {
-#     print(paste0("sigma", i))
-#     med_i = median(log_sigmas[,i])
-#     
-#     for(j in seq(0, 10, by = 0.00001)) {
-#         sum_j = sum((log_sigmas[,i] <= med_i + j) & (log_sigmas[,i] >= med_i - j))
-#         if(sum_j >= .95 * nrow(log_sigmas)) {
-#             interval_width[i, 1] = j
-#             interval_width[i, 2] = sum_j
-#             break
-#         }
-#     }
-# }
-# 
-# print("95% Credible Sets for log(sigma)")
-# print(cbind(apply(log_sigmas, 2, median) - interval_width[,1],
-#             apply(log_sigmas, 2, median) + interval_width[,1]))
-# print("95% Credible width")
-# print(interval_width)
-
-# if(!simulation) {
-#     # Probability of transitioning in 30s with certain covariate combinations -----
-#     load('../Data/data_format_30.rda')
-#     data_format = data_format_30
+# Calculate the 95% credible sets centered at the post. median of log(sigma_123)
+log_sigmas = stacked_chains[,par_index$sigma2]
+interval_width = matrix(nrow = 3, ncol = 2)
+for(i in 1:ncol(log_sigmas)) {
+    print(paste0("sigma", i))
+    med_i = median(log_sigmas[,i])
     
-#     # Removing the participants with missing labels
-#     miss_info = c(26296, 29698, 30625, 401, 423, 419, 457)
-#     data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
-    
-#     ages = NULL
-#     dler_val = NULL
-#     for(a in unique(data_format[,"ID.."])) {
-#         ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-#         dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-#     }
-#     s_dler = sd(dler_val)
-#     print(paste0("Mean DLER: ", mean(dler_val)))
-#     print(paste0("Standard dev. DLER: ", s_dler))
-    
-#     sex = c(0,1)
-#     pEdu = c(0,1)
-#     dler = c(-s_dler,0,s_dler)
-    
-#     if(covariate_struct == 1) {
-#         zeta_est = matrix(par_median[par_index$zeta], nrow=6, ncol=4)
-#     } else if(covariate_struct == 2) {
-#         zeta_est = matrix(par_median[par_index$zeta], nrow=6, ncol=2)
-#     } else {
-#         zeta_est = matrix(par_median[par_index$zeta], nrow=6, ncol=5)   
-#     }
-    
-#     # Probability evolution curves ------------------------------------------------
-#     prob_evo <- function( zeta_est, t_i, cov_val){
-        
-#         # Compute prob evolutions of transitioning 1->2, 1->3, 2->3
-#         prob_evo_mat = matrix( 0, 3, length(t_i))
-#         P_t = matrix(c(1,0,0), ncol = 3)
-#         prob_evo_mat[,1] = c(P_t)
-        
-#         for(k in 2:length(t_i)){
-            
-#             qs = zeta_est %*% cov_val
-#             Q = matrix(c( 1,          exp(qs[1]), exp(qs[2]),
-#                           exp(qs[3]),          1, exp(qs[4]),
-#                           exp(qs[5]), exp(qs[6]),          1), ncol = 3, byrow=T)
-#             P = Q / rowSums(Q)
-            
-#             P_t = P_t %*% P
-#             prob_evo_mat[,k] = c(P_t)
-#         }
-        
-#         return(prob_evo_mat)
-#     }
-    
-#     # baseline, age, sex, pEdu, dler
-#     dler_vals = seq(2.6, -1.4, by = -0.2)
-#     t_i = 1:200
-    
-#     # Sex = 0
-#     case_0 = vector(mode = 'list', length = length(dler_vals))
-#     # Sex = 1
-#     case_1 = vector(mode = 'list', length = length(dler_vals))
-#     for(i in 1:length(dler_vals)) {
-#         if(covariate_struct == 1) {
-#             cov_val_0 = matrix(c(1, 0, 0, 0), ncol = 1)
-#             cov_val_1 = matrix(c(1, 0, 1, 0), ncol = 1)
-#         } else if(covariate_struct == 2) {
-#             cov_val_0 = matrix(c(1, dler_vals[i]), ncol = 1)
-#             cov_val_1 = matrix(c(1, dler_vals[i]), ncol = 1)
-#         } else {
-#             cov_val_0 = matrix(c(1, 0, 0, 0, dler_vals[i]), ncol = 1)
-#             cov_val_1 = matrix(c(1, 0, 1, 0, dler_vals[i]), ncol = 1)
-#         }
-        
-#         case_0[[i]] = prob_evo(zeta_est, t_i, cov_val_0)
-#         case_1[[i]] = prob_evo(zeta_est, t_i, cov_val_1)
-#     }
+    for(j in seq(0, 10, by = 0.00001)) {
+        sum_j = sum((log_sigmas[,i] <= med_i + j) & (log_sigmas[,i] >= med_i - j))
+        if(sum_j >= .95 * nrow(log_sigmas)) {
+            interval_width[i, 1] = j
+            interval_width[i, 2] = sum_j
+            break
+        }
+    }
+}
 
-#     if(covariate_struct == 1) {
-#         qs = zeta_est %*% cov_val_0
+print("95% Credible Sets for log(sigma)")
+print(cbind(apply(log_sigmas, 2, median) - interval_width[,1],
+            apply(log_sigmas, 2, median) + interval_width[,1]))
+print("95% Credible width")
+print(interval_width)
 
-#         Q = matrix(c( 1,          exp(qs[1]), exp(qs[2]),
-#                         exp(qs[3]),          1, exp(qs[4]),
-#                         exp(qs[5]), exp(qs[6]),          1), ncol = 3, byrow=T)
-#         P = Q / rowSums(Q)
-#         print("Transition Probability matrix (sex = 0): ")
-#         print(P)
+if(!simulation) {
+    # Probability of transitioning in 30s with certain covariate combinations -----
+    load('../Data/data_format_30.rda')
+    data_format = data_format_30
+    
+    # Removing the participants with missing labels
+    miss_info = c(26296, 29698, 30625, 401, 423, 419, 457)
+    data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
+    
+    ages = NULL
+    dler_val = NULL
+    for(a in unique(data_format[,"ID.."])) {
+        ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
+        dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
+    }
+    s_dler = sd(dler_val)
+    print(paste0("Mean DLER: ", mean(dler_val)))
+    print(paste0("Standard dev. DLER: ", s_dler))
+    
+    sex = c(0,1)
+    pEdu = c(0,1)
+    dler = c(-s_dler,0,s_dler)
+    
+    if(covariate_struct == 1) {
+        zeta_est = matrix(par_median[par_index$zeta], nrow=6, ncol=4)
+    } else if(covariate_struct == 2) {
+        zeta_est = matrix(par_median[par_index$zeta], nrow=6, ncol=2)
+    } else {
+        zeta_est = matrix(par_median[par_index$zeta], nrow=6, ncol=5)   
+    }
+    
+    # Probability evolution curves ------------------------------------------------
+    prob_evo <- function( zeta_est, t_i, cov_val){
+        
+        # Compute prob evolutions of transitioning 1->2, 1->3, 2->3
+        prob_evo_mat = matrix( 0, 3, length(t_i))
+        P_t = matrix(c(1,0,0), ncol = 3)
+        prob_evo_mat[,1] = c(P_t)
+        
+        for(k in 2:length(t_i)){
+            
+            qs = zeta_est %*% cov_val
+            Q = matrix(c( 1,          exp(qs[1]), exp(qs[2]),
+                          exp(qs[3]),          1, exp(qs[4]),
+                          exp(qs[5]), exp(qs[6]),          1), ncol = 3, byrow=T)
+            P = Q / rowSums(Q)
+            
+            P_t = P_t %*% P
+            prob_evo_mat[,k] = c(P_t)
+        }
+        
+        return(prob_evo_mat)
+    }
+    
+    # baseline, age, sex, pEdu, dler
+    dler_vals = seq(2.6, -1.4, by = -0.2)
+    t_i = 1:200
+    
+    # Sex = 0
+    case_0 = vector(mode = 'list', length = length(dler_vals))
+    # Sex = 1
+    case_1 = vector(mode = 'list', length = length(dler_vals))
+    for(i in 1:length(dler_vals)) {
+        if(covariate_struct == 1) {
+            cov_val_0 = matrix(c(1, 0, 0, 0), ncol = 1)
+            cov_val_1 = matrix(c(1, 0, 1, 0), ncol = 1)
+        } else if(covariate_struct == 2) {
+            cov_val_0 = matrix(c(1, dler_vals[i]), ncol = 1)
+            cov_val_1 = matrix(c(1, dler_vals[i]), ncol = 1)
+        } else {
+            cov_val_0 = matrix(c(1, 0, 0, 0, dler_vals[i]), ncol = 1)
+            cov_val_1 = matrix(c(1, 0, 1, 0, dler_vals[i]), ncol = 1)
+        }
+        
+        case_0[[i]] = prob_evo(zeta_est, t_i, cov_val_0)
+        case_1[[i]] = prob_evo(zeta_est, t_i, cov_val_1)
+    }
 
-#         qs = zeta_est %*% cov_val_1
+    if(covariate_struct == 1) {
+        qs = zeta_est %*% cov_val_0
 
-#         Q = matrix(c( 1,          exp(qs[1]), exp(qs[2]),
-#                         exp(qs[3]),          1, exp(qs[4]),
-#                         exp(qs[5]), exp(qs[6]),          1), ncol = 3, byrow=T)
-#         P = Q / rowSums(Q)
-#         print("Transition Probability matrix (sex = 1): ")
-#         print(P)
-#     }
+        Q = matrix(c( 1,          exp(qs[1]), exp(qs[2]),
+                        exp(qs[3]),          1, exp(qs[4]),
+                        exp(qs[5]), exp(qs[6]),          1), ncol = 3, byrow=T)
+        P = Q / rowSums(Q)
+        print("Transition Probability matrix (sex = 0): ")
+        print(P)
 
-#     if(covariate_struct != 1) {
-        
-#         prob0_1_to_1 = cbind(t_i, case_0[[1]][1,], dler_vals[1] + mean(dler_val))
-#         prob1_1_to_1 = cbind(t_i, case_1[[1]][1,], dler_vals[1] + mean(dler_val))
-#         prob0_1_to_2 = cbind(t_i, case_0[[1]][2,], dler_vals[1] + mean(dler_val))
-#         prob1_1_to_2 = cbind(t_i, case_1[[1]][2,], dler_vals[1] + mean(dler_val))
-#         prob0_1_to_3 = cbind(t_i, case_0[[1]][3,], dler_vals[1] + mean(dler_val))
-#         prob1_1_to_3 = cbind(t_i, case_1[[1]][3,], dler_vals[1] + mean(dler_val))
-#         for(c in 2:length(dler_vals)) {
-#             temp1 = cbind(t_i, case_0[[c]][1,], dler_vals[c] + mean(dler_val))
-#             prob0_1_to_1 = rbind(prob0_1_to_1, temp1)
-            
-#             temp1 = cbind(t_i, case_1[[c]][1,], dler_vals[c] + mean(dler_val))
-#             prob1_1_to_1 = rbind(prob1_1_to_1, temp1)
-            
-#             temp1 = cbind(t_i, case_0[[c]][2,], dler_vals[c] + mean(dler_val))
-#             prob0_1_to_2 = rbind(prob0_1_to_2, temp1)
-            
-#             temp1 = cbind(t_i, case_1[[c]][2,], dler_vals[c] + mean(dler_val))
-#             prob1_1_to_2 = rbind(prob1_1_to_2, temp1)
-            
-#             temp1 = cbind(t_i, case_0[[c]][3,], dler_vals[c] + mean(dler_val))
-#             prob0_1_to_3 = rbind(prob0_1_to_3, temp1)
-            
-#             temp1 = cbind(t_i, case_1[[c]][3,], dler_vals[c] + mean(dler_val))
-#             prob1_1_to_3 = rbind(prob1_1_to_3, temp1)
-#         }
-        
-#         colnames(prob0_1_to_1) = colnames(prob1_1_to_1) = colnames(prob0_1_to_2) = 
-#             colnames(prob1_1_to_2) = colnames(prob0_1_to_3) = colnames(prob1_1_to_3) = 
-#             c('t', 'prob', 'dler')
-        
-#         prob0_1_to_1 = as.data.frame(prob0_1_to_1)
-#         prob1_1_to_1 = as.data.frame(prob1_1_to_1)
-#         prob0_1_to_2 = as.data.frame(prob0_1_to_2)
-#         prob1_1_to_2 = as.data.frame(prob1_1_to_2)
-#         prob0_1_to_3 = as.data.frame(prob0_1_to_3)
-#         prob1_1_to_3 = as.data.frame(prob1_1_to_3)
-        
-#         # 1 -> 1 transition ----------------------------------------------------
-#         if(covariate_struct == 3) {
-#             sub_title_0 = TeX(r'((sex $=$ 0) )')
-#         } else {
-#             sub_title_0 = " "
-#         }
-#         plot0_1_to_1 = ggplot(data = prob0_1_to_1, aes(x = t, y = prob, 
-#                                                        color = as.integer(dler),
-#                                                        group = dler)) +
-#             geom_line() +
-#             ylim(c(0,1)) + 
-#             scale_colour_gradient(name = "DLER value", 
-#                                   low = "blue", high = "red") +
-#             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                  y = TeX(r'(Probability of baseline state)'), 
-#                  title = TeX(r'(Probability evolution curve from baseline state)'),
-#                  subtitle = sub_title_0) +
-#             theme(legend.position = "bottom",
-#                   legend.key.height = unit(0.25, 'cm'), #change legend key height
-#                   legend.key.width = unit(1, 'cm'), #change legend key width
-#                   legend.title = element_text(size=10), #change legend title font size
-#                   legend.text = element_text(size=7)) +
-#             guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))
-        
-#         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_0.png"), 
-#                plot = plot0_1_to_1, width = 1500, height = 1000, units = "px")
+        qs = zeta_est %*% cov_val_1
 
-#         if(covariate_struct == 3) {
-#             plot1_1_to_1 = ggplot(data = prob1_1_to_1, aes(x = t, y = prob, 
-#                                                            color = as.integer(dler), 
-#                                                            group = dler)) +
-#                 geom_line() +
-#                 ylim(c(0,1)) + 
-#                 scale_colour_gradient(name = "DLER value", 
-#                                       low = "blue", high = "red") +
-#                 labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                      y = TeX(r'(Probability of baseline state)'), 
-#                      title = TeX(r'(Probability evolution curve from baseline state)'),
-#                      subtitle = TeX(r'((sex $=$ 1) )')) +
-#                 theme(legend.position = "bottom",
-#                       legend.key.height = unit(0.25, 'cm'), #change legend key height
-#                       legend.key.width = unit(1, 'cm'), #change legend key width
-#                       legend.title = element_text(size=10), #change legend title font size
-#                       legend.text = element_text(size=7)) +
-#                 guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))   
+        Q = matrix(c( 1,          exp(qs[1]), exp(qs[2]),
+                        exp(qs[3]),          1, exp(qs[4]),
+                        exp(qs[5]), exp(qs[6]),          1), ncol = 3, byrow=T)
+        P = Q / rowSums(Q)
+        print("Transition Probability matrix (sex = 1): ")
+        print(P)
+    }
+
+    if(covariate_struct != 1) {
+        
+        prob0_1_to_1 = cbind(t_i, case_0[[1]][1,], dler_vals[1] + mean(dler_val))
+        prob1_1_to_1 = cbind(t_i, case_1[[1]][1,], dler_vals[1] + mean(dler_val))
+        prob0_1_to_2 = cbind(t_i, case_0[[1]][2,], dler_vals[1] + mean(dler_val))
+        prob1_1_to_2 = cbind(t_i, case_1[[1]][2,], dler_vals[1] + mean(dler_val))
+        prob0_1_to_3 = cbind(t_i, case_0[[1]][3,], dler_vals[1] + mean(dler_val))
+        prob1_1_to_3 = cbind(t_i, case_1[[1]][3,], dler_vals[1] + mean(dler_val))
+        for(c in 2:length(dler_vals)) {
+            temp1 = cbind(t_i, case_0[[c]][1,], dler_vals[c] + mean(dler_val))
+            prob0_1_to_1 = rbind(prob0_1_to_1, temp1)
             
-#             ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_1.png"), 
-#                    plot = plot1_1_to_1, width = 1500, height = 1000, units = "px")
-#         }
-        
-#         # 1 -> 2 transition ----------------------------------------------------
-#         plot0_1_to_2 = ggplot(data = prob0_1_to_2, aes(x = t, y = prob, 
-#                                                        color = as.integer(dler),
-#                                                        group = dler)) +
-#             geom_line() +
-#             ylim(c(0,1)) + 
-#             scale_colour_gradient(name = "DLER value", 
-#                                   low = "blue", high = "red") +
-#             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                  y = TeX(r'(Transition probability)'), 
-#                  title = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )'),
-#                  subtitle = sub_title_0) +
-#             theme(legend.position = "bottom",
-#                   legend.key.height = unit(0.25, 'cm'), #change legend key height
-#                   legend.key.width = unit(1, 'cm'), #change legend key width
-#                   legend.title = element_text(size=10), #change legend title font size
-#                   legend.text = element_text(size=7)) +
-#             guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))
-        
-#         # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_0.png"), 
-#         #        plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
-        
-#         if(covariate_struct == 3) {
-#             plot1_1_to_2 = ggplot(data = prob1_1_to_2, aes(x = t, y = prob, 
-#                                                            color = as.integer(dler), 
-#                                                            group = dler)) +
-#                 geom_line() +
-#                 ylim(c(0,1)) + 
-#                 scale_colour_gradient(name = "DLER value", 
-#                                       low = "blue", high = "red") +
-#                 labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                      y = TeX(r'(Transition probability)'), 
-#                      title = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )'),
-#                      subtitle = TeX(r'((sex $=$ 1) )')) +
-#                 theme(legend.position = "bottom",
-#                       legend.key.height = unit(0.25, 'cm'), #change legend key height
-#                       legend.key.width = unit(1, 'cm'), #change legend key width
-#                       legend.title = element_text(size=10), #change legend title font size
-#                       legend.text = element_text(size=7)) +
-#                 guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))
+            temp1 = cbind(t_i, case_1[[c]][1,], dler_vals[c] + mean(dler_val))
+            prob1_1_to_1 = rbind(prob1_1_to_1, temp1)
             
-#             # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_1.png"), 
-#             #        plot = plot1_1_to_2, width = 1500, height = 1000, units = "px")
-#         }
-        
-#         # 1 -> 3 transition ----------------------------------------------------
-#         plot0_1_to_3 = ggplot(data = prob0_1_to_3, aes(x = t, y = prob, 
-#                                                        color = as.integer(dler),
-#                                                        group = dler)) +
-#             geom_line() +
-#             ylim(c(0,1)) + 
-#             scale_colour_gradient(name = "DLER value", 
-#                                   low = "blue", high = "red") +
-#             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                  y = TeX(r'(Transition probability)'), 
-#                  title = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )'),
-#                  subtitle = sub_title_0) +
-#             theme(legend.position = "bottom",
-#                   legend.key.height = unit(0.25, 'cm'), #change legend key height
-#                   legend.key.width = unit(1, 'cm'), #change legend key width
-#                   legend.title = element_text(size=10), #change legend title font size
-#                   legend.text = element_text(size=7)) +
-#             guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))
-        
-#         # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_0.png"), 
-#         #        plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
-        
-#         if(covariate_struct == 3) {
-#             plot1_1_to_3 = ggplot(data = prob1_1_to_3, aes(x = t, y = prob, 
-#                                                            color = as.integer(dler), 
-#                                                            group = dler)) +
-#                 geom_line() +
-#                 ylim(c(0,1)) + 
-#                 scale_colour_gradient(name = "DLER value", 
-#                                       low = "blue", high = "red") +
-#                 labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                      y = TeX(r'(Transition probability)'), 
-#                      title = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )'),
-#                      subtitle = TeX(r'((sex $=$ 1) )')) +
-#                 theme(legend.position = "bottom",
-#                       legend.key.height = unit(0.25, 'cm'), #change legend key height
-#                       legend.key.width = unit(1, 'cm'), #change legend key width
-#                       legend.title = element_text(size=10), #change legend title font size
-#                       legend.text = element_text(size=7)) +
-#                 guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))   
+            temp1 = cbind(t_i, case_0[[c]][2,], dler_vals[c] + mean(dler_val))
+            prob0_1_to_2 = rbind(prob0_1_to_2, temp1)
             
-#             # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_1.png"), 
-#             #        plot = plot1_1_to_3, width = 1500, height = 1000, units = "px")
-#         }
-        
-#         app0 = ggarrange(plot0_1_to_2 + 
-#                              labs(title = TeX(r'(Probability evolution: baseline to state 2)')) +
-#                              theme(axis.title.x = element_blank(),
-#                                    plot.title = element_text(size = 8, face = "bold"),
-#                                    plot.subtitle = element_text(size = 7)), 
-#                          plot0_1_to_3 + 
-#                              labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
-#                              theme(axis.text.y = element_blank(),
-#                                    axis.ticks.y = element_blank(),
-#                                    axis.title.y = element_blank(),
-#                                    axis.title.x = element_blank(),
-#                                    legend.position="none",
-#                                    plot.title = element_text(size = 8, face = "bold"),
-#                                    plot.subtitle = element_text(size = 7)),
-#                          nrow = 1, ncol = 2)
-        
-#         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_0.png"), 
-#                plot = app0, width = 1500, height = 1000, units = "px")
-        
-#         if(covariate_struct == 3) {
-#             app1 = ggarrange(plot1_1_to_2 + 
-#                                  labs(title = TeX(r'(Probability evolution: baseline to state 2)'))+
-#                                  theme(axis.title.x = element_blank(),
-#                                        plot.title = element_text(size = 8, face = "bold"),
-#                                        plot.subtitle = element_text(size = 7)), 
-#                              plot1_1_to_3 + 
-#                                  labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
-#                                  theme(axis.text.y = element_blank(),
-#                                        axis.ticks.y = element_blank(),
-#                                        axis.title.y = element_blank(),
-#                                        axis.title.x = element_blank(),
-#                                        legend.position="none",
-#                                        plot.title = element_text(size = 8, face = "bold"),
-#                                        plot.subtitle = element_text(size = 7)),
-#                              nrow = 1, ncol = 2)   
+            temp1 = cbind(t_i, case_1[[c]][2,], dler_vals[c] + mean(dler_val))
+            prob1_1_to_2 = rbind(prob1_1_to_2, temp1)
             
-#             ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_1.png"), 
-#                    plot = app1, width = 1500, height = 1000, units = "px")
-#         }
+            temp1 = cbind(t_i, case_0[[c]][3,], dler_vals[c] + mean(dler_val))
+            prob0_1_to_3 = rbind(prob0_1_to_3, temp1)
+            
+            temp1 = cbind(t_i, case_1[[c]][3,], dler_vals[c] + mean(dler_val))
+            prob1_1_to_3 = rbind(prob1_1_to_3, temp1)
+        }
+        
+        colnames(prob0_1_to_1) = colnames(prob1_1_to_1) = colnames(prob0_1_to_2) = 
+            colnames(prob1_1_to_2) = colnames(prob0_1_to_3) = colnames(prob1_1_to_3) = 
+            c('t', 'prob', 'dler')
+        
+        prob0_1_to_1 = as.data.frame(prob0_1_to_1)
+        prob1_1_to_1 = as.data.frame(prob1_1_to_1)
+        prob0_1_to_2 = as.data.frame(prob0_1_to_2)
+        prob1_1_to_2 = as.data.frame(prob1_1_to_2)
+        prob0_1_to_3 = as.data.frame(prob0_1_to_3)
+        prob1_1_to_3 = as.data.frame(prob1_1_to_3)
+        
+        # 1 -> 1 transition ----------------------------------------------------
+        if(covariate_struct == 3) {
+            sub_title_0 = TeX(r'((sex $=$ 0) )')
+        } else {
+            sub_title_0 = " "
+        }
+        plot0_1_to_1 = ggplot(data = prob0_1_to_1, aes(x = t, y = prob, 
+                                                       color = as.integer(dler),
+                                                       group = dler)) +
+            geom_line() +
+            ylim(c(0,1)) + 
+            scale_colour_gradient(name = "DLER value", 
+                                  low = "blue", high = "red") +
+            labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                 y = TeX(r'(Probability of baseline state)'), 
+                 title = TeX(r'(Probability evolution curve from baseline state)'),
+                 subtitle = sub_title_0) +
+            theme(legend.position = "bottom",
+                  legend.key.height = unit(0.25, 'cm'), #change legend key height
+                  legend.key.width = unit(1, 'cm'), #change legend key width
+                  legend.title = element_text(size=10), #change legend title font size
+                  legend.text = element_text(size=7)) +
+            guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))
+        
+        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_0.png"), 
+               plot = plot0_1_to_1, width = 1500, height = 1000, units = "px")
+
+        if(covariate_struct == 3) {
+            plot1_1_to_1 = ggplot(data = prob1_1_to_1, aes(x = t, y = prob, 
+                                                           color = as.integer(dler), 
+                                                           group = dler)) +
+                geom_line() +
+                ylim(c(0,1)) + 
+                scale_colour_gradient(name = "DLER value", 
+                                      low = "blue", high = "red") +
+                labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                     y = TeX(r'(Probability of baseline state)'), 
+                     title = TeX(r'(Probability evolution curve from baseline state)'),
+                     subtitle = TeX(r'((sex $=$ 1) )')) +
+                theme(legend.position = "bottom",
+                      legend.key.height = unit(0.25, 'cm'), #change legend key height
+                      legend.key.width = unit(1, 'cm'), #change legend key width
+                      legend.title = element_text(size=10), #change legend title font size
+                      legend.text = element_text(size=7)) +
+                guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))   
+            
+            ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_1.png"), 
+                   plot = plot1_1_to_1, width = 1500, height = 1000, units = "px")
+        }
+        
+        # 1 -> 2 transition ----------------------------------------------------
+        plot0_1_to_2 = ggplot(data = prob0_1_to_2, aes(x = t, y = prob, 
+                                                       color = as.integer(dler),
+                                                       group = dler)) +
+            geom_line() +
+            ylim(c(0,1)) + 
+            scale_colour_gradient(name = "DLER value", 
+                                  low = "blue", high = "red") +
+            labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                 y = TeX(r'(Transition probability)'), 
+                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )'),
+                 subtitle = sub_title_0) +
+            theme(legend.position = "bottom",
+                  legend.key.height = unit(0.25, 'cm'), #change legend key height
+                  legend.key.width = unit(1, 'cm'), #change legend key width
+                  legend.title = element_text(size=10), #change legend title font size
+                  legend.text = element_text(size=7)) +
+            guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))
+        
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_0.png"), 
+        #        plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
+        
+        if(covariate_struct == 3) {
+            plot1_1_to_2 = ggplot(data = prob1_1_to_2, aes(x = t, y = prob, 
+                                                           color = as.integer(dler), 
+                                                           group = dler)) +
+                geom_line() +
+                ylim(c(0,1)) + 
+                scale_colour_gradient(name = "DLER value", 
+                                      low = "blue", high = "red") +
+                labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                     y = TeX(r'(Transition probability)'), 
+                     title = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )'),
+                     subtitle = TeX(r'((sex $=$ 1) )')) +
+                theme(legend.position = "bottom",
+                      legend.key.height = unit(0.25, 'cm'), #change legend key height
+                      legend.key.width = unit(1, 'cm'), #change legend key width
+                      legend.title = element_text(size=10), #change legend title font size
+                      legend.text = element_text(size=7)) +
+                guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))
+            
+            # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_1.png"), 
+            #        plot = plot1_1_to_2, width = 1500, height = 1000, units = "px")
+        }
+        
+        # 1 -> 3 transition ----------------------------------------------------
+        plot0_1_to_3 = ggplot(data = prob0_1_to_3, aes(x = t, y = prob, 
+                                                       color = as.integer(dler),
+                                                       group = dler)) +
+            geom_line() +
+            ylim(c(0,1)) + 
+            scale_colour_gradient(name = "DLER value", 
+                                  low = "blue", high = "red") +
+            labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                 y = TeX(r'(Transition probability)'), 
+                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )'),
+                 subtitle = sub_title_0) +
+            theme(legend.position = "bottom",
+                  legend.key.height = unit(0.25, 'cm'), #change legend key height
+                  legend.key.width = unit(1, 'cm'), #change legend key width
+                  legend.title = element_text(size=10), #change legend title font size
+                  legend.text = element_text(size=7)) +
+            guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))
+        
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_0.png"), 
+        #        plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
+        
+        if(covariate_struct == 3) {
+            plot1_1_to_3 = ggplot(data = prob1_1_to_3, aes(x = t, y = prob, 
+                                                           color = as.integer(dler), 
+                                                           group = dler)) +
+                geom_line() +
+                ylim(c(0,1)) + 
+                scale_colour_gradient(name = "DLER value", 
+                                      low = "blue", high = "red") +
+                labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                     y = TeX(r'(Transition probability)'), 
+                     title = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )'),
+                     subtitle = TeX(r'((sex $=$ 1) )')) +
+                theme(legend.position = "bottom",
+                      legend.key.height = unit(0.25, 'cm'), #change legend key height
+                      legend.key.width = unit(1, 'cm'), #change legend key width
+                      legend.title = element_text(size=10), #change legend title font size
+                      legend.text = element_text(size=7)) +
+                guides(colour = guide_colorbar(title.position = "left",title.vjust = 1))   
+            
+            # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_1.png"), 
+            #        plot = plot1_1_to_3, width = 1500, height = 1000, units = "px")
+        }
+        
+        app0 = ggarrange(plot0_1_to_2 + 
+                             labs(title = TeX(r'(Probability evolution: baseline to state 2)')) +
+                             theme(axis.title.x = element_blank(),
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)), 
+                         plot0_1_to_3 + 
+                             labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
+                             theme(axis.text.y = element_blank(),
+                                   axis.ticks.y = element_blank(),
+                                   axis.title.y = element_blank(),
+                                   axis.title.x = element_blank(),
+                                   legend.position="none",
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)),
+                         nrow = 1, ncol = 2)
+        
+        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_0.png"), 
+               plot = app0, width = 1500, height = 1000, units = "px")
+        
+        if(covariate_struct == 3) {
+            app1 = ggarrange(plot1_1_to_2 + 
+                                 labs(title = TeX(r'(Probability evolution: baseline to state 2)'))+
+                                 theme(axis.title.x = element_blank(),
+                                       plot.title = element_text(size = 8, face = "bold"),
+                                       plot.subtitle = element_text(size = 7)), 
+                             plot1_1_to_3 + 
+                                 labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
+                                 theme(axis.text.y = element_blank(),
+                                       axis.ticks.y = element_blank(),
+                                       axis.title.y = element_blank(),
+                                       axis.title.x = element_blank(),
+                                       legend.position="none",
+                                       plot.title = element_text(size = 8, face = "bold"),
+                                       plot.subtitle = element_text(size = 7)),
+                             nrow = 1, ncol = 2)   
+            
+            ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_1.png"), 
+                   plot = app1, width = 1500, height = 1000, units = "px")
+        }
           
-#     } else {
-#         # Sex = 0
-#         prob0_1_to_1 = data.frame('t' = t_i, 'prob' = case_0[[1]][1,])
-#         plot0_1_to_1 = ggplot(data = prob0_1_to_1, aes(x = t, y = prob)) +
-#             ylim(c(0,1)) + 
-#             geom_line(linewidth=1) +
-#             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                  y = TeX(r'(Probability of baseline state)'), 
-#                  title = TeX(r'(Probability evolution curve from baseline state)'),
-#                  subtitle = TeX(r'((sex $=$ 0) )'))
+    } else {
+        # Sex = 0
+        prob0_1_to_1 = data.frame('t' = t_i, 'prob' = case_0[[1]][1,])
+        plot0_1_to_1 = ggplot(data = prob0_1_to_1, aes(x = t, y = prob)) +
+            ylim(c(0,1)) + 
+            geom_line(linewidth=1) +
+            labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                 y = TeX(r'(Probability of baseline state)'), 
+                 title = TeX(r'(Probability evolution curve from baseline state)'),
+                 subtitle = TeX(r'((sex $=$ 0) )'))
         
-#         prob0_1_to_2 = data.frame('t' = t_i, 'prob' = case_0[[1]][2,])
-#         plot0_1_to_2 = ggplot(data = prob0_1_to_2, aes(x = t, y = prob)) +
-#             ylim(c(0,1)) + 
-#             geom_line(linewidth=1) +
-#             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                  y = TeX(r'(Transition probability)'), 
-#                  title = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )'),
-#                  subtitle = TeX(r'((sex $=$ 0) )'))
+        prob0_1_to_2 = data.frame('t' = t_i, 'prob' = case_0[[1]][2,])
+        plot0_1_to_2 = ggplot(data = prob0_1_to_2, aes(x = t, y = prob)) +
+            ylim(c(0,1)) + 
+            geom_line(linewidth=1) +
+            labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                 y = TeX(r'(Transition probability)'), 
+                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )'),
+                 subtitle = TeX(r'((sex $=$ 0) )'))
         
-#         prob0_1_to_3 = data.frame('t' = t_i, 'prob' = case_0[[1]][3,])
-#         plot0_1_to_3 = ggplot(data = prob0_1_to_3, aes(x = t, y = prob)) +
-#             ylim(c(0,1)) + 
-#             geom_line(linewidth=1) +
-#             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                  y = TeX(r'(Transition probability)'), 
-#                  title = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )'),
-#                  subtitle = TeX(r'((sex $=$ 0) )'))
+        prob0_1_to_3 = data.frame('t' = t_i, 'prob' = case_0[[1]][3,])
+        plot0_1_to_3 = ggplot(data = prob0_1_to_3, aes(x = t, y = prob)) +
+            ylim(c(0,1)) + 
+            geom_line(linewidth=1) +
+            labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                 y = TeX(r'(Transition probability)'), 
+                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )'),
+                 subtitle = TeX(r'((sex $=$ 0) )'))
         
-#         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_0.png"), 
-#                plot = plot0_1_to_1, width = 1500, height = 1000, units = "px")
-#         # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_0.png"), 
-#         #        plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
-#         # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_0.png"), 
-#         #        plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
+        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_0.png"), 
+               plot = plot0_1_to_1, width = 1500, height = 1000, units = "px")
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_0.png"), 
+        #        plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_0.png"), 
+        #        plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
         
-#         app0 = ggarrange(plot0_1_to_2 + 
-#                              labs(title = TeX(r'(Probability evolution: baseline to state 2)')) +
-#                              theme(axis.title.x = element_blank(),
-#                                    plot.title = element_text(size = 8, face = "bold"),
-#                                    plot.subtitle = element_text(size = 7)), 
-#                          plot0_1_to_3 + 
-#                              labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
-#                              theme(axis.text.y = element_blank(),
-#                                    axis.ticks.y = element_blank(),
-#                                    axis.title.y = element_blank(),
-#                                    axis.title.x = element_blank(),
-#                                    legend.position="none",
-#                                    plot.title = element_text(size = 8, face = "bold"),
-#                                    plot.subtitle = element_text(size = 7)),
-#                          nrow = 1, ncol = 2)
-#         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_0.png"), 
-#                plot = app0, width = 1500, height = 1000, units = "px")
+        app0 = ggarrange(plot0_1_to_2 + 
+                             labs(title = TeX(r'(Probability evolution: baseline to state 2)')) +
+                             theme(axis.title.x = element_blank(),
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)), 
+                         plot0_1_to_3 + 
+                             labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
+                             theme(axis.text.y = element_blank(),
+                                   axis.ticks.y = element_blank(),
+                                   axis.title.y = element_blank(),
+                                   axis.title.x = element_blank(),
+                                   legend.position="none",
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)),
+                         nrow = 1, ncol = 2)
+        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_0.png"), 
+               plot = app0, width = 1500, height = 1000, units = "px")
 
 
-#         # Sex = 1
-#         prob0_1_to_1 = data.frame('t' = t_i, 'prob' = case_1[[1]][1,])
-#         plot0_1_to_1 = ggplot(data = prob0_1_to_1, aes(x = t, y = prob)) +
-#             ylim(c(0,1)) + 
-#             geom_line(linewidth=1) +
-#             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                  y = TeX(r'(Probability of baseline state)'), 
-#                  title = TeX(r'(Probability evolution curve from baseline state)'),
-#                  subtitle = TeX(r'((sex $=$ 1) )'))
+        # Sex = 1
+        prob0_1_to_1 = data.frame('t' = t_i, 'prob' = case_1[[1]][1,])
+        plot0_1_to_1 = ggplot(data = prob0_1_to_1, aes(x = t, y = prob)) +
+            ylim(c(0,1)) + 
+            geom_line(linewidth=1) +
+            labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                 y = TeX(r'(Probability of baseline state)'), 
+                 title = TeX(r'(Probability evolution curve from baseline state)'),
+                 subtitle = TeX(r'((sex $=$ 1) )'))
         
-#         prob0_1_to_2 = data.frame('t' = t_i, 'prob' = case_1[[1]][2,])
-#         plot0_1_to_2 = ggplot(data = prob0_1_to_2, aes(x = t, y = prob)) +
-#             ylim(c(0,1)) + 
-#             geom_line(linewidth=1) +
-#             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                  y = TeX(r'(Transition probability)'), 
-#                  title = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )'),
-#                  subtitle = TeX(r'((sex $=$ 1) )'))
+        prob0_1_to_2 = data.frame('t' = t_i, 'prob' = case_1[[1]][2,])
+        plot0_1_to_2 = ggplot(data = prob0_1_to_2, aes(x = t, y = prob)) +
+            ylim(c(0,1)) + 
+            geom_line(linewidth=1) +
+            labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                 y = TeX(r'(Transition probability)'), 
+                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 2) )'),
+                 subtitle = TeX(r'((sex $=$ 1) )'))
         
-#         prob0_1_to_3 = data.frame('t' = t_i, 'prob' = case_1[[1]][3,])
-#         plot0_1_to_3 = ggplot(data = prob0_1_to_3, aes(x = t, y = prob)) +
-#             ylim(c(0,1)) + 
-#             geom_line(linewidth=1) +
-#             labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
-#                  y = TeX(r'(Transition probability)'), 
-#                  title = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )'),
-#                  subtitle = TeX(r'((sex $=$ 1) )'))
+        prob0_1_to_3 = data.frame('t' = t_i, 'prob' = case_1[[1]][3,])
+        plot0_1_to_3 = ggplot(data = prob0_1_to_3, aes(x = t, y = prob)) +
+            ylim(c(0,1)) + 
+            geom_line(linewidth=1) +
+            labs(x = TeX(r'(Time post baseline (x30 sec) )'), 
+                 y = TeX(r'(Transition probability)'), 
+                 title = TeX(r'(Probability evolution curve (state 1 $\to$ 3) )'),
+                 subtitle = TeX(r'((sex $=$ 1) )'))
         
-#         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_1.png"), 
-#                plot = plot0_1_to_1, width = 1500, height = 1000, units = "px")
-#         # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_1.png"), 
-#         #        plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
-#         # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_1.png"), 
-#         #        plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
+        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to1_1.png"), 
+               plot = plot0_1_to_1, width = 1500, height = 1000, units = "px")
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to2_1.png"), 
+        #        plot = plot0_1_to_2, width = 1500, height = 1000, units = "px")
+        # ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_1to3_1.png"), 
+        #        plot = plot0_1_to_3, width = 1500, height = 1000, units = "px")
         
-#         app0 = ggarrange(plot0_1_to_2 + 
-#                              labs(title = TeX(r'(Probability evolution: baseline to state 2)')) +
-#                              theme(axis.title.x = element_blank(),
-#                                    plot.title = element_text(size = 8, face = "bold"),
-#                                    plot.subtitle = element_text(size = 7)), 
-#                          plot0_1_to_3 + 
-#                              labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
-#                              theme(axis.text.y = element_blank(),
-#                                    axis.ticks.y = element_blank(),
-#                                    axis.title.y = element_blank(),
-#                                    axis.title.x = element_blank(),
-#                                    legend.position="none",
-#                                    plot.title = element_text(size = 8, face = "bold"),
-#                                    plot.subtitle = element_text(size = 7)),
-#                          nrow = 1, ncol = 2)
-#         ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_1.png"), 
-#                plot = app0, width = 1500, height = 1000, units = "px")
-#     }
+        app0 = ggarrange(plot0_1_to_2 + 
+                             labs(title = TeX(r'(Probability evolution: baseline to state 2)')) +
+                             theme(axis.title.x = element_blank(),
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)), 
+                         plot0_1_to_3 + 
+                             labs(title = TeX(r'(Probability evolution: baseline to state 3)')) +
+                             theme(axis.text.y = element_blank(),
+                                   axis.ticks.y = element_blank(),
+                                   axis.title.y = element_blank(),
+                                   axis.title.x = element_blank(),
+                                   legend.position="none",
+                                   plot.title = element_text(size = 8, face = "bold"),
+                                   plot.subtitle = element_text(size = 7)),
+                         nrow = 1, ncol = 2)
+        ggsave(filename = paste0("Plots/probEvo_trial", trial_num, "_combo_1.png"), 
+               plot = app0, width = 1500, height = 1000, units = "px")
+    }
     
-# }
-
-# # Plot the random effect distributions
-# mu_alpha_beta = par_median[par_index$delta]
-# var_1_2_3     = tail(par_median, 3)
-# sigma_1_2_3   = sqrt(var_1_2_3)
-
-# x_max = max(mu_alpha_beta[1] + 4 * sigma_1_2_3[1],
-#             sum(mu_alpha_beta[c(1,2)]) + 4 * sigma_1_2_3[2],
-#             sum(mu_alpha_beta[c(1,3)]) + 4 * sigma_1_2_3[3])
-# x_min = min(mu_alpha_beta[1] - 4 * sigma_1_2_3[1],
-#             sum(mu_alpha_beta[c(1,2)]) - 4 * sigma_1_2_3[2],
-#             sum(mu_alpha_beta[c(1,3)]) - 4 * sigma_1_2_3[3])
-
-# x_vals = seq(round(x_min, 3), round(x_max, 3), by = 0.001)
-
-# baseline_distr = dnorm(x_vals, mean = mu_alpha_beta[1], sd = sigma_1_2_3[1])
-# state_2_distr  = dnorm(x_vals, mean = sum(mu_alpha_beta[c(1,2)]), sd = sigma_1_2_3[2])
-# state_3_distr  = dnorm(x_vals, mean = sum(mu_alpha_beta[c(1,3)]), sd = sigma_1_2_3[3])
-
-# dat <- data.frame(dens = c(baseline_distr, state_2_distr, state_3_distr), 
-#                   lines = rep(c("baseline", "state 2", "state 3"), 
-#                               each = length(x_vals)),
-#                   x = rep(x_vals, 3))
-# dat$lines = as.factor(dat$lines)
-
-# y_end_base = dnorm(mu_alpha_beta[1], 
-#                    mean = mu_alpha_beta[1], 
-#                    sd = sigma_1_2_3[1])
-# y_end_s2   = dnorm(sum(mu_alpha_beta[c(1,2)]), 
-#                    mean = sum(mu_alpha_beta[c(1,2)]), 
-#                    sd = sigma_1_2_3[2])
-# y_end_s3   = dnorm(sum(mu_alpha_beta[c(1,3)]), 
-#                    mean = sum(mu_alpha_beta[c(1,3)]), 
-#                    sd = sigma_1_2_3[3])
-
-# subtitle_text = ""
-# if(covariate_struct == 1) {
-#     subtitle_text = "All covariates (no DLER)"
-# } else if(covariate_struct == 2) {
-#     subtitle_text = "Only DLER"
-# } else {
-#     subtitle_text = "All covariates (including DLER)"
-# }
-# re_dist = ggplot(dat, aes(x=x, y=dens, group=lines, fill=lines)) +
-#     xlim(0,12) +
-#     ylim(0, 1) + 
-#     geom_line(linewidth=.5) + 
-#     geom_segment(aes(x = mu_alpha_beta[1], xend = mu_alpha_beta[1], 
-#                      y = 0, yend = y_end_base), color = "blue") + 
-#     geom_segment(aes(x = sum(mu_alpha_beta[c(1,2)]), xend = sum(mu_alpha_beta[c(1,2)]), 
-#                      y = 0, yend = y_end_s2), color = "red") + 
-#     geom_segment(aes(x = sum(mu_alpha_beta[c(1,3)]), xend = sum(mu_alpha_beta[c(1,3)]), 
-#                      y = 0, yend = y_end_s3), color = "green") +
-#     geom_ribbon(data=subset(dat,x>2.466 & x<11.354),aes(x=x,ymax=dens),ymin=0,alpha=0.3) +
-#     scale_fill_manual(name='', values=c("baseline" = "blue", "state 2" = "red",
-#                                         "state 3" = "green")) +
-#     labs(x = "", 
-#          y = "Density", 
-#          title = "Random effect distributions for each state",
-#          subtitle = subtitle_text)
-# ggsave(filename = paste0("Plots/randomEffects_", trial_num, ".png"), 
-#        plot = re_dist, width = 1500, height = 1000, units = "px")
-
-# # Remove empty plot created
-# file.remove("Rplots.pdf")
+}

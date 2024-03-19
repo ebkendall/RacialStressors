@@ -14,7 +14,7 @@ data_format = data_format_30
 miss_info = c(26296, 29698, 30625, 401, 423, 419, 457)
 data_format = data_format[!(data_format[,"ID.."] %in% miss_info), ]
 
-N = length(unique(data_format$ID..))
+N = 3 * length(unique(data_format$ID..))
 
 EIDs = unique(data_format$ID..)
 
@@ -44,24 +44,30 @@ if(covariate_struct == 1) {
     
     load(paste0("Model_out/mcmc_out_", 5, "_", 9, "_30b.rda"))
     true_par = apply(mcmc_out$chain[190000:200000, ], 2, median)
+    print(true_par[par_index$zeta])
+    true_par[par_index$zeta][1:2] = -2
+    true_par[par_index$zeta][c(7,13,19,25)] = true_par[par_index$zeta][c(8,14,20,26)] 
+    true_par[par_index$zeta][3:4] = -2
+    true_par[par_index$zeta][c(10,16,22,28)] = true_par[par_index$zeta][c(9,15,21,27)] 
+    true_par[par_index$zeta][5:6] = c(-4,-4)
+    print(matrix(true_par[par_index$zeta], nrow = 6))
     save(true_par, file = paste0('Data/true_par_', covariate_struct, '_30.rda'))
 }
 
 # Covariate information -------------------------------------------------------
-cov_info = data_format[,c("Age", "sex1", "edu_yes", "DLER_avg"), drop=F] 
-cov_info = as.matrix(cov_info)
+cov_mat_big = matrix(0, nrow=length(unique(data_format[,"ID.."])), ncol = 4)
+for(i in 1:length(unique(data_format[,"ID.."]))) {
+    sub_dat = as.matrix(data_format[data_format[,"ID.."] == unique(data_format[,"ID.."])[i], ])
+    cov_mat_big[i, ] = c(sub_dat[1, c("Age", "sex1", "edu_yes", "DLER_avg")])
+}
+colnames(cov_mat_big) = c("Age", "sex1", "edu_yes", "DLER_avg")
 
 # Centering Age & DLER
-ages = NULL
-dler_val = NULL
-for(a in EIDs) {
-    ages = c(ages, unique(data_format[data_format[,"ID.."] == a, "Age"]))
-    dler_val = c(dler_val, unique(data_format[data_format[,"ID.."] == a, "DLER_avg"]))
-}
-mean_age = mean(ages)
-mean_dler = mean(dler_val)
-cov_info[,'Age'] = cov_info[,'Age'] - mean_age
-cov_info[,'DLER_avg'] = cov_info[,'DLER_avg'] - mean_dler    
+ages = mean(cov_mat_big[,"Age"])
+dler_val = mean(cov_mat_big[,"DLER_avg"])
+
+cov_mat_big[,'Age'] = cov_mat_big[,'Age'] - ages
+cov_mat_big[,'DLER_avg'] = cov_mat_big[,'DLER_avg'] - dler_val    
 
 # Simulate the data -----------------------------------------------------------
 tau2 = exp(true_par[par_index$tau2])
@@ -82,7 +88,7 @@ for(ind in 1:100) {
     sim_data = NULL
 
     for(i in 1:N) {
-        id_info = EIDs[i]
+        id_info = sample(x = EIDs, size = 1, replace = T)
         n_i = sum(data_format[,"ID.."] == id_info)
         b_i = NULL
         s_i = NULL
@@ -91,7 +97,9 @@ for(ind in 1:100) {
         sub_dat = data_format[data_format[,"ID.."] == id_info, ,drop=F]
         y_1_sub = c(sub_dat[,"State"])
         
-        cov_i = cov_info[data_format$ID.. ==id_info, ,drop=F]
+        cov_i_small = cov_mat_big[sample(x = 1:nrow(cov_mat_big), size = 1, replace = T), ,drop=F]
+        cov_i = matrix(rep(cov_i_small, n_i), nrow = n_i, byrow = T)
+        colnames(cov_i) = c("Age", "sex1", "edu_yes", "DLER_avg")
         cov_gamma_i = cov_i[, c("Age", "sex1", "edu_yes"), drop = F]
         cov_dler_i = c(cov_i[, "DLER_avg"])
         
@@ -103,11 +111,11 @@ for(ind in 1:100) {
             z_i = matrix(c(1, cov_i[1,]), nrow=1)
         }
 
-        start_run = FALSE
+        start_run = TRUE
         b_i = 1
         s_i = rep(1, n_i)
         for(k in 2:n_i) {
-            if(y_1_sub[k] != 1 && y_1_sub[k-1] == 1) start_run = TRUE
+            # if(y_1_sub[k] != 1 && y_1_sub[k-1] == 1) start_run = TRUE
             if(start_run) {
                 q1   = exp(z_i %*% t(zeta[1, , drop=F])) 
                 q2   = exp(z_i %*% t(zeta[2, , drop=F]))
@@ -178,6 +186,22 @@ for(ind in 1:100) {
     print('Proption of occurances in each state:')
     print(table(sim_data[,'State']))
     print(table(sim_data[,'State'])/dim(sim_data)[1])
+    
+    count_transitions = matrix(0, nrow=3, ncol=3)
+    total_trans = 0
+    for(i in unique(sim_data[,"ID.."])){
+        
+        b_i_mle = as.numeric(c(sim_data[sim_data[,"ID.."] == i, 'State']))
+        
+        for(t in 1:(length(b_i_mle) - 1)) {
+            count_transitions[b_i_mle[t], b_i_mle[t+1]] = 
+                count_transitions[b_i_mle[t], b_i_mle[t+1]] + 1
+            total_trans = total_trans + 1
+        }
+    }
+    
+    print("Transition distribution")
+    print(count_transitions)
     
     save(sim_data, file = paste0("Data/sim_data_", covariate_struct, "_", ind, ".rda"))
 }

@@ -10,7 +10,7 @@ print(ind)
 # 2: DLER
 # 3: all covariates
 
-covariate_struct = 1
+covariate_struct = 3
 # ------------------------------------------------------------------------------
 simulation = T
 case_b = T
@@ -201,8 +201,6 @@ if(simulation) {
 # Specifying the priors --------------------------------------------------------
 prior_mean = rep(0, length(init_par))
 prior_sd = rep(400, length(init_par))
-# prior_mean[par_index$delta] = c(6,0,0)
-# prior_sd[par_index$delta] = c(4,4,4)
 
 prior_par = list()
 prior_par[[1]] = prior_mean
@@ -231,7 +229,7 @@ for(i in 1:length(EIDs)) {
     }
 }
 
-big_steps = 1000000
+big_steps = 250000
 steps     = 100000
 burnin    = 5000
 

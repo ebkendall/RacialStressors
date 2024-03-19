@@ -216,16 +216,16 @@ mcmc_routine = function( y_1, y_2, t, id, init_par, prior_par, par_index, steps,
                 B_chain_big = rbind(B_chain_big, B_chain[ind_keep, ])
             }
 
-            # Save intermediary chain
-            if(ttt/steps == 5) {
-                if(simulation) {
-                    save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
-                                                trial_num, 'it', ttt/steps, '_sim_check.rda'))
-                } else {
-                    save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
-                                                trial_num, 'it', ttt/steps, '_check.rda'))
-                }
-            }
+            # # Save intermediary chain
+            # if(ttt/steps == 5) {
+            #     if(simulation) {
+            #         save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
+            #                                     trial_num, 'it', ttt/steps, '_sim_check.rda'))
+            #     } else {
+            #         save(mcmc_out, file = paste0('Model_out/mcmc_out_interm_',ind,'_', 
+            #                                     trial_num, 'it', ttt/steps, '_check.rda'))
+            #     }
+            # }
 
             # Reset the chains
             chain = matrix( 0, steps, n_par)
