@@ -11,7 +11,7 @@ dir = 'Model_out/'
 # 2: DLER
 # 3: all covariates
 
-covariate_struct = 1
+covariate_struct = 3
 # ------------------------------------------------------------------------------
 
 # Information defining which approach to take ----------------------------------
@@ -29,7 +29,7 @@ if(simulation) {
 # ------------------------------------------------------------------------------
 
 # Size of posterior sample from mcmc chains
-n_post = 25000; burnin = 500; steps = 50000
+n_post = 19500; burnin = 500; steps = 20000
 # n_post = 20000; burnin = 500; steps = 100000
 
 # Matrix row indices for the posterior sample to use

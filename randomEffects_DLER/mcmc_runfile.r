@@ -7,7 +7,7 @@ print(ind)
 
 # Model type -------------------------------------------------------------------
 # 1: baseline model (age, sex, pEdu)
-# 2: DLER
+# 2: DLER only
 # 3: all covariates
 
 covariate_struct = 3
@@ -229,7 +229,7 @@ for(i in 1:length(EIDs)) {
     }
 }
 
-big_steps = 250000
+big_steps = 200000
 steps     = 100000
 burnin    = 5000
 
